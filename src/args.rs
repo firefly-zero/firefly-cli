@@ -25,11 +25,11 @@ pub struct BuildArgs {
     pub output: Option<String>,
 
     /// The programming language used in the app.
-    #[arg(value_enum, default_value = None)]
+    #[arg(long, value_enum, default_value = None)]
     pub lang: Option<Lang>,
 }
 
-#[derive(Copy, Debug, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
+#[derive(Debug, Clone, ValueEnum)]
 pub(crate) enum Lang {
     Go,
     Rust,
