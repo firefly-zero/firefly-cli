@@ -1,4 +1,4 @@
-use clap::{Parser, Subcommand};
+use clap::{Parser, Subcommand, ValueEnum};
 
 #[derive(Parser)]
 #[command(author, version, about, long_about = None)]
@@ -25,6 +25,14 @@ pub struct BuildArgs {
     pub output: Option<String>,
 
     /// The programming language used in the app.
-    #[arg(short, long, default_value = None)]
-    pub lang: Option<String>,
+    #[arg(value_enum, default_value = None)]
+    pub lang: Option<Lang>,
+}
+
+#[derive(Copy, Debug, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
+pub(crate) enum Lang {
+    Go,
+    Rust,
+    Zig,
+    TS,
 }
