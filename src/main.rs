@@ -1,6 +1,9 @@
+#![feature(iter_array_chunks)]
+
 mod args;
 mod build;
 mod error;
+mod images;
 use crate::args::*;
 use crate::build::cmd_build;
 use crate::error::CLIError;

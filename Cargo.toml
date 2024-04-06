@@ -8,3 +8,5 @@ edition = "2021"
 clap = { version = "4.5.4", features = ["derive"] }
 # ANSI color codes for terminal output
 colored = "2.1.0"
+heapless = "0.8.0"
+image = { version = "0.25.1", default-features = false, features = ["png"] }
