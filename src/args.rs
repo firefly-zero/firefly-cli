@@ -1,4 +1,4 @@
-use clap::{Parser, Subcommand, ValueEnum};
+use clap::{Parser, Subcommand};
 use std::path::PathBuf;
 
 #[derive(Parser)]
@@ -20,12 +20,4 @@ pub struct BuildArgs {
     /// Path to the package directory.
     #[arg(default_value = ".")]
     pub root: PathBuf,
-}
-
-#[derive(Debug, Clone, ValueEnum)]
-pub(crate) enum Lang {
-    Go,
-    Rust,
-    Zig,
-    TS,
 }

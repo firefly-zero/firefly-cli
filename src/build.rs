@@ -5,11 +5,16 @@ use crate::images::convert_image;
 use crate::langs::build_bin;
 
 pub(crate) fn cmd_build(args: &BuildArgs) -> Result<(), CLIError> {
-    let raw_config = std::fs::read_to_string(&args.root)?;
-    let config: Config = toml::from_str(raw_config.as_str())?;
+    let config_path = args.root.join("firefly.toml");
+    let raw_config = std::fs::read_to_string(config_path)?;
+    let mut config: Config = toml::from_str(raw_config.as_str())?;
+    config.root = args.root.clone();
+    std::fs::create_dir_all(config.rom_path())?;
     build_bin(&config)?;
-    for (name, file_config) in config.files.iter() {
-        convert_file(name, &config, file_config)?;
+    if let Some(files) = &config.files {
+        for (name, file_config) in files.iter() {
+            convert_file(name, &config, file_config)?;
+        }
     }
     Ok(())
 }

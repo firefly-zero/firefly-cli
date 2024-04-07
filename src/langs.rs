@@ -42,11 +42,19 @@ fn build_go(config: &Config) -> Result<(), CLIError> {
     target_file.write_all(include_bytes!("target.json"))?;
     let target_path_str: &str = target_path.to_str().unwrap();
     let out_path = config.rom_path().join("cart.wasm");
+    let out_path = std::fs::canonicalize(out_path)?;
     let out_path = out_path.to_str().unwrap();
-    Command::new("tinygo")
-        .args(["build", "-target", target_path_str, "-o", out_path])
+    let in_path = config.root.to_str().unwrap();
+    let output = Command::new("tinygo")
+        .args(["build", "-target", target_path_str, "-o", out_path, "."])
+        .current_dir(in_path)
         .output()?;
-    todo!()
+    std::io::stdout().write_all(&output.stdout)?;
+    std::io::stderr().write_all(&output.stderr)?;
+    if !output.status.success() {
+        return Err(CLIError::Subprocess(output.status.code().unwrap_or(1)));
+    }
+    Ok(())
 }
 
 fn build_rust(_config: &Config) -> Result<(), CLIError> {

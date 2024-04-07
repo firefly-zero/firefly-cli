@@ -9,7 +9,7 @@ pub(crate) struct Config {
     pub app_name:    String,
     pub author_name: String,
     pub lang:        Option<Lang>,
-    pub files:       HashMap<String, FileConfig>,
+    pub files:       Option<HashMap<String, FileConfig>>,
 
     #[serde(skip)]
     pub root: PathBuf,
