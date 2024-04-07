@@ -2,8 +2,10 @@
 
 mod args;
 mod build;
+mod config;
 mod error;
 mod images;
+mod langs;
 use crate::args::*;
 use crate::build::cmd_build;
 use crate::error::CLIError;

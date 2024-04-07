@@ -4,8 +4,11 @@ use std::fmt::Display;
 pub(crate) enum CLIError {
     IO(std::io::Error),
     Image(image::ImageError),
+    Toml(toml::de::Error),
     TooManyColors,
     LangNotDetected,
+    FileExtNotDetected(String),
+    UnknownFileExt(String),
 }
 
 impl From<std::io::Error> for CLIError {
@@ -20,6 +23,12 @@ impl From<image::ImageError> for CLIError {
     }
 }
 
+impl From<toml::de::Error> for CLIError {
+    fn from(value: toml::de::Error) -> Self {
+        Self::Toml(value)
+    }
+}
+
 impl CLIError {
     pub fn get_code(&self) -> i32 {
         match self {
@@ -27,6 +36,9 @@ impl CLIError {
             CLIError::LangNotDetected => 3,
             CLIError::Image(_) => 4,
             CLIError::TooManyColors => 5,
+            CLIError::Toml(_) => 6,
+            CLIError::FileExtNotDetected(_) => 7,
+            CLIError::UnknownFileExt(_) => 8,
         }
     }
 
@@ -43,8 +55,11 @@ impl Display for CLIError {
         match self {
             IO(err) => write!(f, "IO error: {err}"),
             Image(err) => write!(f, "image error: {err}"),
+            Toml(err) => write!(f, "toml deserialization error: {err}"),
             TooManyColors => write!(f, "the image contains more than 4 colors"),
             LangNotDetected => write!(f, "cannot detect programming language"),
+            FileExtNotDetected(fname) => write!(f, "cannot detect file extension for {fname}"),
+            UnknownFileExt(ext) => write!(f, "unsupported file type: {ext}"),
         }
     }
 }

@@ -1,46 +1,28 @@
-use crate::args::{BuildArgs, Lang};
+use crate::args::BuildArgs;
+use crate::config::{Config, FileConfig};
 use crate::error::CLIError;
-use std::path::Path;
+use crate::images::convert_image;
+use crate::langs::build_bin;
 
 pub(crate) fn cmd_build(args: &BuildArgs) -> Result<(), CLIError> {
-    let root = Path::new(&args.input);
-    let lang = detect_lang(root)?;
-    match lang {
-        Lang::Go => build_go(args),
-        Lang::Rust => build_rust(args),
-        Lang::Zig => build_zig(args),
-        Lang::TS => build_ts(args),
+    let raw_config = std::fs::read_to_string(&args.root)?;
+    let config: Config = toml::from_str(raw_config.as_str())?;
+    build_bin(&config)?;
+    for (name, file_config) in config.files.iter() {
+        convert_file(name, &config, file_config)?;
     }
+    Ok(())
 }
 
-fn detect_lang(root: &Path) -> Result<Lang, CLIError> {
-    if root.join("go.mod").exists() {
-        return Ok(Lang::Go);
+fn convert_file(name: &str, config: &Config, file_config: &FileConfig) -> Result<(), CLIError> {
+    let output_path = config.rom_path().join(name);
+    let Some(extension) = file_config.path.extension() else {
+        let file_name = file_config.path.to_str().unwrap().to_string();
+        return Err(CLIError::FileExtNotDetected(file_name));
+    };
+    let extension = extension.to_str().unwrap();
+    match extension {
+        "png" => convert_image(&file_config.path, &output_path),
+        _ => Err(CLIError::UnknownFileExt(extension.to_string())),
     }
-    if root.join("Cargo.toml").exists() {
-        return Ok(Lang::Rust);
-    }
-    if root.join("build.zig").exists() {
-        return Ok(Lang::Zig);
-    }
-    if root.join("package.json").exists() {
-        return Ok(Lang::TS);
-    }
-    Err(CLIError::LangNotDetected)
-}
-
-fn build_go(_args: &BuildArgs) -> Result<(), CLIError> {
-    todo!()
-}
-
-fn build_rust(_args: &BuildArgs) -> Result<(), CLIError> {
-    todo!()
-}
-
-fn build_zig(_args: &BuildArgs) -> Result<(), CLIError> {
-    todo!()
-}
-
-fn build_ts(_args: &BuildArgs) -> Result<(), CLIError> {
-    todo!()
 }

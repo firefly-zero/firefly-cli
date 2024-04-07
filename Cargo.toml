@@ -10,3 +10,5 @@ clap = { version = "4.5.4", features = ["derive"] }
 colored = "2.1.0"
 heapless = "0.8.0"
 image = { version = "0.25.1", default-features = false, features = ["png"] }
+serde = { version = "1.0.197", features = ["serde_derive", "derive"] }
+toml = "0.8.12"
