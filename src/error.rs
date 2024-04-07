@@ -10,6 +10,13 @@ pub(crate) enum CLIError {
     FileExtNotDetected(String),
     UnknownFileExt(String),
     Subprocess(i32),
+    Wrapped(String, Box<CLIError>),
+}
+
+impl CLIError {
+    pub(crate) fn wrap<T>(msg: &'static str, err: CLIError) -> Result<T, CLIError> {
+        Err(Self::Wrapped(msg.to_string(), err.into()))
+    }
 }
 
 impl From<std::io::Error> for CLIError {
@@ -41,6 +48,7 @@ impl CLIError {
             CLIError::FileExtNotDetected(_) => 7,
             CLIError::UnknownFileExt(_) => 8,
             CLIError::Subprocess(_) => 9,
+            CLIError::Wrapped(_, err) => err.get_code(),
         }
     }
 
@@ -63,6 +71,7 @@ impl Display for CLIError {
             FileExtNotDetected(fname) => write!(f, "cannot detect file extension for {fname}"),
             UnknownFileExt(ext) => write!(f, "unsupported file type: {ext}"),
             Subprocess(code) => write!(f, "subprocess exited with status code {code}"),
+            Wrapped(msg, err) => write!(f, "{msg}: {err}"),
         }
     }
 }

@@ -38,8 +38,13 @@ fn detect_lang(root: &Path) -> Result<Lang, CLIError> {
 
 fn build_go(config: &Config) -> Result<(), CLIError> {
     let target_path = temp_dir().join("firefly-tinygo-target.json");
-    let mut target_file = File::create(&target_path)?;
-    target_file.write_all(include_bytes!("target.json"))?;
+    let mut target_file = match File::create(&target_path) {
+        Ok(target_file) => target_file,
+        Err(err) => CLIError::wrap("create temp file", err.into())?,
+    };
+    if let Err(err) = target_file.write_all(include_bytes!("target.json")) {
+        CLIError::wrap("write temp file", err.into())?;
+    };
     let target_path_str: &str = target_path.to_str().unwrap();
     let out_path = config.rom_path().join("cart.wasm");
     let out_path = std::fs::canonicalize(out_path)?;

@@ -9,11 +9,17 @@ pub(crate) fn cmd_build(args: &BuildArgs) -> Result<(), CLIError> {
     let raw_config = std::fs::read_to_string(config_path)?;
     let mut config: Config = toml::from_str(raw_config.as_str())?;
     config.root = args.root.clone();
-    std::fs::create_dir_all(config.rom_path())?;
-    build_bin(&config)?;
+    if let Err(err) = std::fs::create_dir_all(config.rom_path()) {
+        CLIError::wrap("create ROM directory", err.into())?;
+    }
+    if let Err(err) = build_bin(&config) {
+        CLIError::wrap("build binary", err)?;
+    }
     if let Some(files) = &config.files {
         for (name, file_config) in files.iter() {
-            convert_file(name, &config, file_config)?;
+            if let Err(err) = convert_file(name, &config, file_config) {
+                CLIError::wrap("convert file", err)?;
+            }
         }
     }
     Ok(())
