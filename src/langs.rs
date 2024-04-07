@@ -46,8 +46,8 @@ fn build_go(config: &Config) -> Result<(), CLIError> {
         CLIError::wrap("write temp file", err.into())?;
     };
     let target_path_str: &str = target_path.to_str().unwrap();
-    let out_path = config.rom_path().join("cart.wasm");
-    let out_path = std::fs::canonicalize(out_path)?;
+    let rom_path = std::fs::canonicalize(config.rom_path())?;
+    let out_path = rom_path.join("cart.wasm");
     let out_path = out_path.to_str().unwrap();
     let in_path = config.root.to_str().unwrap();
     let output = Command::new("tinygo")
