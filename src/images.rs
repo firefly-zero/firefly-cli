@@ -11,33 +11,38 @@ pub(crate) fn convert_image(input_path: &Path, output_path: &Path) -> Result<(),
     let mut out = File::create(output_path)?;
     write_u8(&mut out, 0x21)?;
     if palette.len() <= 2 {
-        dump_1bpp(out, img, palette)
+        write_image::<2, 4>(out, img, palette)
     } else {
-        dump_2bpp(out, img, palette)
+        write_image::<1, 8>(out, img, palette)
     }
 }
 
-fn dump_1bpp(
+fn write_image<const BPP: usize, const PPB: usize>(
     mut out: File,
     img: ImageBuffer<Luma<u8>, Vec<u8>>,
     palette: heapless::Vec<u8, 4>,
 ) -> Result<(), CLIError> {
-    write_u8(&mut out, 0x00)?; // TODO: transparency and BPP
+    write_u8(&mut out, 0x02)?;
     write_u16(&mut out, img.width() as u16)?;
-    todo!()
-}
-
-fn dump_2bpp(
-    mut out: File,
-    img: ImageBuffer<Luma<u8>, Vec<u8>>,
-    palette: heapless::Vec<u8, 4>,
-) -> Result<(), CLIError> {
-    write_u8(&mut out, 0x00)?; // TODO: transparency and BPP
-    write_u16(&mut out, img.width() as u16)?;
-    for pixels in img.pixels().array_chunks::<4>() {
-        todo!()
+    for pixels in img.pixels().array_chunks::<PPB>() {
+        let mut byte: u8 = 0;
+        for pixel in pixels {
+            let luma = pixel.0[0];
+            let raw_color = find_in_palette(&palette, luma);
+            byte = (byte << BPP) | raw_color;
+        }
+        write_u8(&mut out, byte)?;
     }
     Ok(())
+}
+
+fn find_in_palette(palette: &heapless::Vec<u8, 4>, luma: u8) -> u8 {
+    for (i, color) in palette.into_iter().enumerate() {
+        if color == &luma {
+            return i as u8;
+        }
+    }
+    unreachable!("color is not in palette, palette is incomplete")
 }
 
 fn make_palette(img: &ImageBuffer<Luma<u8>, Vec<u8>>) -> Result<heapless::Vec<u8, 4>, CLIError> {
