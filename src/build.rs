@@ -5,9 +5,21 @@ use crate::langs::build_bin;
 use anyhow::{bail, Context};
 
 pub(crate) fn cmd_build(args: &BuildArgs) -> anyhow::Result<()> {
+    let config = read_config(args)?;
+    std::fs::create_dir_all(&config.rom_path).context("create rom directory")?;
+    build_bin(&config).context("build binary")?;
+    if let Some(files) = &config.files {
+        for (name, file_config) in files.iter() {
+            convert_file(name, &config, file_config).context("convert file")?;
+        }
+    }
+    Ok(())
+}
+
+fn read_config(args: &BuildArgs) -> anyhow::Result<Config> {
     let config_path = args.root.join("firefly.toml");
-    let raw_config = std::fs::read_to_string(config_path)?;
-    let mut config: Config = toml::from_str(raw_config.as_str())?;
+    let raw_config = std::fs::read_to_string(config_path).context("read config file")?;
+    let mut config: Config = toml::from_str(raw_config.as_str()).context("parse config")?;
     config.root_path = args.root.clone();
     config.roms_path = match &args.roms {
         Some(roms_path) => roms_path.clone(),
@@ -18,14 +30,7 @@ pub(crate) fn cmd_build(args: &BuildArgs) -> anyhow::Result<()> {
         .join(&config.author_id)
         .join(&config.app_id)
         .clone();
-    std::fs::create_dir_all(&config.rom_path).context("create rom directory")?;
-    build_bin(&config).context("build binary")?;
-    if let Some(files) = &config.files {
-        for (name, file_config) in files.iter() {
-            convert_file(name, &config, file_config).context("convert file")?;
-        }
-    }
-    Ok(())
+    Ok(config)
 }
 
 fn convert_file(name: &str, config: &Config, file_config: &FileConfig) -> anyhow::Result<()> {
