@@ -23,7 +23,7 @@ fn write_image<const BPP: usize, const PPB: usize>(
     img: ImageBuffer<Luma<u8>, Vec<u8>>,
     palette: heapless::Vec<u8, 4>,
 ) -> anyhow::Result<()> {
-    write_u8(&mut out, 0x02)?;
+    write_u8(&mut out, BPP as u8)?;
     write_u16(&mut out, img.width() as u16)?;
     for pixels in img.pixels().array_chunks::<PPB>() {
         let mut byte: u8 = 0;
