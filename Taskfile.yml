@@ -1,0 +1,15 @@
+# https://taskfile.dev
+
+version: '3'
+
+vars:
+  GREETING: Hello, World!
+
+tasks:
+  build:
+    desc: build an app
+    cmds:
+      - test {{.CLI_ARGS}}
+      - cargo run -- build --roms ../roms {{.CLI_ARGS}}
+  default:
+    - task: build
