@@ -8,6 +8,9 @@ pub(crate) fn convert_image(input_path: &Path, output_path: &Path) -> anyhow::Re
     let file = image::io::Reader::open(input_path).context("open image file")?;
     let img = file.decode().context("decode image")?;
     let img = img.to_luma8();
+    if img.width() % 8 != 0 {
+        bail!("image width must be divisible by 8");
+    }
     let palette = make_palette(&img).context("detect colors used in the image")?;
     let mut out = File::create(output_path).context("create output path")?;
     write_u8(&mut out, 0x21)?;
