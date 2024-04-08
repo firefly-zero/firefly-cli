@@ -1,10 +1,10 @@
 use crate::args::BuildArgs;
 use crate::config::{Config, FileConfig};
-use crate::error::CLIError;
 use crate::images::convert_image;
 use crate::langs::build_bin;
+use anyhow::{bail, Context};
 
-pub(crate) fn cmd_build(args: &BuildArgs) -> Result<(), CLIError> {
+pub(crate) fn cmd_build(args: &BuildArgs) -> anyhow::Result<()> {
     let config_path = args.root.join("firefly.toml");
     let raw_config = std::fs::read_to_string(config_path)?;
     let mut config: Config = toml::from_str(raw_config.as_str())?;
@@ -18,31 +18,25 @@ pub(crate) fn cmd_build(args: &BuildArgs) -> Result<(), CLIError> {
         .join(&config.author_id)
         .join(&config.app_id)
         .clone();
-    if let Err(err) = std::fs::create_dir_all(&config.rom_path) {
-        CLIError::wrap("create ROM directory", err.into())?;
-    }
-    if let Err(err) = build_bin(&config) {
-        CLIError::wrap("build binary", err)?;
-    }
+    std::fs::create_dir_all(&config.rom_path).context("create rom directory")?;
+    build_bin(&config).context("build binary")?;
     if let Some(files) = &config.files {
         for (name, file_config) in files.iter() {
-            if let Err(err) = convert_file(name, &config, file_config) {
-                CLIError::wrap("convert file", err)?;
-            }
+            convert_file(name, &config, file_config).context("convert file")?;
         }
     }
     Ok(())
 }
 
-fn convert_file(name: &str, config: &Config, file_config: &FileConfig) -> Result<(), CLIError> {
+fn convert_file(name: &str, config: &Config, file_config: &FileConfig) -> anyhow::Result<()> {
     let output_path = config.rom_path.join(name);
     let Some(extension) = file_config.path.extension() else {
         let file_name = file_config.path.to_str().unwrap().to_string();
-        return Err(CLIError::FileExtNotDetected(file_name));
+        bail!("cannot detect extension for {file_name}");
     };
     let extension = extension.to_str().unwrap();
     match extension {
         "png" => convert_image(&file_config.path, &output_path),
-        _ => Err(CLIError::UnknownFileExt(extension.to_string())),
+        _ => bail!("unknown file extension: {extension}"),
     }
 }

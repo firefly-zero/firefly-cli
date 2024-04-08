@@ -4,6 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+anyhow = "1.0.81"
 # Framework for parsing CLI args
 clap = { version = "4.5.4", features = ["derive"] }
 # ANSI color codes for terminal output

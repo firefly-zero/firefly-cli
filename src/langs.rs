@@ -1,12 +1,12 @@
 use crate::config::{Config, Lang};
-use crate::error::CLIError;
+use anyhow::{bail, Context};
 use std::env::temp_dir;
 use std::fs::File;
 use std::io::Write;
 use std::path::Path;
 use std::process::Command;
 
-pub(crate) fn build_bin(config: &Config) -> Result<(), CLIError> {
+pub(crate) fn build_bin(config: &Config) -> anyhow::Result<()> {
     let lang: Lang = match &config.lang {
         Some(lang) => lang.clone(),
         None => detect_lang(&config.root_path)?,
@@ -19,7 +19,7 @@ pub(crate) fn build_bin(config: &Config) -> Result<(), CLIError> {
     }
 }
 
-fn detect_lang(root: &Path) -> Result<Lang, CLIError> {
+fn detect_lang(root: &Path) -> anyhow::Result<Lang> {
     if root.join("go.mod").exists() {
         return Ok(Lang::Go);
     }
@@ -32,18 +32,16 @@ fn detect_lang(root: &Path) -> Result<Lang, CLIError> {
     if root.join("package.json").exists() {
         return Ok(Lang::TS);
     }
-    Err(CLIError::LangNotDetected)
+    bail!("failed to detect the programming language");
 }
 
-fn build_go(config: &Config) -> Result<(), CLIError> {
+fn build_go(config: &Config) -> anyhow::Result<()> {
     let target_path = temp_dir().join("firefly-tinygo-target.json");
-    let mut target_file = match File::create(&target_path) {
-        Ok(target_file) => target_file,
-        Err(err) => CLIError::wrap("create temp file", err.into())?,
-    };
-    if let Err(err) = target_file.write_all(include_bytes!("target.json")) {
-        CLIError::wrap("write temp file", err.into())?;
-    };
+    let mut target_file = File::create(&target_path).context("create temporary file")?;
+    let target_raw = include_bytes!("target.json");
+    target_file
+        .write_all(target_raw)
+        .context("write temp file")?;
     let target_path_str: &str = target_path.to_str().unwrap();
     let rom_path = std::fs::canonicalize(&config.rom_path)?;
     let out_path = rom_path.join("cart.wasm");
@@ -56,19 +54,20 @@ fn build_go(config: &Config) -> Result<(), CLIError> {
     std::io::stdout().write_all(&output.stdout)?;
     std::io::stderr().write_all(&output.stderr)?;
     if !output.status.success() {
-        return Err(CLIError::Subprocess(output.status.code().unwrap_or(1)));
+        let code = output.status.code().unwrap_or(1);
+        bail!("subprocess exited with status code {code}");
     }
     Ok(())
 }
 
-fn build_rust(_config: &Config) -> Result<(), CLIError> {
+fn build_rust(_config: &Config) -> anyhow::Result<()> {
     todo!()
 }
 
-fn build_zig(_config: &Config) -> Result<(), CLIError> {
+fn build_zig(_config: &Config) -> anyhow::Result<()> {
     todo!()
 }
 
-fn build_ts(_config: &Config) -> Result<(), CLIError> {
+fn build_ts(_config: &Config) -> anyhow::Result<()> {
     todo!()
 }
