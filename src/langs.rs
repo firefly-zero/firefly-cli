@@ -43,7 +43,8 @@ fn build_go(config: &Config) -> anyhow::Result<()> {
         .write_all(target_raw)
         .context("write temp file")?;
     let target_path_str: &str = target_path.to_str().unwrap();
-    let rom_path = std::fs::canonicalize(&config.rom_path)?;
+    let current_dir = std::env::current_dir().context("get current directory")?;
+    let rom_path = current_dir.join(&config.rom_path);
     let out_path = rom_path.join("cart.wasm");
     let out_path = out_path.to_str().unwrap();
     let in_path = config.root_path.to_str().unwrap();

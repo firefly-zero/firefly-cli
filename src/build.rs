@@ -35,8 +35,11 @@ fn read_config(args: &BuildArgs) -> anyhow::Result<Config> {
 
 fn convert_file(name: &str, config: &Config, file_config: &FileConfig) -> anyhow::Result<()> {
     let output_path = config.rom_path.join(name);
-    let Some(extension) = file_config.path.extension() else {
-        let file_name = file_config.path.to_str().unwrap().to_string();
+    // The input path is defined in the config
+    // and should be resolved relative to the project root.
+    let input_path = &config.root_path.join(&file_config.path);
+    let Some(extension) = input_path.extension() else {
+        let file_name = input_path.to_str().unwrap().to_string();
         bail!("cannot detect extension for {file_name}");
     };
     let extension = match extension.to_str() {
@@ -45,11 +48,11 @@ fn convert_file(name: &str, config: &Config, file_config: &FileConfig) -> anyhow
     };
     match extension {
         "png" => {
-            convert_image(&file_config.path, &output_path)?;
+            convert_image(input_path, &output_path)?;
         }
         // firefly formats for fonts and images
         "fff" | "ffi" => {
-            std::fs::copy(&file_config.path, &output_path)?;
+            std::fs::copy(input_path, &output_path)?;
         }
         _ => bail!("unknown file extension: {extension}"),
     }
