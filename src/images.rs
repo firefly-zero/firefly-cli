@@ -12,9 +12,9 @@ pub(crate) fn convert_image(input_path: &Path, output_path: &Path) -> anyhow::Re
     let mut out = File::create(output_path).context("create output path")?;
     write_u8(&mut out, 0x21)?;
     if palette.len() <= 2 {
-        write_image::<2, 4>(out, img, palette)
+        write_image::<2, 4>(out, img, palette).context("write 2BPP image")
     } else {
-        write_image::<1, 8>(out, img, palette)
+        write_image::<1, 8>(out, img, palette).context("write 1BPP image")
     }
 }
 

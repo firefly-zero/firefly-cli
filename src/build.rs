@@ -39,9 +39,19 @@ fn convert_file(name: &str, config: &Config, file_config: &FileConfig) -> anyhow
         let file_name = file_config.path.to_str().unwrap().to_string();
         bail!("cannot detect extension for {file_name}");
     };
-    let extension = extension.to_str().unwrap();
+    let extension = match extension.to_str() {
+        Some(extension) => extension,
+        None => bail!("cannot convert file extension to string"),
+    };
     match extension {
-        "png" => convert_image(&file_config.path, &output_path),
+        "png" => {
+            convert_image(&file_config.path, &output_path)?;
+        }
+        // firefly formats for fonts and images
+        "fff" | "ffi" => {
+            std::fs::copy(&file_config.path, &output_path)?;
+        }
         _ => bail!("unknown file extension: {extension}"),
     }
+    Ok(())
 }
