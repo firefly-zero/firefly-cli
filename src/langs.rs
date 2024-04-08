@@ -42,16 +42,21 @@ fn build_go(config: &Config) -> anyhow::Result<()> {
     target_file
         .write_all(target_raw)
         .context("write temp file")?;
-    let target_path_str: &str = target_path.to_str().unwrap();
+    let Some(target_path_str) = target_path.to_str() else {
+        bail!("temporary file path cannot be converted to UTF-8");
+    };
     let current_dir = std::env::current_dir().context("get current directory")?;
     let rom_path = current_dir.join(&config.rom_path);
     let out_path = rom_path.join("cart.wasm");
-    let out_path = out_path.to_str().unwrap();
+    let Some(out_path) = out_path.to_str() else {
+        bail!("rom path cannot be converted to UTF-8");
+    };
     let in_path = config.root_path.to_str().unwrap();
     let output = Command::new("tinygo")
         .args(["build", "-target", target_path_str, "-o", out_path, "."])
         .current_dir(in_path)
-        .output()?;
+        .output()
+        .context("run tinygo build")?;
     std::io::stdout().write_all(&output.stdout)?;
     std::io::stderr().write_all(&output.stderr)?;
     if !output.status.success() {
