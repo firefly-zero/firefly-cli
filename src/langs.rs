@@ -7,10 +7,9 @@ use std::path::Path;
 use std::process::Command;
 
 pub(crate) fn build_bin(config: &Config) -> Result<(), CLIError> {
-    let root = Path::new(&config.root);
     let lang: Lang = match &config.lang {
         Some(lang) => lang.clone(),
-        None => detect_lang(root)?,
+        None => detect_lang(&config.root_path)?,
     };
     match lang {
         Lang::Go => build_go(config),
@@ -46,10 +45,10 @@ fn build_go(config: &Config) -> Result<(), CLIError> {
         CLIError::wrap("write temp file", err.into())?;
     };
     let target_path_str: &str = target_path.to_str().unwrap();
-    let rom_path = std::fs::canonicalize(config.rom_path())?;
+    let rom_path = std::fs::canonicalize(&config.rom_path)?;
     let out_path = rom_path.join("cart.wasm");
     let out_path = out_path.to_str().unwrap();
-    let in_path = config.root.to_str().unwrap();
+    let in_path = config.root_path.to_str().unwrap();
     let output = Command::new("tinygo")
         .args(["build", "-target", target_path_str, "-o", out_path, "."])
         .current_dir(in_path)

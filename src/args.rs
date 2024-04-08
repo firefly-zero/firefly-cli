@@ -17,7 +17,15 @@ pub enum Commands {
 
 #[derive(Debug, Parser)]
 pub struct BuildArgs {
-    /// Path to the package directory.
+    /// Path to the project root.
     #[arg(default_value = ".")]
     pub root: PathBuf,
+
+    /// Path to the directory where to store roms
+    #[arg(short, long, default_value = None)]
+    pub roms: Option<PathBuf>,
+
+    /// Path to the firefly config.
+    #[arg(short, long, default_value = None)]
+    pub config: Option<PathBuf>,
 }

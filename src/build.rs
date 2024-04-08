@@ -8,8 +8,17 @@ pub(crate) fn cmd_build(args: &BuildArgs) -> Result<(), CLIError> {
     let config_path = args.root.join("firefly.toml");
     let raw_config = std::fs::read_to_string(config_path)?;
     let mut config: Config = toml::from_str(raw_config.as_str())?;
-    config.root = args.root.clone();
-    if let Err(err) = std::fs::create_dir_all(config.rom_path()) {
+    config.root_path = args.root.clone();
+    config.roms_path = match &args.roms {
+        Some(roms_path) => roms_path.clone(),
+        None => config.root_path.join("roms"),
+    };
+    config.rom_path = config
+        .roms_path
+        .join(&config.author_id)
+        .join(&config.app_id)
+        .clone();
+    if let Err(err) = std::fs::create_dir_all(&config.rom_path) {
         CLIError::wrap("create ROM directory", err.into())?;
     }
     if let Err(err) = build_bin(&config) {
@@ -26,7 +35,7 @@ pub(crate) fn cmd_build(args: &BuildArgs) -> Result<(), CLIError> {
 }
 
 fn convert_file(name: &str, config: &Config, file_config: &FileConfig) -> Result<(), CLIError> {
-    let output_path = config.rom_path().join(name);
+    let output_path = config.rom_path.join(name);
     let Some(extension) = file_config.path.extension() else {
         let file_name = file_config.path.to_str().unwrap().to_string();
         return Err(CLIError::FileExtNotDetected(file_name));

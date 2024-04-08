@@ -11,17 +11,21 @@ pub(crate) struct Config {
     pub lang:        Option<Lang>,
     pub files:       Option<HashMap<String, FileConfig>>,
 
+    /// Path to the project root.
     #[serde(skip)]
-    pub root: PathBuf,
-}
+    pub root_path: PathBuf,
 
-impl Config {
-    pub fn rom_path(&self) -> PathBuf {
-        self.root
-            .join("roms")
-            .join(&self.author_id)
-            .join(&self.app_id)
-    }
+    /// Path to the directory with ROMs for all apps.
+    #[serde(skip)]
+    pub roms_path: PathBuf,
+
+    /// Path to the room of the current app.
+    #[serde(skip)]
+    pub rom_path: PathBuf,
+
+    /// Path to the file with the config.
+    #[serde(skip)]
+    pub config_path: PathBuf,
 }
 
 #[derive(Deserialize, Debug)]
