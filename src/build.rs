@@ -7,6 +7,7 @@ use anyhow::{bail, Context};
 pub(crate) fn cmd_build(args: &BuildArgs) -> anyhow::Result<()> {
     let config = read_config(args)?;
     std::fs::create_dir_all(&config.rom_path).context("create rom directory")?;
+    write_meta(&config).context("write metadata file")?;
     build_bin(&config).context("build binary")?;
     if let Some(files) = &config.files {
         for (name, file_config) in files.iter() {
@@ -31,6 +32,33 @@ fn read_config(args: &BuildArgs) -> anyhow::Result<Config> {
         .join(&config.app_id)
         .clone();
     Ok(config)
+}
+
+fn write_meta(config: &Config) -> anyhow::Result<()> {
+    use firefly_meta::*;
+    if let Err(err) = validate_id(&config.app_id) {
+        bail!("validate app_id: {err}");
+    }
+    if let Err(err) = validate_id(&config.author_id) {
+        bail!("validate author_id: {err}");
+    }
+    if let Err(err) = validate_name(&config.app_name) {
+        bail!("validate app_name: {err}");
+    }
+    if let Err(err) = validate_name(&config.author_name) {
+        bail!("validate author_name: {err}");
+    }
+    let meta = Meta {
+        app_id:      &config.app_id,
+        app_name:    &config.app_name,
+        author_id:   &config.author_id,
+        author_name: &config.author_name,
+    };
+    let mut buf = vec![0; meta.size()];
+    let encoded = meta.encode(&mut buf).context("serialize")?;
+    let output_path = config.rom_path.join("meta");
+    std::fs::write(output_path, encoded).context("write file")?;
+    Ok(())
 }
 
 fn convert_file(name: &str, config: &Config, file_config: &FileConfig) -> anyhow::Result<()> {
