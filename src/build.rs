@@ -2,12 +2,13 @@ use crate::args::BuildArgs;
 use crate::config::{Config, FileConfig};
 use crate::images::convert_image;
 use crate::langs::build_bin;
+use crate::vfs::init_vfs;
 use anyhow::{bail, Context};
 use std::fs;
 
 pub(crate) fn cmd_build(args: &BuildArgs) -> anyhow::Result<()> {
+    init_vfs().context("init vfs")?;
     let config = Config::load(&args.root).context("load project config")?;
-    fs::create_dir_all(&config.rom_path).context("create rom directory")?;
     write_meta(&config).context("write metadata file")?;
     build_bin(&config).context("build binary")?;
     if let Some(files) = &config.files {

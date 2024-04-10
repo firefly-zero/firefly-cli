@@ -1,4 +1,6 @@
+use anyhow::Context;
 use directories::ProjectDirs;
+use std::fs;
 use std::path::PathBuf;
 
 pub(crate) fn cmd_vfs() -> anyhow::Result<()> {
@@ -13,4 +15,13 @@ pub(crate) fn get_vfs_path() -> PathBuf {
         Some(dirs) => dirs.data_dir().to_owned(),
         None => PathBuf::from(".firefly"),
     }
+}
+
+pub(crate) fn init_vfs() -> anyhow::Result<()> {
+    let path = get_vfs_path();
+    fs::create_dir_all(&path).context("create vfs directory")?;
+    fs::create_dir_all(path.join("roms")).context("create roms directory")?;
+    fs::create_dir_all(path.join("sys")).context("create sys directory")?;
+    fs::create_dir_all(path.join("data")).context("create data directory")?;
+    Ok(())
 }
