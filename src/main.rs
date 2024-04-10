@@ -5,8 +5,10 @@ mod build;
 mod config;
 mod images;
 mod langs;
+mod vfs;
 use crate::args::*;
 use crate::build::cmd_build;
+use crate::vfs::cmd_vfs;
 use clap::Parser;
 use colored::Colorize;
 use std::fmt::Display;
@@ -15,6 +17,7 @@ fn main() {
     let cli = Cli::parse();
     let res: anyhow::Result<()> = match &cli.command {
         Commands::Build(args) => cmd_build(args),
+        Commands::Vfs => cmd_vfs(),
     };
     if let Err(err) = res {
         eprintln!("{} {}", "💥 Error:".red(), Error(err));

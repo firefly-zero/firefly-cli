@@ -6,6 +6,6 @@ tasks:
     desc: build an app
     cmds:
       - test {{.CLI_ARGS}}
-      - cargo run -- build --roms ../roms {{.CLI_ARGS}}
+      - cargo run -- build {{.CLI_ARGS}}
   default:
     - task: build

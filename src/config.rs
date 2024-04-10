@@ -1,6 +1,9 @@
+use crate::vfs::get_vfs_path;
+use anyhow::Context;
 use serde::Deserialize;
 use std::collections::HashMap;
-use std::path::PathBuf;
+use std::fs;
+use std::path::{Path, PathBuf};
 
 #[derive(Deserialize, Debug)]
 pub(crate) struct Config {
@@ -15,17 +18,24 @@ pub(crate) struct Config {
     #[serde(skip)]
     pub root_path: PathBuf,
 
-    /// Path to the directory with ROMs for all apps.
-    #[serde(skip)]
-    pub roms_path: PathBuf,
-
     /// Path to the room of the current app.
     #[serde(skip)]
     pub rom_path: PathBuf,
+}
 
-    /// Path to the file with the config.
-    #[serde(skip)]
-    pub config_path: PathBuf,
+impl Config {
+    pub(crate) fn load(root: &Path) -> anyhow::Result<Self> {
+        let config_path = root.join("firefly.toml");
+        let raw_config = fs::read_to_string(config_path).context("read config file")?;
+        let mut config: Config = toml::from_str(raw_config.as_str()).context("parse config")?;
+        config.root_path = PathBuf::from(root);
+        let roms_path = get_vfs_path().join("roms");
+        config.rom_path = roms_path
+            .join(&config.author_id)
+            .join(&config.app_id)
+            .clone();
+        Ok(config)
+    }
 }
 
 #[derive(Deserialize, Debug)]

@@ -14,3 +14,4 @@ heapless = "0.8.0"
 image = { version = "0.25.1", default-features = false, features = ["png"] }
 serde = { version = "1.0.197", features = ["serde_derive", "derive"] }
 toml = "0.8.12"
+directories = "5.0.1"

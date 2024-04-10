@@ -13,6 +13,9 @@ pub struct Cli {
 pub enum Commands {
     /// Build cartridge.
     Build(BuildArgs),
+
+    /// Show the full path to the virtual filesystem.
+    Vfs,
 }
 
 #[derive(Debug, Parser)]

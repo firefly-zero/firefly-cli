@@ -6,7 +6,7 @@ use anyhow::{bail, Context};
 use std::fs;
 
 pub(crate) fn cmd_build(args: &BuildArgs) -> anyhow::Result<()> {
-    let config = read_config(args)?;
+    let config = Config::load(&args.root).context("load project config")?;
     fs::create_dir_all(&config.rom_path).context("create rom directory")?;
     write_meta(&config).context("write metadata file")?;
     build_bin(&config).context("build binary")?;
@@ -16,23 +16,6 @@ pub(crate) fn cmd_build(args: &BuildArgs) -> anyhow::Result<()> {
         }
     }
     Ok(())
-}
-
-fn read_config(args: &BuildArgs) -> anyhow::Result<Config> {
-    let config_path = args.root.join("firefly.toml");
-    let raw_config = fs::read_to_string(config_path).context("read config file")?;
-    let mut config: Config = toml::from_str(raw_config.as_str()).context("parse config")?;
-    config.root_path = args.root.clone();
-    config.roms_path = match &args.roms {
-        Some(roms_path) => roms_path.clone(),
-        None => config.root_path.join("roms"),
-    };
-    config.rom_path = config
-        .roms_path
-        .join(&config.author_id)
-        .join(&config.app_id)
-        .clone();
-    Ok(config)
 }
 
 fn write_meta(config: &Config) -> anyhow::Result<()> {
