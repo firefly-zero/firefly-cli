@@ -29,6 +29,9 @@ fn detect_lang(root: &Path) -> anyhow::Result<Lang> {
     if root.join("build.zig").exists() {
         return Ok(Lang::Zig);
     }
+    if root.join("build.zig.zon").exists() {
+        return Ok(Lang::Zig);
+    }
     if root.join("package.json").exists() {
         return Ok(Lang::TS);
     }
@@ -47,7 +50,7 @@ fn build_go(config: &Config) -> anyhow::Result<()> {
     };
     let current_dir = std::env::current_dir().context("get current directory")?;
     let rom_path = current_dir.join(&config.rom_path);
-    let out_path = rom_path.join("cart.wasm");
+    let out_path = rom_path.join("bin");
     let Some(out_path) = out_path.to_str() else {
         bail!("rom path cannot be converted to UTF-8");
     };

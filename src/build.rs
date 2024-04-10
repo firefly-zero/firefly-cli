@@ -3,10 +3,11 @@ use crate::config::{Config, FileConfig};
 use crate::images::convert_image;
 use crate::langs::build_bin;
 use anyhow::{bail, Context};
+use std::fs;
 
 pub(crate) fn cmd_build(args: &BuildArgs) -> anyhow::Result<()> {
     let config = read_config(args)?;
-    std::fs::create_dir_all(&config.rom_path).context("create rom directory")?;
+    fs::create_dir_all(&config.rom_path).context("create rom directory")?;
     write_meta(&config).context("write metadata file")?;
     build_bin(&config).context("build binary")?;
     if let Some(files) = &config.files {
@@ -19,7 +20,7 @@ pub(crate) fn cmd_build(args: &BuildArgs) -> anyhow::Result<()> {
 
 fn read_config(args: &BuildArgs) -> anyhow::Result<Config> {
     let config_path = args.root.join("firefly.toml");
-    let raw_config = std::fs::read_to_string(config_path).context("read config file")?;
+    let raw_config = fs::read_to_string(config_path).context("read config file")?;
     let mut config: Config = toml::from_str(raw_config.as_str()).context("parse config")?;
     config.root_path = args.root.clone();
     config.roms_path = match &args.roms {
@@ -57,7 +58,7 @@ fn write_meta(config: &Config) -> anyhow::Result<()> {
     let mut buf = vec![0; meta.size()];
     let encoded = meta.encode(&mut buf).context("serialize")?;
     let output_path = config.rom_path.join("meta");
-    std::fs::write(output_path, encoded).context("write file")?;
+    fs::write(output_path, encoded).context("write file")?;
     Ok(())
 }
 
@@ -80,7 +81,7 @@ fn convert_file(name: &str, config: &Config, file_config: &FileConfig) -> anyhow
         }
         // firefly formats for fonts and images
         "fff" | "ffi" => {
-            std::fs::copy(input_path, &output_path)?;
+            fs::copy(input_path, &output_path)?;
         }
         _ => bail!("unknown file extension: {extension}"),
     }
