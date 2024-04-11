@@ -16,6 +16,7 @@ pub(crate) fn cmd_build(args: &BuildArgs) -> anyhow::Result<()> {
             convert_file(name, &config, file_config).context("convert file")?;
         }
     }
+    write_installed(&config)?;
     Ok(())
 }
 
@@ -42,6 +43,19 @@ fn write_meta(config: &Config) -> anyhow::Result<()> {
     let mut buf = vec![0; meta.size()];
     let encoded = meta.encode(&mut buf).context("serialize")?;
     let output_path = config.rom_path.join("meta");
+    fs::write(output_path, encoded).context("write file")?;
+    Ok(())
+}
+
+/// Write the latest installed app name into internal DB.
+fn write_installed(config: &Config) -> anyhow::Result<()> {
+    let meta = firefly_meta::ShortMeta {
+        app_id:    &config.app_id,
+        author_id: &config.author_id,
+    };
+    let mut buf = vec![0; meta.size()];
+    let encoded = meta.encode(&mut buf).context("serialize")?;
+    let output_path = config.vfs_path.join("sys").join("new-app");
     fs::write(output_path, encoded).context("write file")?;
     Ok(())
 }
