@@ -42,6 +42,7 @@ fn write_meta(config: &Config) -> anyhow::Result<()> {
     };
     let mut buf = vec![0; meta.size()];
     let encoded = meta.encode(&mut buf).context("serialize")?;
+    fs::create_dir_all(&config.rom_path)?;
     let output_path = config.rom_path.join("meta");
     fs::write(output_path, encoded).context("write file")?;
     Ok(())
