@@ -28,14 +28,15 @@ fn write_image<const BPP: usize, const PPB: usize>(
 ) -> anyhow::Result<()> {
     write_u8(&mut out, BPP as u8)?;
     write_u16(&mut out, img.width() as u16)?;
-    for pixels in img.pixels().array_chunks::<PPB>() {
-        let mut byte: u8 = 0;
-        for pixel in pixels {
-            let luma = pixel.0[0];
-            let raw_color = find_in_palette(&palette, luma);
-            byte = (byte << BPP) | raw_color;
+    let mut byte: u8 = 0;
+    for (i, pixel) in img.pixels().into_iter().enumerate() {
+        let luma = pixel.0[0];
+        let raw_color = find_in_palette(&palette, luma);
+        byte = (byte << BPP) | raw_color;
+        if (i + 1) % PPB == 0 {
+            write_u8(&mut out, byte)?;
+            byte = 0;
         }
-        write_u8(&mut out, byte)?;
     }
     Ok(())
 }

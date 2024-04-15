@@ -1,5 +1,3 @@
-#![feature(iter_array_chunks)]
-
 mod args;
 mod build;
 mod config;
