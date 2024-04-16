@@ -38,8 +38,7 @@ impl Config {
             .vfs_path
             .join("roms")
             .join(&config.author_id)
-            .join(&config.app_id)
-            .clone();
+            .join(&config.app_id);
         Ok(config)
     }
 }

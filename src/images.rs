@@ -29,7 +29,7 @@ fn write_image<const BPP: usize, const PPB: usize>(
     write_u8(&mut out, BPP as u8)?;
     write_u16(&mut out, img.width() as u16)?;
     let mut byte: u8 = 0;
-    for (i, pixel) in img.pixels().into_iter().enumerate() {
+    for (i, pixel) in img.pixels().enumerate() {
         let luma = pixel.0[0];
         let raw_color = find_in_palette(&palette, luma);
         byte = (byte << BPP) | raw_color;
