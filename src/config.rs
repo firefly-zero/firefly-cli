@@ -12,6 +12,10 @@ pub(crate) struct Config {
     pub app_name:    String,
     pub author_name: String,
     pub lang:        Option<Lang>,
+    #[serde(default)]
+    pub launcher:    bool,
+    #[serde(default)]
+    pub sudo:        bool,
     pub files:       Option<HashMap<String, FileConfig>>,
 
     /// Path to the project root.

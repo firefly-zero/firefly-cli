@@ -39,6 +39,8 @@ fn write_meta(config: &Config) -> anyhow::Result<()> {
         app_name:    &config.app_name,
         author_id:   &config.author_id,
         author_name: &config.author_name,
+        launcher:    config.launcher,
+        sudo:        config.sudo,
     };
     let mut buf = vec![0; meta.size()];
     let encoded = meta.encode(&mut buf).context("serialize")?;
