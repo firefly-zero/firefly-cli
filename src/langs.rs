@@ -1,4 +1,5 @@
 use crate::config::{Config, Lang};
+use crate::wasm::strip_custom;
 use anyhow::{bail, Context};
 use std::env::temp_dir;
 use std::fs::File;
@@ -16,7 +17,9 @@ pub(crate) fn build_bin(config: &Config) -> anyhow::Result<()> {
         Lang::Rust => build_rust(config),
         Lang::Zig => build_zig(config),
         Lang::TS => build_ts(config),
-    }
+    }?;
+    let bin_path = config.rom_path.join("bin");
+    strip_custom(&bin_path)
 }
 
 fn detect_lang(root: &Path) -> anyhow::Result<Lang> {

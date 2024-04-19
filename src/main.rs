@@ -4,6 +4,7 @@ mod config;
 mod images;
 mod langs;
 mod vfs;
+mod wasm;
 use crate::args::*;
 use crate::build::cmd_build;
 use crate::vfs::cmd_vfs;
