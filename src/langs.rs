@@ -29,6 +29,10 @@ fn detect_lang(root: &Path) -> anyhow::Result<Lang> {
     if root.join("Cargo.toml").exists() {
         return Ok(Lang::Rust);
     }
+    // Rust examples don't have Cargo.toml
+    if root.join("main.rs").exists() {
+        return Ok(Lang::Rust);
+    }
     if root.join("build.zig").exists() {
         return Ok(Lang::Zig);
     }
