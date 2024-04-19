@@ -13,7 +13,11 @@ pub(crate) fn cmd_vfs() -> anyhow::Result<()> {
 pub(crate) fn get_vfs_path() -> PathBuf {
     match ProjectDirs::from("com", "firefly", "firefly") {
         Some(dirs) => dirs.data_dir().to_owned(),
-        None => PathBuf::from(".firefly"),
+        None => match std::env::current_dir() {
+            // Make the path absolute if possible
+            Ok(current_dir) => current_dir.join(".firefly"),
+            Err(_) => PathBuf::from(".firefly"),
+        },
     }
 }
 
