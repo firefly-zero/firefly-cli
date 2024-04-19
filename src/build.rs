@@ -59,7 +59,11 @@ fn write_installed(config: &Config) -> anyhow::Result<()> {
     let mut buf = vec![0; meta.size()];
     let encoded = meta.encode(&mut buf).context("serialize")?;
     let output_path = config.vfs_path.join("sys").join("new-app");
-    fs::write(output_path, encoded).context("write file")?;
+    fs::write(output_path, &encoded).context("write new-app file")?;
+    if config.launcher {
+        let output_path = config.vfs_path.join("sys").join("launcher");
+        fs::write(output_path, &encoded).context("write launcher file")?;
+    }
     Ok(())
 }
 
