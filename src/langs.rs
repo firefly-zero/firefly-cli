@@ -118,6 +118,7 @@ fn build_rust_inner(config: &Config, example: bool) -> anyhow::Result<()> {
         path_to_utf8(&cargo_out_dir)?,
         "-Z",
         "unstable-options",
+        "--release",
     ];
     if example {
         cmd_args.push("--example");
