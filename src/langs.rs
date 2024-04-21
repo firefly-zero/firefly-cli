@@ -93,6 +93,14 @@ fn build_rust(config: &Config) -> anyhow::Result<()> {
 ///
 /// http://xion.io/post/code/rust-examples.html
 fn build_rust_example(config: &Config) -> anyhow::Result<()> {
+    build_rust_inner(config, true)
+}
+
+fn build_rust_project(config: &Config) -> anyhow::Result<()> {
+    build_rust_inner(config, false)
+}
+
+fn build_rust_inner(config: &Config, example: bool) -> anyhow::Result<()> {
     let example_name = match config.root_path.file_name() {
         Some(dir_name) => dir_name,
         None => bail!("empty project path"),
@@ -110,9 +118,11 @@ fn build_rust_example(config: &Config) -> anyhow::Result<()> {
         path_to_utf8(&cargo_out_dir)?,
         "-Z",
         "unstable-options",
-        "--example",
-        example_name,
     ];
+    if example {
+        cmd_args.push("--example");
+        cmd_args.push(example_name);
+    }
     if let Some(additional_args) = &config.compile_args {
         for arg in additional_args {
             cmd_args.push(arg.as_str());
@@ -128,10 +138,6 @@ fn build_rust_example(config: &Config) -> anyhow::Result<()> {
     let out_path = config.rom_path.join("bin");
     std::fs::copy(cargo_out_path, out_path)?;
     Ok(())
-}
-
-fn build_rust_project(_config: &Config) -> anyhow::Result<()> {
-    todo!()
 }
 
 fn build_zig(_config: &Config) -> anyhow::Result<()> {
