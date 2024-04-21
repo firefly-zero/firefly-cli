@@ -11,12 +11,21 @@ pub(crate) struct Config {
     pub author_id:   String,
     pub app_name:    String,
     pub author_name: String,
-    pub lang:        Option<Lang>,
+
+    /// The programming language used for the app.
+    pub lang: Option<Lang>,
+
+    /// Additional CLI args to pass into the build subcommand.
+    pub compile_args: Option<Vec<String>>,
+
+    /// The app should be launched first when the device starts.
     #[serde(default)]
-    pub launcher:    bool,
+    pub launcher: bool,
+
+    /// The app requires privileged access.
     #[serde(default)]
-    pub sudo:        bool,
-    pub files:       Option<HashMap<String, FileConfig>>,
+    pub sudo:  bool,
+    pub files: Option<HashMap<String, FileConfig>>,
 
     /// Path to the project root.
     #[serde(skip)]

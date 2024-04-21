@@ -52,8 +52,14 @@ fn build_go(config: &Config) -> anyhow::Result<()> {
     let out_path = config.rom_path.join("bin");
     let out_path = path_to_utf8(&out_path)?;
     let in_path = path_to_utf8(&config.root_path)?;
+    let mut cmd_args = vec!["build", "-target", target_path, "-o", out_path, "."];
+    if let Some(additional_args) = &config.compile_args {
+        for arg in additional_args {
+            cmd_args.push(arg.as_str());
+        }
+    }
     let output = Command::new("tinygo")
-        .args(["build", "-target", target_path, "-o", out_path, "."])
+        .args(cmd_args)
         .current_dir(in_path)
         .output()
         .context("run tinygo build")?;
@@ -96,7 +102,7 @@ fn build_rust_example(config: &Config) -> anyhow::Result<()> {
     };
     let cargo_out_dir = temp_dir();
     let in_path = path_to_utf8(&config.root_path)?;
-    let cmd_args = [
+    let mut cmd_args = vec![
         "build",
         "--target",
         "wasm32-unknown-unknown",
@@ -107,6 +113,11 @@ fn build_rust_example(config: &Config) -> anyhow::Result<()> {
         "--example",
         example_name,
     ];
+    if let Some(additional_args) = &config.compile_args {
+        for arg in additional_args {
+            cmd_args.push(arg.as_str());
+        }
+    }
     let output = Command::new("cargo")
         .args(cmd_args)
         .current_dir(in_path)
