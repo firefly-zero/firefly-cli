@@ -17,6 +17,9 @@ pub enum Commands {
     /// Export an installed app as a zip archive.
     Export(ExportArgs),
 
+    /// Install locally an app from a zip archive.
+    Import(ImportArgs),
+
     /// Show the full path to the virtual filesystem.
     Vfs,
 }
@@ -53,4 +56,11 @@ pub struct ExportArgs {
     /// Path to the archive.
     #[arg(short, long, default_value = None)]
     pub output: Option<PathBuf>,
+}
+
+#[derive(Debug, Parser)]
+pub struct ImportArgs {
+    /// Path to the archive file.
+    #[arg()]
+    pub path: PathBuf,
 }

@@ -1,12 +1,14 @@
 use crate::args::ExportArgs;
 use crate::config::Config;
 use crate::vfs::get_vfs_path;
-use anyhow::Context;
+use anyhow::{Context, Result};
 use std::fs;
 use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
+use zip::write::FileOptions;
+use zip::{CompressionMethod, ZipWriter};
 
-pub(crate) fn cmd_export(args: &ExportArgs) -> anyhow::Result<()> {
+pub(crate) fn cmd_export(args: &ExportArgs) -> Result<()> {
     let (author_id, app_id) = get_id(args)?;
     let vfs_path = get_vfs_path();
     let rom_path = vfs_path.join("roms").join(&author_id).join(&app_id);
@@ -22,7 +24,7 @@ pub(crate) fn cmd_export(args: &ExportArgs) -> anyhow::Result<()> {
     Ok(())
 }
 
-fn get_id(args: &ExportArgs) -> anyhow::Result<(String, String)> {
+fn get_id(args: &ExportArgs) -> Result<(String, String)> {
     match (&args.author, &args.app) {
         (Some(author), Some(app)) => Ok((author.to_string(), app.to_string())),
         _ => {
@@ -32,15 +34,15 @@ fn get_id(args: &ExportArgs) -> anyhow::Result<(String, String)> {
     }
 }
 
-fn archive(in_path: &Path, out_path: &Path) -> anyhow::Result<()> {
+fn archive(in_path: &Path, out_path: &Path) -> Result<()> {
     // Should go first so that we don't create empty archive
     // if ROM doesn't exist.
     let entries = fs::read_dir(in_path).context("read ROM dir")?;
 
     let out_file = fs::File::create(out_path).context("create archive file")?;
-    let mut zip = zip::ZipWriter::new(out_file);
-    let options = zip::write::FileOptions::<()>::default()
-        .compression_method(zip::CompressionMethod::Zstd)
+    let mut zip = ZipWriter::new(out_file);
+    let options = FileOptions::<()>::default()
+        .compression_method(CompressionMethod::Zstd)
         .unix_permissions(0o755);
 
     let mut buffer = Vec::new();
