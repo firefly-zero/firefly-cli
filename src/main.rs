@@ -1,12 +1,14 @@
 mod args;
 mod build;
 mod config;
+mod export;
 mod images;
 mod langs;
 mod vfs;
 mod wasm;
 use crate::args::*;
 use crate::build::cmd_build;
+use crate::export::cmd_export;
 use crate::vfs::cmd_vfs;
 use clap::Parser;
 use colored::Colorize;
@@ -16,6 +18,7 @@ fn main() {
     let cli = Cli::parse();
     let res: anyhow::Result<()> = match &cli.command {
         Commands::Build(args) => cmd_build(args),
+        Commands::Export(args) => cmd_export(args),
         Commands::Vfs => cmd_vfs(),
     };
     if let Err(err) = res {

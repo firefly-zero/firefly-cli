@@ -17,3 +17,4 @@ toml = "0.8.12"
 directories = "5.0.1"
 wasmparser = "0.205.0"
 wasm-encoder = "0.205.0"
+zip = { version = "1.1.1", default-features = false, features = ["zstd"] }
