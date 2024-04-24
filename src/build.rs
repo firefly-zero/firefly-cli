@@ -4,11 +4,16 @@ use crate::images::convert_image;
 use crate::langs::build_bin;
 use crate::vfs::init_vfs;
 use anyhow::{bail, Context};
+use std::collections::HashMap;
+use std::ffi::OsString;
 use std::fs;
+use std::os::unix::fs::MetadataExt;
+use std::path::Path;
 
 pub(crate) fn cmd_build(args: &BuildArgs) -> anyhow::Result<()> {
     init_vfs().context("init vfs")?;
     let config = Config::load(&args.root).context("load project config")?;
+    let old_sizes = collect_sizes(&config.rom_path);
     write_meta(&config).context("write metadata file")?;
     build_bin(&config).context("build binary")?;
     if let Some(files) = &config.files {
@@ -17,6 +22,8 @@ pub(crate) fn cmd_build(args: &BuildArgs) -> anyhow::Result<()> {
         }
     }
     write_installed(&config)?;
+    let new_sizes = collect_sizes(&config.rom_path);
+    print_sizes(old_sizes, new_sizes);
     Ok(())
 }
 
@@ -91,4 +98,38 @@ fn convert_file(name: &str, config: &Config, file_config: &FileConfig) -> anyhow
         _ => bail!("unknown file extension: {extension}"),
     }
     Ok(())
+}
+
+fn collect_sizes(root: &Path) -> HashMap<OsString, u64> {
+    let mut sizes = HashMap::new();
+    let Ok(entries) = fs::read_dir(root) else {
+        return sizes;
+    };
+    for entry in entries {
+        let Ok(entry) = entry else {
+            continue;
+        };
+        let Ok(meta) = entry.metadata() else { continue };
+        sizes.insert(entry.file_name(), meta.size());
+    }
+    sizes
+}
+
+fn print_sizes(old_sizes: HashMap<OsString, u64>, new_sizes: HashMap<OsString, u64>) {
+    let mut pairs: Vec<_> = new_sizes.iter().collect();
+    pairs.sort();
+    for (name, new_size) in pairs {
+        let old_size = old_sizes.get(name).unwrap_or(&0);
+        let Some(name) = name.to_str() else {
+            continue;
+        };
+        // If the size changed, show the diff
+        let suffix = if old_size != new_size {
+            let diff = *new_size as i64 - *old_size as i64;
+            format!(" ({diff:+})")
+        } else {
+            "".to_string()
+        };
+        println!("{name:16} {new_size:>7}{suffix}")
+    }
 }
