@@ -19,7 +19,7 @@ pub(crate) fn cmd_export(args: &ExportArgs) -> Result<()> {
     archive(&rom_path, &out_path).context("create archive")?;
     let out_path = out_path.as_os_str();
     if let Some(out_path) = out_path.to_str() {
-        println!("{out_path}");
+        println!("✅ exported: {out_path}");
     }
     Ok(())
 }

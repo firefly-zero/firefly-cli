@@ -13,8 +13,10 @@ pub(crate) fn cmd_import(args: &ImportArgs) -> Result<()> {
     let out_dir = get_out_path(&mut archive).context("get ROM path")?;
     init_vfs().context("init VFS")?;
     create_dir_all(&out_dir).context("create ROM dir")?;
-    archive.extract(out_dir).context("extract archive")?;
-    println!("✅ installed");
+    archive.extract(&out_dir).context("extract archive")?;
+    if let Some(out_dir) = out_dir.to_str() {
+        println!("✅ installed: {out_dir}");
+    }
     Ok(())
 }
 
