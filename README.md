@@ -14,11 +14,11 @@ cargo install firefly-cli
 
 ```bash
 # build an app and install it into VFS
-firefly-cli build
+firefly_cli build
 
 # export an app installed in VFS
-firefly-cli export --author sys --app input-test
+firefly_cli export --author sys --app input-test
 
 # install an exported app into VFS
-firefly-cli import sys.input-test.zip
+firefly_cli import sys.input-test.zip
 ```
