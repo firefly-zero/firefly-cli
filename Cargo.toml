@@ -4,20 +4,33 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-firefly-meta = "0.1.0"
+# Simpler error handling
 anyhow = "1.0.81"
 # Framework for parsing CLI args
 clap = { version = "4.5.4", features = ["derive"] }
 # ANSI color codes for terminal output
 colored = "2.1.0"
-heapless = "0.8.0"
-image = { version = "0.25.1", default-features = false, features = ["png"] }
-serde = { version = "1.0.197", features = ["serde_derive", "derive"] }
-toml = "0.8.12"
-directories = "5.0.1"
-wasmparser = "0.205.0"
-wasm-encoder = "0.205.0"
-zip = { version = "1.1.1", default-features = false, features = ["zstd"] }
-reqwest = { version = "0.12.4", features = ["blocking"] }
+# Convert binary hash into hex
 data-encoding = "2.6.0"
+# Find the best place to sotre the VFS
+directories = "5.0.1"
+# Serialize app config into meta file in the ROM
+firefly-meta = "0.1.0"
+# Create vector on the stack
+heapless = "0.8.0"
+# Parse PNG inages
+image = { version = "0.25.1", default-features = false, features = ["png"] }
+# Download remote files (`url` field in `firefly.toml`)
+reqwest = { version = "0.12.4", features = ["blocking"] }
+# Deserialize firefly.toml (required by `toml`)
+serde = { version = "1.0.197", features = ["serde_derive", "derive"] }
+# Calculate file checksum
 sha2 = "0.10.8"
+# Deserialize firefly.toml
+toml = "0.8.12"
+# Build together post-processed wasm binaries
+wasm-encoder = "0.205.0"
+# Parse wasm binaries for post-processing (removing custom sections)
+wasmparser = "0.205.0"
+# Work with zip archives (distribution format for ROMs)
+zip = { version = "1.1.1", default-features = false, features = ["zstd"] }
