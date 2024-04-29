@@ -4,7 +4,7 @@ use std::fs::File;
 use std::io::Write;
 use std::path::Path;
 
-pub(crate) fn convert_image(input_path: &Path, output_path: &Path) -> anyhow::Result<()> {
+pub fn convert_image(input_path: &Path, output_path: &Path) -> anyhow::Result<()> {
     let file = image::io::Reader::open(input_path).context("open image file")?;
     let img = file.decode().context("decode image")?;
     let img = img.to_luma8();

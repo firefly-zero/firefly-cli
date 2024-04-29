@@ -12,7 +12,7 @@ use std::fs;
 use std::os::unix::fs::MetadataExt;
 use std::path::Path;
 
-pub(crate) fn cmd_build(args: &BuildArgs) -> anyhow::Result<()> {
+pub fn cmd_build(args: &BuildArgs) -> anyhow::Result<()> {
     init_vfs().context("init vfs")?;
     let config = Config::load(&args.root).context("load project config")?;
     let old_sizes = collect_sizes(&config.rom_path);

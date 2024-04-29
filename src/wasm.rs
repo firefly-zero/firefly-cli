@@ -11,7 +11,7 @@ use wasmparser::{Encoding, Parser};
 /// Based on [wasm-strip].
 ///
 /// [wasm-strip]: https://github.com/bytecodealliance/wasm-tools/blob/main/src/bin/wasm-tools/strip.rs
-pub(crate) fn strip_custom(bin_path: &Path) -> anyhow::Result<()> {
+pub fn strip_custom(bin_path: &Path) -> anyhow::Result<()> {
     let parser = Parser::new(0);
     let input_bytes = std::fs::read(bin_path)?;
     let input = parser.parse_all(&input_bytes);
@@ -34,11 +34,10 @@ pub(crate) fn strip_custom(bin_path: &Path) -> anyhow::Result<()> {
                 let Some(mut parent) = stack.pop() else { break };
                 if output.starts_with(&Component::HEADER) {
                     parent.push(ComponentSectionId::Component as u8);
-                    output.encode(&mut parent);
                 } else {
                     parent.push(ComponentSectionId::CoreModule as u8);
-                    output.encode(&mut parent);
                 }
+                output.encode(&mut parent);
                 output = parent;
             }
             _ => {}

@@ -7,7 +7,7 @@ use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Output};
 
-pub(crate) fn build_bin(config: &Config) -> anyhow::Result<()> {
+pub fn build_bin(config: &Config) -> anyhow::Result<()> {
     let lang: Lang = match &config.lang {
         Some(lang) => lang.clone(),
         None => detect_lang(&config.root_path)?,

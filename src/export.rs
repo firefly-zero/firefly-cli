@@ -8,7 +8,7 @@ use std::path::{Path, PathBuf};
 use zip::write::FileOptions;
 use zip::{CompressionMethod, ZipWriter};
 
-pub(crate) fn cmd_export(args: &ExportArgs) -> Result<()> {
+pub fn cmd_export(args: &ExportArgs) -> Result<()> {
     let (author_id, app_id) = get_id(args)?;
     let vfs_path = get_vfs_path();
     let rom_path = vfs_path.join("roms").join(&author_id).join(&app_id);

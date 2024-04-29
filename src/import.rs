@@ -7,7 +7,7 @@ use std::io::Read;
 use std::path::PathBuf;
 use zip::ZipArchive;
 
-pub(crate) fn cmd_import(args: &ImportArgs) -> Result<()> {
+pub fn cmd_import(args: &ImportArgs) -> Result<()> {
     let file = File::open(&args.path).context("open archive file")?;
     let mut archive = ZipArchive::new(file).context("open archive")?;
     let out_dir = get_out_path(&mut archive).context("get ROM path")?;

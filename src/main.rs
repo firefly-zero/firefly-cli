@@ -1,6 +1,7 @@
-#![warn(clippy::pedantic)]
+#![warn(clippy::pedantic, clippy::nursery)]
+#![allow(clippy::module_name_repetitions)]
+#![allow(clippy::option_if_let_else)]
 // #![warn(clippy::all, clippy::pedantic, clippy::nursery, clippy::cargo)]
-
 mod args;
 mod build;
 mod config;
@@ -49,7 +50,6 @@ fn main() {
 /// ```text
 /// 💥 Error: read config file: No such file or directory (os error 2).
 /// ```
-
 struct Error(anyhow::Error);
 
 impl Display for Error {

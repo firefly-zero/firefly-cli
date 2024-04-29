@@ -6,7 +6,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 #[derive(Deserialize, Debug)]
-pub(crate) struct Config {
+pub struct Config {
     pub app_id:      String,
     pub author_id:   String,
     pub app_name:    String,
@@ -41,10 +41,10 @@ pub(crate) struct Config {
 }
 
 impl Config {
-    pub(crate) fn load(root: &Path) -> anyhow::Result<Self> {
+    pub fn load(root: &Path) -> anyhow::Result<Self> {
         let config_path = root.join("firefly.toml");
         let raw_config = fs::read_to_string(config_path).context("read config file")?;
-        let mut config: Config = toml::from_str(raw_config.as_str()).context("parse config")?;
+        let mut config: Self = toml::from_str(raw_config.as_str()).context("parse config")?;
         config.root_path = match std::env::current_dir() {
             // Make the path absolute if possible
             Ok(current_dir) => current_dir.join(root),
@@ -61,7 +61,7 @@ impl Config {
 }
 
 #[derive(Deserialize, Debug)]
-pub(crate) struct FileConfig {
+pub struct FileConfig {
     pub path:   PathBuf,
     pub url:    Option<String>,
     pub sha256: Option<String>,
@@ -69,7 +69,7 @@ pub(crate) struct FileConfig {
 
 #[derive(Deserialize, Debug, Clone)]
 #[serde(rename_all = "lowercase")]
-pub(crate) enum Lang {
+pub enum Lang {
     Go,
     Rust,
     Zig,
