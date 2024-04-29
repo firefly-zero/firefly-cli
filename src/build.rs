@@ -44,12 +44,12 @@ fn write_meta(config: &Config) -> anyhow::Result<()> {
         bail!("validate author_name: {err}");
     }
     let meta = Meta {
-        app_id:      &config.app_id,
-        app_name:    &config.app_name,
-        author_id:   &config.author_id,
+        app_id: &config.app_id,
+        app_name: &config.app_name,
+        author_id: &config.author_id,
         author_name: &config.author_name,
-        launcher:    config.launcher,
-        sudo:        config.sudo,
+        launcher: config.launcher,
+        sudo: config.sudo,
     };
     let mut buf = vec![0; meta.size()];
     let encoded = meta.encode(&mut buf).context("serialize")?;
@@ -62,7 +62,7 @@ fn write_meta(config: &Config) -> anyhow::Result<()> {
 /// Write the latest installed app name into internal DB.
 fn write_installed(config: &Config) -> anyhow::Result<()> {
     let meta = firefly_meta::ShortMeta {
-        app_id:    &config.app_id,
+        app_id: &config.app_id,
         author_id: &config.author_id,
     };
     let mut buf = vec![0; meta.size()];
@@ -81,7 +81,7 @@ fn convert_file(name: &str, config: &Config, file_config: &FileConfig) -> anyhow
     // The input path is defined in the config
     // and should be resolved relative to the project root.
     let input_path = &config.root_path.join(&file_config.path);
-    download_file(input_path, file_config)?;
+    download_file(input_path, file_config).context("download file")?;
     let Some(extension) = input_path.extension() else {
         let file_name = input_path.to_str().unwrap().to_string();
         bail!("cannot detect extension for {file_name}");
@@ -111,8 +111,11 @@ fn download_file(input_path: &Path, file_config: &FileConfig) -> anyhow::Result<
     let Some(url) = &file_config.url else {
         bail!("file does not exist and no url specified");
     };
-    let resp = reqwest::blocking::get(url)?;
-    let bytes = resp.bytes()?;
+    let resp = ureq::get(url).call().context("send request")?;
+    let mut bytes: Vec<u8> = vec![];
+    resp.into_reader()
+        .read_to_end(&mut bytes)
+        .context("read response")?;
     if let Some(expected_hash) = &file_config.sha256 {
         let mut hasher = Sha256::new();
         hasher.update(&bytes);
@@ -121,7 +124,7 @@ fn download_file(input_path: &Path, file_config: &FileConfig) -> anyhow::Result<
             bail!("sha256 hash mismatch: {actual_hash} != {expected_hash}");
         }
     }
-    std::fs::write(input_path, bytes)?;
+    std::fs::write(input_path, bytes).context("write file")?;
     Ok(())
 }
 
