@@ -58,8 +58,9 @@ impl Config {
 
 #[derive(Deserialize, Debug)]
 pub(crate) struct FileConfig {
-    pub path: PathBuf,
-    // pub url:  String,
+    pub path:   PathBuf,
+    pub url:    Option<String>,
+    pub sha256: Option<String>,
 }
 
 #[derive(Deserialize, Debug, Clone)]

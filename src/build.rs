@@ -4,6 +4,8 @@ use crate::images::convert_image;
 use crate::langs::build_bin;
 use crate::vfs::init_vfs;
 use anyhow::{bail, Context};
+use data_encoding::HEXLOWER;
+use sha2::{Digest, Sha256};
 use std::collections::HashMap;
 use std::ffi::OsString;
 use std::fs;
@@ -79,6 +81,7 @@ fn convert_file(name: &str, config: &Config, file_config: &FileConfig) -> anyhow
     // The input path is defined in the config
     // and should be resolved relative to the project root.
     let input_path = &config.root_path.join(&file_config.path);
+    download_file(input_path, file_config)?;
     let Some(extension) = input_path.extension() else {
         let file_name = input_path.to_str().unwrap().to_string();
         bail!("cannot detect extension for {file_name}");
@@ -97,6 +100,28 @@ fn convert_file(name: &str, config: &Config, file_config: &FileConfig) -> anyhow
         }
         _ => bail!("unknown file extension: {extension}"),
     }
+    Ok(())
+}
+
+/// If file doesn't exist, donload it from `url` and validate `sha256`.
+fn download_file(input_path: &Path, file_config: &FileConfig) -> anyhow::Result<()> {
+    if input_path.exists() {
+        return Ok(());
+    }
+    let Some(url) = &file_config.url else {
+        bail!("file does not exist and no url specified");
+    };
+    let resp = reqwest::blocking::get(url)?;
+    let bytes = resp.bytes()?;
+    if let Some(expected_hash) = &file_config.sha256 {
+        let mut hasher = Sha256::new();
+        hasher.update(&bytes);
+        let actual_hash = HEXLOWER.encode(&hasher.finalize());
+        if actual_hash != *expected_hash {
+            bail!("sha256 hash mismatch: {actual_hash} != {expected_hash}");
+        }
+    }
+    std::fs::write(input_path, bytes)?;
     Ok(())
 }
 
