@@ -19,18 +19,18 @@ pub(crate) fn cmd_build(args: &BuildArgs) -> anyhow::Result<()> {
     write_meta(&config).context("write metadata file")?;
     build_bin(&config).context("build binary")?;
     if let Some(files) = &config.files {
-        for (name, file_config) in files.iter() {
+        for (name, file_config) in files {
             convert_file(name, &config, file_config).context("convert file")?;
         }
     }
     write_installed(&config)?;
     let new_sizes = collect_sizes(&config.rom_path);
-    print_sizes(old_sizes, new_sizes);
+    print_sizes(&old_sizes, &new_sizes);
     Ok(())
 }
 
 fn write_meta(config: &Config) -> anyhow::Result<()> {
-    use firefly_meta::*;
+    use firefly_meta::{validate_id, validate_name, Meta};
     if let Err(err) = validate_id(&config.app_id) {
         bail!("validate app_id: {err}");
     }
@@ -86,9 +86,8 @@ fn convert_file(name: &str, config: &Config, file_config: &FileConfig) -> anyhow
         let file_name = input_path.to_str().unwrap().to_string();
         bail!("cannot detect extension for {file_name}");
     };
-    let extension = match extension.to_str() {
-        Some(extension) => extension,
-        None => bail!("cannot convert file extension to string"),
+    let Some(extension) = extension.to_str() else {
+        bail!("cannot convert file extension to string");
     };
     match extension {
         "png" => {
@@ -143,7 +142,7 @@ fn collect_sizes(root: &Path) -> HashMap<OsString, u64> {
     sizes
 }
 
-fn print_sizes(old_sizes: HashMap<OsString, u64>, new_sizes: HashMap<OsString, u64>) {
+fn print_sizes(old_sizes: &HashMap<OsString, u64>, new_sizes: &HashMap<OsString, u64>) {
     let mut pairs: Vec<_> = new_sizes.iter().collect();
     pairs.sort();
     for (name, new_size) in pairs {
@@ -152,12 +151,13 @@ fn print_sizes(old_sizes: HashMap<OsString, u64>, new_sizes: HashMap<OsString, u
             continue;
         };
         // If the size changed, show the diff
-        let suffix = if old_size != new_size {
+        let suffix = if old_size == new_size {
+            String::new()
+        } else {
+            #[allow(clippy::cast_possible_wrap)]
             let diff = *new_size as i64 - *old_size as i64;
             format!(" ({diff:+})")
-        } else {
-            "".to_string()
         };
-        println!("{name:16} {new_size:>7}{suffix}")
+        println!("{name:16} {new_size:>7}{suffix}");
     }
 }

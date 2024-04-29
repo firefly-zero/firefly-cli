@@ -1,3 +1,6 @@
+#![warn(clippy::pedantic)]
+// #![warn(clippy::all, clippy::pedantic, clippy::nursery, clippy::cargo)]
+
 mod args;
 mod build;
 mod config;
@@ -7,7 +10,7 @@ mod import;
 mod langs;
 mod vfs;
 mod wasm;
-use crate::args::*;
+use crate::args::{Cli, Commands};
 use crate::build::cmd_build;
 use crate::export::cmd_export;
 use crate::import::cmd_import;
@@ -30,7 +33,7 @@ fn main() {
     }
 }
 
-/// A wrapper for anyhow::Error that prints it as Go errors.
+/// A wrapper for [`anyhow::Error`] that prints it as Go errors.
 ///
 /// So, instead of:
 ///

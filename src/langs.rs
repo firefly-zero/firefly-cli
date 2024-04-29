@@ -45,7 +45,9 @@ fn detect_lang(root: &Path) -> anyhow::Result<Lang> {
     bail!("failed to detect the programming language");
 }
 
-/// Build Go code using TinyGo.
+/// Build Go code using [TinyGo].
+///
+/// [TinyGo]: https://tinygo.org/
 fn build_go(config: &Config) -> anyhow::Result<()> {
     let target_path = find_tinygo_target(config)?;
     let target_path = path_to_utf8(&target_path)?;
@@ -63,7 +65,7 @@ fn build_go(config: &Config) -> anyhow::Result<()> {
         .current_dir(in_path)
         .output()
         .context("run tinygo build")?;
-    check_output(output)
+    check_output(&output)
 }
 
 /// Get the path to target.json in the project root or create a temporary one.
@@ -91,7 +93,10 @@ fn build_rust(config: &Config) -> anyhow::Result<()> {
 
 /// Build rust code example (must be a directory).
 ///
-/// http://xion.io/post/code/rust-examples.html
+/// See [Add examples to your Rust libraries][1] to learn more about
+/// how directory-based examples in Rust work.
+///
+/// [1]: http://xion.io/post/code/rust-examples.html
 fn build_rust_example(config: &Config) -> anyhow::Result<()> {
     build_rust_inner(config, true)
 }
@@ -101,9 +106,8 @@ fn build_rust_project(config: &Config) -> anyhow::Result<()> {
 }
 
 fn build_rust_inner(config: &Config, example: bool) -> anyhow::Result<()> {
-    let example_name = match config.root_path.file_name() {
-        Some(dir_name) => dir_name,
-        None => bail!("empty project path"),
+    let Some(example_name) = config.root_path.file_name() else {
+        bail!("empty project path");
     };
     let Some(example_name) = example_name.to_str() else {
         bail!("cannot convert project directory name to UTF-8")
@@ -134,7 +138,7 @@ fn build_rust_inner(config: &Config, example: bool) -> anyhow::Result<()> {
         .current_dir(in_path)
         .output()
         .context("run cargo build")?;
-    check_output(output)?;
+    check_output(&output)?;
     let cargo_out_path = cargo_out_dir.join(format!("{example_name}.wasm"));
     let out_path = config.rom_path.join("bin");
     std::fs::copy(cargo_out_path, out_path)?;
@@ -157,7 +161,7 @@ fn path_to_utf8(path: &Path) -> anyhow::Result<&str> {
     }
 }
 
-fn check_output(output: Output) -> anyhow::Result<()> {
+fn check_output(output: &Output) -> anyhow::Result<()> {
     std::io::stdout().write_all(&output.stdout)?;
     std::io::stderr().write_all(&output.stderr)?;
     if !output.status.success() {

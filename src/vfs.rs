@@ -3,6 +3,7 @@ use directories::ProjectDirs;
 use std::fs;
 use std::path::PathBuf;
 
+#[allow(clippy::unnecessary_wraps)]
 pub(crate) fn cmd_vfs() -> anyhow::Result<()> {
     let path = get_vfs_path();
     let path = path.to_str().unwrap();
