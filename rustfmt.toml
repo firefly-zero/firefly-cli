@@ -1,0 +1,10 @@
+imports_granularity = "Module"
+group_imports = "One"
+hex_literal_case = "Lower"
+newline_style = "Unix"
+normalize_comments = true
+normalize_doc_attributes = true
+reorder_impl_items = true
+struct_field_align_threshold = 20
+use_field_init_shorthand = true
+force_explicit_abi = false

@@ -44,12 +44,12 @@ fn write_meta(config: &Config) -> anyhow::Result<()> {
         bail!("validate author_name: {err}");
     }
     let meta = Meta {
-        app_id: &config.app_id,
-        app_name: &config.app_name,
-        author_id: &config.author_id,
+        app_id:      &config.app_id,
+        app_name:    &config.app_name,
+        author_id:   &config.author_id,
         author_name: &config.author_name,
-        launcher: config.launcher,
-        sudo: config.sudo,
+        launcher:    config.launcher,
+        sudo:        config.sudo,
     };
     let mut buf = vec![0; meta.size()];
     let encoded = meta.encode(&mut buf).context("serialize")?;
@@ -62,7 +62,7 @@ fn write_meta(config: &Config) -> anyhow::Result<()> {
 /// Write the latest installed app name into internal DB.
 fn write_installed(config: &Config) -> anyhow::Result<()> {
     let meta = firefly_meta::ShortMeta {
-        app_id: &config.app_id,
+        app_id:    &config.app_id,
         author_id: &config.author_id,
     };
     let mut buf = vec![0; meta.size()];

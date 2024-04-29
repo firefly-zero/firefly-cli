@@ -45,7 +45,11 @@ impl Config {
         let config_path = root.join("firefly.toml");
         let raw_config = fs::read_to_string(config_path).context("read config file")?;
         let mut config: Config = toml::from_str(raw_config.as_str()).context("parse config")?;
-        config.root_path = PathBuf::from(root);
+        config.root_path = match std::env::current_dir() {
+            // Make the path absolute if possible
+            Ok(current_dir) => current_dir.join(root),
+            Err(_) => PathBuf::from(root),
+        };
         config.vfs_path = get_vfs_path();
         config.rom_path = config
             .vfs_path
