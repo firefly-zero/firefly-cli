@@ -8,7 +8,7 @@ use std::path::{Path, PathBuf};
 use zip::write::FileOptions;
 use zip::{CompressionMethod, ZipWriter};
 
-pub(crate) fn cmd_export(args: &ExportArgs) -> Result<()> {
+pub fn cmd_export(args: &ExportArgs) -> Result<()> {
     let (author_id, app_id) = get_id(args)?;
     let vfs_path = get_vfs_path();
     let rom_path = vfs_path.join("roms").join(&author_id).join(&app_id);
@@ -25,13 +25,13 @@ pub(crate) fn cmd_export(args: &ExportArgs) -> Result<()> {
 }
 
 fn get_id(args: &ExportArgs) -> Result<(String, String)> {
-    match (&args.author, &args.app) {
-        (Some(author), Some(app)) => Ok((author.to_string(), app.to_string())),
-        _ => {
-            let config = Config::load(&args.root).context("read project config")?;
-            Ok((config.author_id, config.app_id))
-        }
-    }
+    let res = if let (Some(author), Some(app)) = (&args.author, &args.app) {
+        (author.to_string(), app.to_string())
+    } else {
+        let config = Config::load(&args.root).context("read project config")?;
+        (config.author_id, config.app_id)
+    };
+    Ok(res)
 }
 
 fn archive(in_path: &Path, out_path: &Path) -> Result<()> {

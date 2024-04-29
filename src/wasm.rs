@@ -1,15 +1,17 @@
 use std::path::Path;
 use wasm_encoder::{Component, ComponentSectionId, Encode, Module, Section};
-use wasmparser::Payload::*;
-use wasmparser::*;
+use wasmparser::Payload::{ComponentSection, CustomSection, End, ModuleSection, Version};
+use wasmparser::{Encoding, Parser};
 
 /// Remove custom sections from the given wasm file.
 ///
 /// The custom sections contain DWARF debug info, info about the code producer, etc.
 /// We don't use any of that in the runtime.
 ///
-/// https://github.com/bytecodealliance/wasm-tools/blob/main/src/bin/wasm-tools/strip.rs
-pub(crate) fn strip_custom(bin_path: &Path) -> anyhow::Result<()> {
+/// Based on [wasm-strip].
+///
+/// [wasm-strip]: https://github.com/bytecodealliance/wasm-tools/blob/main/src/bin/wasm-tools/strip.rs
+pub fn strip_custom(bin_path: &Path) -> anyhow::Result<()> {
     let parser = Parser::new(0);
     let input_bytes = std::fs::read(bin_path)?;
     let input = parser.parse_all(&input_bytes);
@@ -29,17 +31,13 @@ pub(crate) fn strip_custom(bin_path: &Path) -> anyhow::Result<()> {
                 continue;
             }
             End { .. } => {
-                let mut parent = match stack.pop() {
-                    Some(c) => c,
-                    None => break,
-                };
+                let Some(mut parent) = stack.pop() else { break };
                 if output.starts_with(&Component::HEADER) {
                     parent.push(ComponentSectionId::Component as u8);
-                    output.encode(&mut parent);
                 } else {
                     parent.push(ComponentSectionId::CoreModule as u8);
-                    output.encode(&mut parent);
                 }
+                output.encode(&mut parent);
                 output = parent;
             }
             _ => {}

@@ -3,14 +3,15 @@ use directories::ProjectDirs;
 use std::fs;
 use std::path::PathBuf;
 
-pub(crate) fn cmd_vfs() -> anyhow::Result<()> {
+#[allow(clippy::unnecessary_wraps)]
+pub fn cmd_vfs() -> anyhow::Result<()> {
     let path = get_vfs_path();
     let path = path.to_str().unwrap();
     println!("{path}");
     Ok(())
 }
 
-pub(crate) fn get_vfs_path() -> PathBuf {
+pub fn get_vfs_path() -> PathBuf {
     match ProjectDirs::from("com", "firefly", "firefly") {
         Some(dirs) => dirs.data_dir().to_owned(),
         None => match std::env::current_dir() {
@@ -21,7 +22,7 @@ pub(crate) fn get_vfs_path() -> PathBuf {
     }
 }
 
-pub(crate) fn init_vfs() -> anyhow::Result<()> {
+pub fn init_vfs() -> anyhow::Result<()> {
     let path = get_vfs_path();
     fs::create_dir_all(&path).context("create vfs directory")?;
     fs::create_dir_all(path.join("roms")).context("create roms directory")?;
