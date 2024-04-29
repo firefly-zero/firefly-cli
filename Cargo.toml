@@ -2,6 +2,19 @@
 name = "firefly_cli"
 version = "0.1.0"
 edition = "2021"
+authors = ["Firefly Zero team"]
+description = "CLI tool for working with Firefly Zero"
+homepage = "https://fireflyzero.com/"
+repository = "https://github.com/firefly-zero/firefly-cli"
+license = "MIT"
+keywords = ["gamedev", "firefly-zero", "cli"]
+categories = [
+    "command-line-utilities",
+    "game-development",
+    "development-tools",
+    "compilers",
+    "wasm",
+]
 
 [dependencies]
 # Simpler error handling
