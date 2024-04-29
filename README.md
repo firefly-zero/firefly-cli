@@ -1,6 +1,6 @@
 # firefly-cli
 
-[ [docs](https://docs.rs/firefly-meta/latest/firefly_cli/) ] [ [github](https://github.com/firefly-zero/firefly-cli) ] [ [crates.io](https://crates.io/crates/firefly-cli) ]
+[ [github](https://github.com/firefly-zero/firefly-cli) ] [ [crates.io](https://crates.io/crates/firefly-cli) ]
 
 Swiss army knife CLI tool for working with [Firefly Zero](https://fireflyzero.com/): build, upload, and publish apps, control device, etc.
 
