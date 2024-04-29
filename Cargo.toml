@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-firefly-meta = { path = "../firefly-meta" }
+firefly-meta = "0.1.0"
 anyhow = "1.0.81"
 # Framework for parsing CLI args
 clap = { version = "4.5.4", features = ["derive"] }
