@@ -1,4 +1,7 @@
+use anyhow::{bail, Context};
+use std::io::Write;
 use std::path::Path;
+use std::process::Command;
 use wasm_encoder::{Component, ComponentSectionId, Encode, Module, Section};
 use wasmparser::Payload::{ComponentSection, CustomSection, End, ModuleSection, Version};
 use wasmparser::{Encoding, Parser};
@@ -55,5 +58,31 @@ pub fn strip_custom(bin_path: &Path) -> anyhow::Result<()> {
         }
     }
     std::fs::write(bin_path, output)?;
+    Ok(())
+}
+
+/// Run [wasm-opt] on the given wasm binary.
+///
+/// [wasm-opt]: https://github.com/WebAssembly/binaryen
+pub fn optimize(bin_path: &Path) -> anyhow::Result<()> {
+    let Some(bin_path) = bin_path.to_str() else {
+        return Ok(());
+    };
+
+    let output = Command::new("wasm-opt").arg("--version").output();
+    if output.is_err() {
+        return Ok(());
+    }
+
+    let output = Command::new("wasm-opt")
+        .args(["-Oz", "-o", bin_path, bin_path])
+        .output()
+        .context("run wasm-opt")?;
+    if !output.status.success() {
+        std::io::stdout().write_all(&output.stdout)?;
+        std::io::stderr().write_all(&output.stderr)?;
+        let code = output.status.code().unwrap_or(1);
+        bail!("subprocess exited with status code {code}");
+    }
     Ok(())
 }
