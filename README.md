@@ -10,6 +10,14 @@ Swiss army knife CLI tool for working with [Firefly Zero](https://fireflyzero.co
 cargo install firefly-cli
 ```
 
+Or alternatively, install the latest version from the source:
+
+```bash
+git clone --depth 1 https://github.com/firefly-zero/firefly-cli.git
+cd firefly-cli
+cargo install --path .
+```
+
 ## Usage
 
 ```bash
