@@ -12,6 +12,9 @@ pub struct Config {
     pub app_name:    String,
     pub author_name: String,
 
+    #[serde(default)]
+    pub version: Option<u32>,
+
     /// The programming language used for the app.
     pub lang: Option<Lang>,
 
@@ -24,7 +27,9 @@ pub struct Config {
 
     /// The app requires privileged access.
     #[serde(default)]
-    pub sudo:  bool,
+    pub sudo: bool,
+
+    /// Mapping of local files to be included into the ROM.
     pub files: Option<HashMap<String, FileConfig>>,
 
     /// Path to the project root.

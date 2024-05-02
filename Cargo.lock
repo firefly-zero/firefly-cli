@@ -294,9 +294,9 @@ dependencies = [
 
 [[package]]
 name = "firefly-meta"
-version = "0.1.0"
+version = "0.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7053aa3d3fb8a3d49b4964c91614de11c955df2762188e9f64ec036d5a739ed9"
+checksum = "1ad5fbe1bbecd684a437ad98c2567f7fa81995a340af9492a0fcca98c600f7c0"
 dependencies = [
  "postcard",
  "serde",
