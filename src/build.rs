@@ -50,6 +50,7 @@ fn write_meta(config: &Config) -> anyhow::Result<()> {
         author_name: &config.author_name,
         launcher:    config.launcher,
         sudo:        config.sudo,
+        version:     config.version.unwrap_or(0),
     };
     let mut buf = vec![0; meta.size()];
     let encoded = meta.encode(&mut buf).context("serialize")?;

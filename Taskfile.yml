@@ -2,10 +2,41 @@
 version: '3'
 
 tasks:
-  build:
-    desc: build an app
+  release:
+    desc: build and publish release
+    vars:
+      TRIPLE:
+        sh: "rustc -vV | sed -n 's|host: ||p'"
+      BIN_NAME: firefly_cli-{{.TRIPLE}}.bin
     cmds:
       - test {{.CLI_ARGS}}
-      - cargo run -- build {{.CLI_ARGS}}
+      - grep -F '"{{.CLI_ARGS}}"' Cargo.toml
+      - cargo build --release
+      - cargo publish
+      - git tag {{.CLI_ARGS}}
+      - git push
+      - git push --tags
+      - gh release create --generate-notes {{.CLI_ARGS}}
+      - cp target/release/firefly_cli {{.BIN_NAME}}
+      - defer: rm {{.BIN_NAME}}
+      - gh release upload {{.CLI_ARGS}} {{.BIN_NAME}}
+  format:
+    desc: run code formatters
+    cmds:
+      - cargo fmt
+  test:
+    desc: run tests
+    cmds:
+      - cargo test
+  lint:
+    desc: run linters
+    cmds:
+      - cargo clippy
+  all:
+    cmds:
+      - task: format
+      - task: lint
+      - task: test
   default:
-    - task: build
+    - task: all
+
