@@ -57,9 +57,12 @@ fn write_image<const BPP: usize, const PPB: usize>(
     write_u8(&mut out, 0xff)?; // transparent color
 
     // palette swaps
-    // TODO: use 4 bits, not 8, for each color
-    for color in palette {
-        write_u8(&mut out, find_color_default(color) as u8)?;
+    let mut byte = 0;
+    for (i, color) in palette.iter().enumerate() {
+        byte = (byte << 4) | find_color_default(color) as u8;
+        if i % 2 == 1 {
+            write_u8(&mut out, byte)?;
+        }
     }
 
     // image raw packed bytes
@@ -69,7 +72,6 @@ fn write_image<const BPP: usize, const PPB: usize>(
         byte = (byte << BPP) | raw_color;
         if (i + 1) % PPB == 0 {
             write_u8(&mut out, byte)?;
-            byte = 0;
         }
     }
     Ok(())
