@@ -1,34 +1,36 @@
 use anyhow::{bail, Context};
-use image::{Rgb, RgbImage};
+use image::{Pixel, Rgb, Rgba, RgbaImage};
 use std::fs::File;
 use std::io::Write;
 use std::path::Path;
 
-static DEFAULT_PALETTE: &[Rgb<u8>] = &[
+type Color = Option<Rgb<u8>>;
+
+static DEFAULT_PALETTE: &[Option<Rgb<u8>>] = &[
     // https://lospec.com/palette-list/sweetie-16
     // https://github.com/nesbox/TIC-80/wiki/Palette
-    Rgb([0x1a, 0x1c, 0x2c]), // black
-    Rgb([0x5d, 0x27, 0x5d]), // purple
-    Rgb([0xb1, 0x3e, 0x53]), // red
-    Rgb([0xef, 0x7d, 0x57]), // orange
-    Rgb([0xff, 0xcd, 0x75]), // yellow
-    Rgb([0xa7, 0xf0, 0x70]), // light green
-    Rgb([0x38, 0xb7, 0x64]), // green
-    Rgb([0x25, 0x71, 0x79]), // dark green
-    Rgb([0x29, 0x36, 0x6f]), // dark blue
-    Rgb([0x3b, 0x5d, 0xc9]), // blue
-    Rgb([0x41, 0xa6, 0xf6]), // light blue
-    Rgb([0x73, 0xef, 0xf7]), // cyan
-    Rgb([0xf4, 0xf4, 0xf4]), // white
-    Rgb([0x94, 0xb0, 0xc2]), // light gray
-    Rgb([0x56, 0x6c, 0x86]), // gray
-    Rgb([0x33, 0x3c, 0x57]), // dark gray
+    Some(Rgb([0x1a, 0x1c, 0x2c])), // black
+    Some(Rgb([0x5d, 0x27, 0x5d])), // purple
+    Some(Rgb([0xb1, 0x3e, 0x53])), // red
+    Some(Rgb([0xef, 0x7d, 0x57])), // orange
+    Some(Rgb([0xff, 0xcd, 0x75])), // yellow
+    Some(Rgb([0xa7, 0xf0, 0x70])), // light green
+    Some(Rgb([0x38, 0xb7, 0x64])), // green
+    Some(Rgb([0x25, 0x71, 0x79])), // dark green
+    Some(Rgb([0x29, 0x36, 0x6f])), // dark blue
+    Some(Rgb([0x3b, 0x5d, 0xc9])), // blue
+    Some(Rgb([0x41, 0xa6, 0xf6])), // light blue
+    Some(Rgb([0x73, 0xef, 0xf7])), // cyan
+    Some(Rgb([0xf4, 0xf4, 0xf4])), // white
+    Some(Rgb([0x94, 0xb0, 0xc2])), // light gray
+    Some(Rgb([0x56, 0x6c, 0x86])), // gray
+    Some(Rgb([0x33, 0x3c, 0x57])), // dark gray
 ];
 
 pub fn convert_image(input_path: &Path, output_path: &Path) -> anyhow::Result<()> {
     let file = image::io::Reader::open(input_path).context("open image file")?;
     let img = file.decode().context("decode image")?;
-    let img = img.to_rgb8();
+    let img = img.to_rgba8();
     if img.width() % 8 != 0 {
         bail!("image width must be divisible by 8");
     }
@@ -52,8 +54,8 @@ pub fn convert_image(input_path: &Path, output_path: &Path) -> anyhow::Result<()
 
 fn write_image<const BPP: u8, const PPB: usize>(
     mut out: File,
-    img: &RgbImage,
-    palette: &[Rgb<u8>],
+    img: &RgbaImage,
+    palette: &[Color],
 ) -> anyhow::Result<()> {
     write_u8(&mut out, BPP)?; // BPP
     let Ok(width) = u16::try_from(img.width()) else {
@@ -75,7 +77,8 @@ fn write_image<const BPP: u8, const PPB: usize>(
     // image raw packed bytes
     let mut byte: u8 = 0;
     for (i, pixel) in img.pixels().enumerate() {
-        let raw_color = find_color(palette, *pixel);
+        let color = convert_color(*pixel);
+        let raw_color = find_color(palette, color);
         byte = (byte << BPP) | raw_color;
         if (i + 1) % PPB == 0 {
             write_u8(&mut out, byte)?;
@@ -85,17 +88,18 @@ fn write_image<const BPP: u8, const PPB: usize>(
 }
 
 /// Detect all colors used in the image
-fn make_palette(img: &RgbImage) -> anyhow::Result<Vec<Rgb<u8>>> {
+fn make_palette(img: &RgbaImage) -> anyhow::Result<Vec<Color>> {
     let mut palette = Vec::new();
     for pixel in img.pixels() {
-        if !palette.contains(pixel) {
-            if !DEFAULT_PALETTE.contains(pixel) {
+        let color = convert_color(*pixel);
+        if !palette.contains(&color) {
+            if !DEFAULT_PALETTE.contains(&color) {
                 bail!(
                     "found a color not present in the default color palette: {}",
-                    format_color(*pixel)
+                    format_color(color)
                 );
             }
-            palette.push(*pixel);
+            palette.push(color);
         }
     }
     palette.sort_by_key(|c| find_color(DEFAULT_PALETTE, *c));
@@ -103,7 +107,7 @@ fn make_palette(img: &RgbImage) -> anyhow::Result<Vec<Rgb<u8>>> {
 }
 
 /// Add empty colors at the end of the palette to match the BPP size.
-fn extend_palette(mut palette: Vec<Rgb<u8>>, size: usize) -> Vec<Rgb<u8>> {
+fn extend_palette(mut palette: Vec<Color>, size: usize) -> Vec<Color> {
     let n = size - palette.len();
     for _ in 0..n {
         palette.push(DEFAULT_PALETTE[0]);
@@ -120,12 +124,12 @@ fn write_u16(f: &mut File, v: u16) -> std::io::Result<()> {
 }
 
 /// Find the index of the given color in the default palette.
-fn find_color_default(c: Rgb<u8>) -> u8 {
+fn find_color_default(c: Color) -> u8 {
     find_color(DEFAULT_PALETTE, c)
 }
 
 /// Find the index of the given color in the given palette.
-fn find_color(palette: &[Rgb<u8>], c: Rgb<u8>) -> u8 {
+fn find_color(palette: &[Color], c: Color) -> u8 {
     for (color, i) in palette.iter().zip(0u8..) {
         if *color == c {
             return i;
@@ -134,7 +138,24 @@ fn find_color(palette: &[Rgb<u8>], c: Rgb<u8>) -> u8 {
     panic!("color not in the default palette")
 }
 
-fn format_color(pixel: Rgb<u8>) -> String {
-    let c = pixel.0;
-    format!("#{:02X}{:02X}{:02X}", c[0], c[1], c[2],)
+fn format_color(c: Color) -> String {
+    match c {
+        Some(c) => {
+            let c = c.0;
+            format!("#{:02X}{:02X}{:02X}", c[0], c[1], c[2])
+        }
+        None => "ALPHA".to_string(),
+    }
+}
+
+fn convert_color(c: Rgba<u8>) -> Color {
+    if is_transparent(c) {
+        return None;
+    }
+    Some(c.to_rgb())
+}
+
+const fn is_transparent(c: Rgba<u8>) -> bool {
+    let alpha = c.0[3];
+    alpha < 128
 }
