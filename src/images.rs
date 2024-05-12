@@ -47,19 +47,22 @@ pub fn convert_image(input_path: &Path, output_path: &Path) -> anyhow::Result<()
     }
 }
 
-fn write_image<const BPP: usize, const PPB: usize>(
+fn write_image<const BPP: u8, const PPB: usize>(
     mut out: File,
     img: &RgbImage,
     palette: &[Rgb<u8>],
 ) -> anyhow::Result<()> {
-    write_u8(&mut out, BPP as u8)?; // BPP
-    write_u16(&mut out, img.width() as u16)?; // image width
+    write_u8(&mut out, BPP)?; // BPP
+    let Ok(width) = u16::try_from(img.width()) else {
+        bail!("the image is too big")
+    };
+    write_u16(&mut out, width)?; // image width
     write_u8(&mut out, 0xff)?; // transparent color
 
     // palette swaps
     let mut byte = 0;
     for (i, color) in palette.iter().enumerate() {
-        byte = (byte << 4) | find_color_default(color) as u8;
+        byte = (byte << 4) | find_color_default(*color);
         if i % 2 == 1 {
             write_u8(&mut out, byte)?;
         }
@@ -68,7 +71,7 @@ fn write_image<const BPP: usize, const PPB: usize>(
     // image raw packed bytes
     let mut byte: u8 = 0;
     for (i, pixel) in img.pixels().enumerate() {
-        let raw_color = find_color(palette, pixel) as u8;
+        let raw_color = find_color(palette, *pixel);
         byte = (byte << BPP) | raw_color;
         if (i + 1) % PPB == 0 {
             write_u8(&mut out, byte)?;
@@ -83,13 +86,16 @@ fn make_palette(img: &RgbImage) -> anyhow::Result<Vec<Rgb<u8>>> {
     for pixel in img.pixels() {
         if !palette.contains(pixel) {
             if !DEFAULT_PALETTE.contains(pixel) {
-                bail!("found a color not present in the default color palette");
+                bail!(
+                    "found a color not present in the default color palette: {}",
+                    format_color(*pixel)
+                );
             }
             palette.push(*pixel);
         }
     }
     // darker colors usually go earlier in the palette
-    palette.sort_by_key(|c| find_color(DEFAULT_PALETTE, c));
+    palette.sort_by_key(|c| find_color(DEFAULT_PALETTE, *c));
     Ok(palette)
 }
 
@@ -101,17 +107,23 @@ fn write_u16(f: &mut File, v: u16) -> std::io::Result<()> {
     f.write_all(&v.to_le_bytes())
 }
 
-/// Find the index of thfind_color_defaulte given color in the default palette.
-fn find_color_default(c: &Rgb<u8>) -> usize {
+/// Find the index of the given color in the default palette.
+fn find_color_default(c: Rgb<u8>) -> u8 {
     find_color(DEFAULT_PALETTE, c)
 }
 
 /// Find the index of the given color in the given palette.
-fn find_color(palette: &[Rgb<u8>], c: &Rgb<u8>) -> usize {
+fn find_color(palette: &[Rgb<u8>], c: Rgb<u8>) -> u8 {
     for (i, color) in palette.iter().enumerate() {
-        if color == c {
-            return i;
+        if *color == c {
+            #[allow(clippy::cast_possible_truncation)]
+            return i as u8;
         }
     }
     panic!("color not in the default palette")
+}
+
+fn format_color(pixel: Rgb<u8>) -> String {
+    let c = pixel.0;
+    format!("#{:02X}{:02X}{:02X}", c[0], c[1], c[2],)
 }
