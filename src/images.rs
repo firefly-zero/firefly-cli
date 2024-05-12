@@ -37,10 +37,13 @@ pub fn convert_image(input_path: &Path, output_path: &Path) -> anyhow::Result<()
     write_u8(&mut out, 0x21)?;
     let colors = palette.len();
     if colors <= 2 {
+        let palette = extend_palette(palette, 2);
         write_image::<1, 8>(out, &img, &palette).context("write 1BPP image")
     } else if colors <= 4 {
+        let palette = extend_palette(palette, 4);
         write_image::<2, 4>(out, &img, &palette).context("write 1BPP image")
     } else if colors <= 16 {
+        let palette = extend_palette(palette, 16);
         write_image::<4, 2>(out, &img, &palette).context("write 1BPP image")
     } else {
         bail!("the image has too many colors")
@@ -61,6 +64,7 @@ fn write_image<const BPP: u8, const PPB: usize>(
 
     // palette swaps
     let mut byte = 0;
+    debug_assert!(palette.len() == 2 || palette.len() == 4 || palette.len() == 16);
     for (i, color) in palette.iter().enumerate() {
         byte = (byte << 4) | find_color_default(*color);
         if i % 2 == 1 {
@@ -94,9 +98,17 @@ fn make_palette(img: &RgbImage) -> anyhow::Result<Vec<Rgb<u8>>> {
             palette.push(*pixel);
         }
     }
-    // darker colors usually go earlier in the palette
     palette.sort_by_key(|c| find_color(DEFAULT_PALETTE, *c));
     Ok(palette)
+}
+
+/// Add empty colors at the end of the palette to match the BPP size.
+fn extend_palette(mut palette: Vec<Rgb<u8>>, size: usize) -> Vec<Rgb<u8>> {
+    let n = size - palette.len();
+    for _ in 0..n {
+        palette.push(DEFAULT_PALETTE[0]);
+    }
+    palette
 }
 
 fn write_u8(f: &mut File, v: u8) -> std::io::Result<()> {
@@ -114,10 +126,9 @@ fn find_color_default(c: Rgb<u8>) -> u8 {
 
 /// Find the index of the given color in the given palette.
 fn find_color(palette: &[Rgb<u8>], c: Rgb<u8>) -> u8 {
-    for (i, color) in palette.iter().enumerate() {
+    for (color, i) in palette.iter().zip(0u8..) {
         if *color == c {
-            #[allow(clippy::cast_possible_truncation)]
-            return i as u8;
+            return i;
         }
     }
     panic!("color not in the default palette")
