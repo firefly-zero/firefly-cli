@@ -35,6 +35,8 @@ heapless = "0.8.0"
 image = { version = "0.25.1", default-features = false, features = ["png"] }
 # Deserialize firefly.toml (required by `toml`)
 serde = { version = "1.0.197", features = ["serde_derive", "derive"] }
+# Deserialize JSON API responses from the firefly catalog.
+serde_json = "1.0.117"
 # Calculate file checksum
 sha2 = "0.10.8"
 # Deserialize firefly.toml

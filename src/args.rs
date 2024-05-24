@@ -62,9 +62,17 @@ pub struct ExportArgs {
 
 #[derive(Debug, Parser)]
 pub struct ImportArgs {
-    /// Path to (or URL of) the archive file.
+    /// The ROM to install.
     ///
-    /// Specify "launcher" to install the default launcher.
+    /// The ROM can be one of:
+    ///
+    /// 1. Local path to a zip file (for example, `sys.launcher.zip`)
+    ///
+    /// 2. URL of a zip file (for example, `https://example.com/sys.launcher.zip`)
+    ///
+    /// 3. App ID in the catalog (for example, `sys.launcher`).
+    ///
+    /// 4. The word "launcher" to install the latest version of the default launcher.
     #[arg()]
     pub path: String,
 }
