@@ -62,12 +62,12 @@ fn write_meta(config: &Config) -> anyhow::Result<()> {
 
 /// Write the latest installed app name into internal DB.
 fn write_installed(config: &Config) -> anyhow::Result<()> {
-    let meta = firefly_meta::ShortMeta {
+    let short_meta = firefly_meta::ShortMeta {
         app_id:    &config.app_id,
         author_id: &config.author_id,
     };
-    let mut buf = vec![0; meta.size()];
-    let encoded = meta.encode(&mut buf).context("serialize")?;
+    let mut buf = vec![0; short_meta.size()];
+    let encoded = short_meta.encode(&mut buf).context("serialize")?;
     let output_path = config.vfs_path.join("sys").join("new-app");
     fs::write(output_path, &encoded).context("write new-app file")?;
     if config.launcher {

@@ -75,7 +75,7 @@ pub fn optimize(bin_path: &Path) -> anyhow::Result<()> {
     }
 
     let output = Command::new("wasm-opt")
-        .args(["-Oz", "-o", bin_path, bin_path])
+        .args(["-Oz", "--all-features", "-o", bin_path, bin_path])
         .output()
         .context("run wasm-opt")?;
     if !output.status.success() {
