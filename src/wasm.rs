@@ -71,6 +71,7 @@ pub fn optimize(bin_path: &Path) -> anyhow::Result<()> {
 
     let output = Command::new("wasm-opt").arg("--version").output();
     if output.is_err() {
+        println!("WARNING: wasm-opt not installed, the binary won't be optimized.");
         return Ok(());
     }
 

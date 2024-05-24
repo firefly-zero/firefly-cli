@@ -86,24 +86,16 @@ fn find_tinygo_target(config: &Config) -> anyhow::Result<PathBuf> {
 
 fn build_rust(config: &Config) -> anyhow::Result<()> {
     if config.root_path.join("Cargo.toml").exists() {
-        build_rust_project(config)
+        build_rust_inner(config, false)
     } else {
-        build_rust_example(config)
+        // Build rust code example (must be a directory).
+        //
+        // See [Add examples to your Rust libraries][1] to learn more about
+        // how directory-based examples in Rust work.
+        //
+        // [1]: http://xion.io/post/code/rust-examples.html
+        build_rust_inner(config, true)
     }
-}
-
-/// Build rust code example (must be a directory).
-///
-/// See [Add examples to your Rust libraries][1] to learn more about
-/// how directory-based examples in Rust work.
-///
-/// [1]: http://xion.io/post/code/rust-examples.html
-fn build_rust_example(config: &Config) -> anyhow::Result<()> {
-    build_rust_inner(config, true)
-}
-
-fn build_rust_project(config: &Config) -> anyhow::Result<()> {
-    build_rust_inner(config, false)
 }
 
 fn build_rust_inner(config: &Config, example: bool) -> anyhow::Result<()> {
@@ -113,18 +105,8 @@ fn build_rust_inner(config: &Config, example: bool) -> anyhow::Result<()> {
     let Some(example_name) = example_name.to_str() else {
         bail!("cannot convert project directory name to UTF-8")
     };
-    let cargo_out_dir = temp_dir();
     let in_path = path_to_utf8(&config.root_path)?;
-    let mut cmd_args = vec![
-        "build",
-        "--target",
-        "wasm32-unknown-unknown",
-        "--out-dir",
-        path_to_utf8(&cargo_out_dir)?,
-        "-Z",
-        "unstable-options",
-        "--release",
-    ];
+    let mut cmd_args = vec!["build", "--target", "wasm32-unknown-unknown", "--release"];
     if example {
         cmd_args.push("--example");
         cmd_args.push(example_name);
@@ -140,10 +122,53 @@ fn build_rust_inner(config: &Config, example: bool) -> anyhow::Result<()> {
         .output()
         .context("run cargo build")?;
     check_output(&output)?;
-    let cargo_out_path = cargo_out_dir.join(format!("{example_name}.wasm"));
+    let cargo_out_path = find_rust_result(&config.root_path)?;
     let out_path = config.rom_path.join("bin");
     std::fs::copy(cargo_out_path, out_path)?;
     Ok(())
+}
+
+/// Locate the wasm binary produced by `cargo build`.
+fn find_rust_result(root: &Path) -> anyhow::Result<PathBuf> {
+    let target_dir = find_rust_target_dir(root)?;
+    let release_dir = target_dir.join("wasm32-unknown-unknown").join("release");
+    let Some(project_name) = root.file_name() else {
+        bail!("cannot get project root directory name");
+    };
+
+    let path = release_dir.join(project_name).with_extension("wasm");
+    if path.is_file() {
+        return Ok(path);
+    }
+    let path = release_dir
+        .join("examples")
+        .join(project_name)
+        .with_extension("wasm");
+    if path.is_file() {
+        return Ok(path);
+    }
+    bail!("cannot find wasm binary")
+}
+
+/// Locate the "target" directory.
+///
+/// If building an example or a crate in a workspace,
+/// the "target" directory might be located not in the given project root
+/// but in one of the parent directorries. So, this function goes up
+/// the file tree until it finds the target dir.
+fn find_rust_target_dir(root: &Path) -> anyhow::Result<PathBuf> {
+    let root = root
+        .canonicalize()
+        .context("canonicalize project root path")?;
+    let mut maybe_path = Some(root.as_path());
+    while let Some(path) = maybe_path {
+        let target_path = path.join("target");
+        if target_path.exists() {
+            return Ok(target_path);
+        }
+        maybe_path = path.parent();
+    }
+    bail!("cannot find Rust's \"target\" output directory")
 }
 
 fn build_zig(_config: &Config) -> anyhow::Result<()> {
