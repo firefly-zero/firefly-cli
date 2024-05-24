@@ -2,11 +2,20 @@ use crate::args::ImportArgs;
 use crate::vfs::{get_vfs_path, init_vfs};
 use anyhow::{bail, Context, Result};
 use firefly_meta::Meta;
+use serde::Deserialize;
 use std::env::temp_dir;
 use std::fs::{self, create_dir_all, File};
 use std::io::Read;
 use std::path::{Path, PathBuf};
 use zip::ZipArchive;
+
+/// API response from the firefly catalog.
+///
+/// Example: <https://catalog.fireflyzero.com/sys.launcher.json>
+#[derive(Deserialize)]
+struct CatalogApp {
+    download: String,
+}
 
 pub fn cmd_import(args: &ImportArgs) -> Result<()> {
     let path = fetch_archive(&args.path).context("download ROM archive")?;
@@ -29,15 +38,31 @@ pub fn cmd_import(args: &ImportArgs) -> Result<()> {
 }
 
 fn fetch_archive(path: &str) -> Result<PathBuf> {
-    let mut path = path;
+    let mut path = path.to_string();
     if path == "launcher" {
-        path = "https://github.com/firefly-zero/firefly-launcher/releases/latest/download/sys.launcher.zip";
+        path = "https://github.com/firefly-zero/firefly-launcher/releases/latest/download/sys.launcher.zip".to_string();
     }
+
+    // App ID is given. Fetch download URL from the catalog.
+    #[allow(clippy::case_sensitive_file_extension_comparisons)]
+    if !path.ends_with(".zip") {
+        let url = format!("https://catalog.fireflyzero.com/{path}.json");
+        let resp = ureq::get(&url).call().context("send HTTP request")?;
+        if resp.status() == 200 && resp.header("Content-Type") == Some("application/json") {
+            let app: CatalogApp =
+                serde_json::from_reader(&mut resp.into_reader()).context("parse JSON")?;
+            path = app.download;
+        }
+    }
+
+    // Local path is given. Just use it.
     if !path.starts_with("https://") {
         return Ok(path.into());
     }
+
+    // URL is given. Download into a temporary file.
     println!("⏳️ downloading the file...");
-    let resp = ureq::get(path).call().context("send HTTP request")?;
+    let resp = ureq::get(&path).call().context("send HTTP request")?;
     let out_path = temp_dir().join("rom.zip");
     let mut file = File::create(&out_path)?;
     std::io::copy(&mut resp.into_reader(), &mut file).context("write response into a file")?;
