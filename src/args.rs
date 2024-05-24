@@ -62,7 +62,9 @@ pub struct ExportArgs {
 
 #[derive(Debug, Parser)]
 pub struct ImportArgs {
-    /// Path to the archive file.
+    /// Path to (or URL of) the archive file.
+    ///
+    /// Specify "launcher" to install the default launcher.
     #[arg()]
-    pub path: PathBuf,
+    pub path: String,
 }

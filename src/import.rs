@@ -2,13 +2,15 @@ use crate::args::ImportArgs;
 use crate::vfs::{get_vfs_path, init_vfs};
 use anyhow::{bail, Context, Result};
 use firefly_meta::Meta;
+use std::env::temp_dir;
 use std::fs::{self, create_dir_all, File};
 use std::io::Read;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use zip::ZipArchive;
 
 pub fn cmd_import(args: &ImportArgs) -> Result<()> {
-    let file = File::open(&args.path).context("open archive file")?;
+    let path = fetch_archive(&args.path).context("download ROM archive")?;
+    let file = File::open(path).context("open archive file")?;
     let mut archive = ZipArchive::new(file).context("open archive")?;
 
     let meta_raw = read_meta_raw(&mut archive)?;
@@ -24,6 +26,23 @@ pub fn cmd_import(args: &ImportArgs) -> Result<()> {
     }
     write_installed(&meta, &vfs_path)?;
     Ok(())
+}
+
+fn fetch_archive(path: &str) -> Result<PathBuf> {
+    let mut path = path;
+    if path == "launcher" {
+        path = "https://github.com/firefly-zero/firefly-launcher/releases/latest/download/sys.launcher.zip";
+    }
+    if !path.starts_with("https://") {
+        return Ok(path.into());
+    }
+    println!("⏳️ downloading the file...");
+    let resp = ureq::get(path).call().context("send HTTP request")?;
+    let out_path = temp_dir().join("rom.zip");
+    let mut file = File::create(&out_path)?;
+    std::io::copy(&mut resp.into_reader(), &mut file).context("write response into a file")?;
+    println!("⌛ installing...");
+    Ok(out_path)
 }
 
 fn read_meta_raw(archive: &mut ZipArchive<File>) -> Result<Vec<u8>> {
