@@ -7,7 +7,7 @@ Swiss army knife CLI tool for working with [Firefly Zero](https://fireflyzero.co
 ## Installation
 
 ```bash
-cargo install firefly-cli
+cargo install firefly_cli
 ```
 
 Or alternatively, install the latest version from the source:
