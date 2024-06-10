@@ -17,7 +17,7 @@ pub fn cmd_build(args: &BuildArgs) -> anyhow::Result<()> {
     let config = Config::load(&args.root).context("load project config")?;
     let old_sizes = collect_sizes(&config.rom_path);
     write_meta(&config).context("write metadata file")?;
-    build_bin(&config).context("build binary")?;
+    build_bin(&config, args).context("build binary")?;
     if let Some(files) = &config.files {
         for (name, file_config) in files {
             convert_file(name, &config, file_config).context("convert file")?;
@@ -95,7 +95,7 @@ fn convert_file(name: &str, config: &Config, file_config: &FileConfig) -> anyhow
             convert_image(input_path, &output_path)?;
         }
         // firefly formats for fonts and images
-        "fff" | "ffi" => {
+        "fff" | "ffi" | "py" | "star" => {
             fs::copy(input_path, &output_path)?;
         }
         _ => bail!("unknown file extension: {extension}"),

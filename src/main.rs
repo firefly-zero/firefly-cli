@@ -1,7 +1,7 @@
-#![warn(clippy::pedantic, clippy::nursery)]
+#![deny(clippy::all, clippy::pedantic, clippy::nursery)]
 #![allow(clippy::module_name_repetitions)]
 #![allow(clippy::option_if_let_else)]
-// #![warn(clippy::all, clippy::pedantic, clippy::nursery, clippy::cargo)]
+
 mod args;
 mod build;
 mod config;
@@ -11,6 +11,7 @@ mod import;
 mod langs;
 mod vfs;
 mod wasm;
+
 use crate::args::{Cli, Commands};
 use crate::build::cmd_build;
 use crate::export::cmd_export;

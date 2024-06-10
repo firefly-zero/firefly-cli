@@ -75,6 +75,7 @@ pub fn optimize(bin_path: &Path) -> anyhow::Result<()> {
         return Ok(());
     }
 
+    // TODO: only allow features supported by the runtime (wasmi).
     let output = Command::new("wasm-opt")
         .args(["-Oz", "--all-features", "-o", bin_path, bin_path])
         .output()
