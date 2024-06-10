@@ -29,8 +29,6 @@ data-encoding = "2.6.0"
 directories = "5.0.1"
 # Serialize app config into meta file in the ROM
 firefly-meta = "0.1.2"
-# Create vector on the stack
-heapless = "0.8.0"
 # Parse PNG inages
 image = { version = "0.25.1", default-features = false, features = ["png"] }
 # Deserialize firefly.toml (required by `toml`)
