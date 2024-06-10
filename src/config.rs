@@ -6,12 +6,14 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 #[derive(Deserialize, Debug)]
+#[serde(deny_unknown_fields)]
 pub struct Config {
     pub app_id:      String,
     pub author_id:   String,
     pub app_name:    String,
     pub author_name: String,
 
+    /// The app version. Compared between devices when starting multiplayer.
     #[serde(default)]
     pub version: Option<u32>,
 
@@ -66,10 +68,20 @@ impl Config {
 }
 
 #[derive(Deserialize, Debug)]
+#[serde(deny_unknown_fields)]
 pub struct FileConfig {
-    pub path:   PathBuf,
-    pub url:    Option<String>,
+    /// Path to the file relative to the project root.
+    pub path: PathBuf,
+
+    /// URL to download the file from if missed.
+    pub url: Option<String>,
+
+    /// The file hash to validate when downloading the file.
     pub sha256: Option<String>,
+
+    /// If the file should be copied as-is, without any processing.
+    #[serde(default)]
+    pub copy: bool,
 }
 
 #[derive(Deserialize, Debug, Clone)]

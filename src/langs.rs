@@ -1,3 +1,4 @@
+use crate::args::BuildArgs;
 use crate::config::{Config, Lang};
 use crate::wasm::{optimize, strip_custom};
 use anyhow::{bail, Context};
@@ -7,7 +8,7 @@ use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Output};
 
-pub fn build_bin(config: &Config) -> anyhow::Result<()> {
+pub fn build_bin(config: &Config, args: &BuildArgs) -> anyhow::Result<()> {
     let lang: Lang = match &config.lang {
         Some(lang) => lang.clone(),
         None => detect_lang(&config.root_path)?,
@@ -19,8 +20,13 @@ pub fn build_bin(config: &Config) -> anyhow::Result<()> {
         Lang::TS => build_ts(config),
     }?;
     let bin_path = config.rom_path.join("bin");
-    strip_custom(&bin_path)?;
-    optimize(&bin_path).context("optimize wasm binary")
+    if !args.no_strip {
+        strip_custom(&bin_path)?;
+    }
+    if !args.no_opt {
+        optimize(&bin_path).context("optimize wasm binary")?;
+    }
+    Ok(())
 }
 
 fn detect_lang(root: &Path) -> anyhow::Result<Lang> {

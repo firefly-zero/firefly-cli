@@ -39,6 +39,14 @@ pub struct BuildArgs {
     /// Path to the firefly config.
     #[arg(short, long, default_value = None)]
     pub config: Option<PathBuf>,
+
+    /// Don't optimize the binary.
+    #[arg(long, default_value_t = false)]
+    pub no_opt: bool,
+
+    /// Don't strip debug info and custom sections.
+    #[arg(long, default_value_t = false)]
+    pub no_strip: bool,
 }
 
 #[derive(Debug, Parser)]
