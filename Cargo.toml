@@ -31,6 +31,7 @@ directories = "5.0.1"
 firefly-meta = "0.1.2"
 # Parse PNG inages
 image = { version = "0.25.1", default-features = false, features = ["png"] }
+rand = "0.8.5"
 # Deserialize firefly.toml (required by `toml`)
 serde = { version = "1.0.197", features = ["serde_derive", "derive"] }
 # Deserialize JSON API responses from the firefly catalog.
