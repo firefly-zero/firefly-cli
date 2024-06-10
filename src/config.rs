@@ -6,6 +6,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 #[derive(Deserialize, Debug)]
+#[serde(deny_unknown_fields)]
 pub struct Config {
     pub app_id:      String,
     pub author_id:   String,
@@ -67,6 +68,7 @@ impl Config {
 }
 
 #[derive(Deserialize, Debug)]
+#[serde(deny_unknown_fields)]
 pub struct FileConfig {
     /// Path to the file relative to the project root.
     pub path: PathBuf,
