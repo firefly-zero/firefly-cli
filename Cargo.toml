@@ -1,6 +1,6 @@
 [package]
 name = "firefly_cli"
-version = "0.2.2"
+version = "0.2.3"
 edition = "2021"
 authors = ["Firefly Zero team"]
 description = "CLI tool for working with Firefly Zero"
@@ -31,6 +31,7 @@ directories = "5.0.1"
 firefly-meta = "0.1.2"
 # Parse PNG inages
 image = { version = "0.25.1", default-features = false, features = ["png"] }
+# Random device name generation
 rand = "0.8.5"
 # Deserialize firefly.toml (required by `toml`)
 serde = { version = "1.0.197", features = ["serde_derive", "derive"] }
