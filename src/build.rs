@@ -83,6 +83,10 @@ fn convert_file(name: &str, config: &Config, file_config: &FileConfig) -> anyhow
     // and should be resolved relative to the project root.
     let input_path = &config.root_path.join(&file_config.path);
     download_file(input_path, file_config).context("download file")?;
+    if file_config.copy {
+        fs::copy(input_path, &output_path)?;
+        return Ok(());
+    }
     let Some(extension) = input_path.extension() else {
         let file_name = input_path.to_str().unwrap().to_string();
         bail!("cannot detect extension for {file_name}");
@@ -95,7 +99,7 @@ fn convert_file(name: &str, config: &Config, file_config: &FileConfig) -> anyhow
             convert_image(input_path, &output_path)?;
         }
         // firefly formats for fonts and images
-        "fff" | "ffi" | "py" | "star" => {
+        "fff" | "ffi" | "ffz" => {
             fs::copy(input_path, &output_path)?;
         }
         _ => bail!("unknown file extension: {extension}"),
