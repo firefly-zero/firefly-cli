@@ -32,7 +32,8 @@ pub fn init_vfs() -> anyhow::Result<()> {
 
 pub fn init_vfs_at(path: &Path) -> anyhow::Result<()> {
     fs::create_dir_all(path.join("roms")).context("create roms directory")?;
-    fs::create_dir_all(path.join("sys")).context("create sys directory")?;
+    fs::create_dir_all(path.join("sys").join("pub")).context("create sys/pub directory")?;
+    fs::create_dir_all(path.join("sys").join("priv")).context("create sys/priv directory")?;
     fs::create_dir_all(path.join("data")).context("create data directory")?;
 
     // Generate random device name if the name file doesn't exist yet.

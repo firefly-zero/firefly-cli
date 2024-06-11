@@ -25,6 +25,30 @@ pub enum Commands {
 
     /// Show the full path to the virtual filesystem.
     Vfs,
+
+    /// Commands to manage signing keys.
+    #[command(subcommand)]
+    Key(KeyCommands),
+}
+
+#[derive(Subcommand, Debug)]
+pub enum KeyCommands {
+    /// Generate a new key pair.
+    New(KeyArgs),
+
+    /// Show public key.
+    Pub(KeyArgs),
+
+    /// Show private key.
+    Priv(KeyArgs),
+
+    /// Remove the public and private key.
+    Rm(KeyArgs),
+}
+
+#[derive(Debug, Parser)]
+pub struct KeyArgs {
+    pub author_id: String,
 }
 
 #[derive(Debug, Parser)]
