@@ -20,6 +20,7 @@ pub enum Commands {
     Export(ExportArgs),
 
     /// Install locally an app from a zip archive.
+    #[clap(alias("install"))]
     Import(ImportArgs),
 
     /// Show the full path to the virtual filesystem.
