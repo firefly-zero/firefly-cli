@@ -9,6 +9,8 @@ use sha2::{Digest, Sha256};
 use std::collections::HashMap;
 use std::ffi::OsString;
 use std::fs;
+use std::io::Write;
+use std::os::unix::ffi::OsStrExt;
 use std::os::unix::fs::MetadataExt;
 use std::path::Path;
 
@@ -23,7 +25,8 @@ pub fn cmd_build(args: &BuildArgs) -> anyhow::Result<()> {
             convert_file(name, &config, file_config).context("convert file")?;
         }
     }
-    write_installed(&config)?;
+    write_installed(&config).context("write app-name")?;
+    write_hash(&config.rom_path).context("write hash")?;
     let new_sizes = collect_sizes(&config.rom_path);
     print_sizes(&old_sizes, &new_sizes);
     Ok(())
@@ -129,6 +132,32 @@ fn download_file(input_path: &Path, file_config: &FileConfig) -> anyhow::Result<
         }
     }
     std::fs::write(input_path, bytes).context("write file")?;
+    Ok(())
+}
+
+fn write_hash(rom_path: &Path) -> anyhow::Result<()> {
+    // generate one big hash for all files
+    let mut hasher = Sha256::new();
+    let files = rom_path.read_dir().context("open the ROM dir")?;
+    let mut file_paths = Vec::new();
+    for entry in files {
+        let entry = entry.context("access dir entry")?;
+        file_paths.push(entry.path());
+    }
+    file_paths.sort();
+    for path in file_paths {
+        let file_name = path.file_name().context("get file name")?;
+        hasher.update(file_name.as_bytes());
+        let mut file = fs::File::open(path).context("open file")?;
+        std::io::copy(&mut file, &mut hasher).context("read file")?;
+    }
+
+    // write the hash into a file
+    let hash = &hasher.finalize();
+    let hash_path = rom_path.join("hash");
+    let mut hash_file = fs::File::create(hash_path).context("create file")?;
+    hash_file.write_all(hash).context("write file")?;
+
     Ok(())
 }
 
