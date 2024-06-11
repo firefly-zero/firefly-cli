@@ -6,6 +6,7 @@ mod args;
 mod build;
 mod config;
 mod export;
+mod file_names;
 mod images;
 mod import;
 mod langs;

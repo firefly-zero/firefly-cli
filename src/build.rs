@@ -1,5 +1,6 @@
 use crate::args::BuildArgs;
 use crate::config::{Config, FileConfig};
+use crate::file_names::{HASH, META, SIG};
 use crate::images::convert_image;
 use crate::langs::build_bin;
 use crate::vfs::init_vfs;
@@ -58,7 +59,7 @@ fn write_meta(config: &Config) -> anyhow::Result<()> {
     let mut buf = vec![0; meta.size()];
     let encoded = meta.encode(&mut buf).context("serialize")?;
     fs::create_dir_all(&config.rom_path)?;
-    let output_path = config.rom_path.join("meta");
+    let output_path = config.rom_path.join(META);
     fs::write(output_path, encoded).context("write file")?;
     Ok(())
 }
@@ -147,6 +148,9 @@ fn write_hash(rom_path: &Path) -> anyhow::Result<()> {
     file_paths.sort();
     for path in file_paths {
         let file_name = path.file_name().context("get file name")?;
+        if file_name == HASH || file_name == SIG {
+            continue;
+        }
         hasher.update(file_name.as_bytes());
         let mut file = fs::File::open(path).context("open file")?;
         std::io::copy(&mut file, &mut hasher).context("read file")?;
@@ -154,7 +158,7 @@ fn write_hash(rom_path: &Path) -> anyhow::Result<()> {
 
     // write the hash into a file
     let hash = &hasher.finalize();
-    let hash_path = rom_path.join("hash");
+    let hash_path = rom_path.join(HASH);
     let mut hash_file = fs::File::create(hash_path).context("create file")?;
     hash_file.write_all(hash).context("write file")?;
 

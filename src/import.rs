@@ -1,4 +1,5 @@
 use crate::args::ImportArgs;
+use crate::file_names::META;
 use crate::vfs::{get_vfs_path, init_vfs};
 use anyhow::{bail, Context, Result};
 use firefly_meta::Meta;
@@ -72,7 +73,7 @@ fn fetch_archive(path: &str) -> Result<PathBuf> {
 
 fn read_meta_raw(archive: &mut ZipArchive<File>) -> Result<Vec<u8>> {
     let mut meta_raw = Vec::new();
-    let mut meta_file = archive.by_name("meta").context("open meta")?;
+    let mut meta_file = archive.by_name(META).context("open meta")?;
     meta_file.read_to_end(&mut meta_raw).context("read meta")?;
     if meta_raw.is_empty() {
         bail!("meta is empty");
