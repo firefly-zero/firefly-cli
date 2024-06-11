@@ -53,6 +53,33 @@ pub fn cmd_key_priv(_args: &KeyArgs) -> anyhow::Result<()> {
     todo!()
 }
 
-pub fn cmd_key_rm(_args: &KeyArgs) -> anyhow::Result<()> {
-    todo!()
+pub fn cmd_key_rm(args: &KeyArgs) -> anyhow::Result<()> {
+    let vfs_path = get_vfs_path();
+
+    let author = &args.author_id;
+    if let Err(err) = firefly_meta::validate_id(author) {
+        bail!("invalid author ID: {err}")
+    }
+
+    // generate and check paths for keys
+    let sys_path = vfs_path.join("sys");
+    let priv_path = sys_path.join("priv").join(author);
+    let pub_path = sys_path.join("pub").join(author);
+    let mut found = true;
+    if priv_path.exists() {
+        fs::remove_file(priv_path)?;
+    } else {
+        println!("⚠️  private key not found");
+        found = false;
+    }
+    if pub_path.exists() {
+        fs::remove_file(pub_path)?;
+    } else {
+        println!("⚠️  public key not found");
+        found = false;
+    }
+    if found {
+        println!("✅ key pair is removed");
+    }
+    Ok(())
 }
