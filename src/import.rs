@@ -29,6 +29,7 @@ pub fn cmd_import(args: &ImportArgs) -> Result<()> {
     let rom_path = vfs_path.join("roms").join(meta.author_id).join(meta.app_id);
 
     init_vfs().context("init VFS")?;
+    _ = fs::remove_dir_all(&rom_path);
     create_dir_all(&rom_path).context("create ROM dir")?;
     archive.extract(&rom_path).context("extract archive")?;
     if let Some(rom_path) = rom_path.to_str() {

@@ -19,6 +19,7 @@ pub fn cmd_build(args: &BuildArgs) -> anyhow::Result<()> {
     init_vfs().context("init vfs")?;
     let config = Config::load(&args.root).context("load project config")?;
     let old_sizes = collect_sizes(&config.rom_path);
+    _ = fs::remove_dir_all(&config.rom_path);
     write_meta(&config).context("write metadata file")?;
     build_bin(&config, args).context("build binary")?;
     if let Some(files) = &config.files {
