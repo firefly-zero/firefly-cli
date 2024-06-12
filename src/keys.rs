@@ -1,7 +1,9 @@
 use crate::args::{KeyArgs, KeyExportArgs};
 use crate::vfs::{get_vfs_path, init_vfs};
 use anyhow::{bail, Context};
-use rsa::pkcs1::{EncodeRsaPrivateKey, EncodeRsaPublicKey};
+use rsa::pkcs1::{
+    DecodeRsaPrivateKey, DecodeRsaPublicKey, EncodeRsaPrivateKey, EncodeRsaPublicKey,
+};
 use rsa::{RsaPrivateKey, RsaPublicKey};
 use std::fs;
 use std::io::Write;
@@ -114,5 +116,75 @@ pub fn cmd_key_rm(args: &KeyArgs) -> anyhow::Result<()> {
     if found {
         println!("✅ key pair is removed");
     }
+    Ok(())
+}
+
+pub fn cmd_key_add(args: &KeyArgs) -> anyhow::Result<()> {
+    init_vfs().context("init vfs")?;
+    let key_path = &args.author_id;
+    let (author, raw_key) = if key_path.starts_with("https://") {
+        println!("⏳️ downloading the key from URL...");
+        download_key(key_path)?
+    } else if PathBuf::from(key_path).exists() {
+        println!("⏳️ reading the key from file...");
+        let key_path = PathBuf::from(key_path);
+        let author = key_path.file_stem().context("get file name")?;
+        let author = author.to_str().context("convert file name to UTF-8")?;
+        let author = author.to_string();
+        let key_raw = fs::read(&key_path)?;
+        (author, key_raw)
+    } else if firefly_meta::validate_id(key_path).is_ok() {
+        println!("⏳️ downloading the key from catalog...");
+        let url = format!("https://catalog.fireflyzero.com/keys/{key_path}.der");
+        download_key(&url)?
+    } else {
+        bail!("the key file not found")
+    };
+    save_raw_key(&author, &raw_key)?;
+    println!("✅ added new key");
+    Ok(())
+}
+
+/// Download the key from the given URL.
+fn download_key(url: &str) -> anyhow::Result<(String, Vec<u8>)> {
+    let file_name = url.split('/').last().unwrap();
+    let Some(author) = file_name.strip_suffix(".der") else {
+        bail!("the key file must have .der extension")
+    };
+    let resp = ureq::get(url).call()?;
+    let mut buf: Vec<u8> = Vec::new();
+    let status = resp.status();
+    if status >= 400 {
+        let text = resp.status_text();
+        bail!("cannot download the key: {status} ({text})",)
+    }
+    resp.into_reader().read_to_end(&mut buf)?;
+    Ok((author.to_string(), buf))
+}
+
+/// Save the given key into VFS.
+fn save_raw_key(author: &str, raw_key: &[u8]) -> anyhow::Result<()> {
+    if raw_key.len() < 200 {
+        bail!("the key is too small")
+    }
+    if raw_key.len() > 2048 {
+        bail!("the key is too big")
+    }
+    let vfs_path = get_vfs_path();
+    let sys_path = vfs_path.join("sys");
+    let pub_path = sys_path.join("pub").join(author);
+    if let Ok(key) = RsaPrivateKey::from_pkcs1_der(raw_key) {
+        let path = sys_path.join("priv").join(author);
+        fs::write(path, raw_key).context("write private key")?;
+
+        // generate and save public key
+        let key = key.to_public_key();
+        let pub_der = key.to_pkcs1_der().context("extract public key")?;
+        let pub_raw = pub_der.as_bytes();
+        fs::write(pub_path, pub_raw).context("write public part of the key")?;
+    } else {
+        RsaPublicKey::from_pkcs1_der(raw_key).context("parse public key")?;
+        fs::write(pub_path, raw_key).context("write public key")?;
+    };
     Ok(())
 }

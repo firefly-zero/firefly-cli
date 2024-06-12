@@ -22,7 +22,7 @@ use crate::vfs::cmd_vfs;
 use args::KeyCommands;
 use clap::Parser;
 use colored::Colorize;
-use keys::{cmd_key_new, cmd_key_priv, cmd_key_pub, cmd_key_rm};
+use keys::{cmd_key_add, cmd_key_new, cmd_key_priv, cmd_key_pub, cmd_key_rm};
 use std::fmt::Display;
 
 fn main() {
@@ -32,6 +32,7 @@ fn main() {
         Commands::Export(args) => cmd_export(args),
         Commands::Import(args) => cmd_import(args),
         Commands::Key(KeyCommands::New(args)) => cmd_key_new(args),
+        Commands::Key(KeyCommands::Add(args)) => cmd_key_add(args),
         Commands::Key(KeyCommands::Pub(args)) => cmd_key_pub(args),
         Commands::Key(KeyCommands::Priv(args)) => cmd_key_priv(args),
         Commands::Key(KeyCommands::Rm(args)) => cmd_key_rm(args),

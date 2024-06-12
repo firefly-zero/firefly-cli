@@ -5,7 +5,6 @@ use std::path::PathBuf;
 
 #[derive(Parser)]
 #[command(author, version, about, long_about = None)]
-#[command(propagate_version = true)]
 pub struct Cli {
     #[command(subcommand)]
     pub command: Commands,
@@ -28,21 +27,30 @@ pub enum Commands {
 
     /// Commands to manage signing keys.
     #[command(subcommand)]
+    #[clap(alias("keys"))]
     Key(KeyCommands),
 }
 
 #[derive(Subcommand, Debug)]
 pub enum KeyCommands {
     /// Generate a new key pair.
+    #[clap(alias("gen"), alias("generate"))]
     New(KeyArgs),
 
+    /// Add a new key from catalog, URL, or file.
+    #[clap(alias("import"))]
+    Add(KeyArgs),
+
     /// Export public key.
+    #[clap(alias("export"), alias("public"))]
     Pub(KeyExportArgs),
 
     /// Export private key.
+    #[clap(alias("private"))]
     Priv(KeyExportArgs),
 
     /// Remove the public and private key.
+    #[clap(alias("remove"))]
     Rm(KeyArgs),
 }
 
