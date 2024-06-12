@@ -1,10 +1,11 @@
-use crate::args::KeyArgs;
+use crate::args::{KeyArgs, KeyExportArgs};
 use crate::vfs::{get_vfs_path, init_vfs};
 use anyhow::{bail, Context};
 use rsa::pkcs1::{EncodeRsaPrivateKey, EncodeRsaPublicKey};
 use rsa::{RsaPrivateKey, RsaPublicKey};
 use std::fs;
 use std::io::Write;
+use std::path::PathBuf;
 
 pub fn cmd_key_new(args: &KeyArgs) -> anyhow::Result<()> {
     init_vfs().context("init vfs")?;
@@ -45,12 +46,44 @@ pub fn cmd_key_new(args: &KeyArgs) -> anyhow::Result<()> {
     Ok(())
 }
 
-pub fn cmd_key_pub(_args: &KeyArgs) -> anyhow::Result<()> {
-    todo!()
+pub fn cmd_key_pub(args: &KeyExportArgs) -> anyhow::Result<()> {
+    export_key(args, true)
 }
 
-pub fn cmd_key_priv(_args: &KeyArgs) -> anyhow::Result<()> {
-    todo!()
+pub fn cmd_key_priv(args: &KeyExportArgs) -> anyhow::Result<()> {
+    export_key(args, false)
+}
+
+pub fn export_key(args: &KeyExportArgs, public: bool) -> anyhow::Result<()> {
+    let author = &args.author_id;
+    let output_path = match &args.output {
+        Some(output) => output,
+        None => &PathBuf::new().join(format!("{author}.der")),
+    };
+    let key_type = if public { "public" } else { "private" };
+
+    // export the key file
+    {
+        let part = if public { "pub" } else { "priv" };
+        let vfs_path = get_vfs_path();
+        let key_path = vfs_path.join("sys").join(part).join(author);
+        if !key_path.exists() {
+            bail!("{key_type} key for {author} not found");
+        }
+        fs::copy(key_path, output_path).context("copy key")?;
+    }
+
+    // make the file read-only (if possible)
+    {
+        let meta = fs::metadata(output_path).context("get file metadata")?;
+        let mut perms = meta.permissions();
+        perms.set_readonly(true);
+        _ = fs::set_permissions(output_path, perms);
+    }
+
+    let output_path = output_path.to_str().unwrap_or("the output path");
+    println!("✅ the {key_type} key saved into {output_path}");
+    Ok(())
 }
 
 pub fn cmd_key_rm(args: &KeyArgs) -> anyhow::Result<()> {

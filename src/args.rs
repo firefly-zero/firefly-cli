@@ -36,11 +36,11 @@ pub enum KeyCommands {
     /// Generate a new key pair.
     New(KeyArgs),
 
-    /// Show public key.
-    Pub(KeyArgs),
+    /// Export public key.
+    Pub(KeyExportArgs),
 
-    /// Show private key.
-    Priv(KeyArgs),
+    /// Export private key.
+    Priv(KeyExportArgs),
 
     /// Remove the public and private key.
     Rm(KeyArgs),
@@ -49,6 +49,15 @@ pub enum KeyCommands {
 #[derive(Debug, Parser)]
 pub struct KeyArgs {
     pub author_id: String,
+}
+
+#[derive(Debug, Parser)]
+pub struct KeyExportArgs {
+    pub author_id: String,
+
+    /// Path to the exported key file.
+    #[arg(short, long, default_value = None)]
+    pub output: Option<PathBuf>,
 }
 
 #[derive(Debug, Parser)]
