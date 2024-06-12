@@ -6,6 +6,11 @@ use crate::langs::build_bin;
 use crate::vfs::init_vfs;
 use anyhow::{bail, Context};
 use data_encoding::HEXLOWER;
+use rsa::pkcs1::DecodeRsaPrivateKey;
+use rsa::pkcs1v15::SigningKey;
+use rsa::signature::hazmat::PrehashSigner;
+use rsa::signature::SignatureEncoding;
+use rsa::RsaPrivateKey;
 use sha2::{Digest, Sha256};
 use std::collections::HashMap;
 use std::ffi::OsString;
@@ -29,6 +34,7 @@ pub fn cmd_build(args: &BuildArgs) -> anyhow::Result<()> {
     }
     write_installed(&config).context("write app-name")?;
     write_hash(&config.rom_path).context("write hash")?;
+    write_sig(&config).context("sign ROM")?;
     let new_sizes = collect_sizes(&config.rom_path);
     print_sizes(&old_sizes, &new_sizes);
     Ok(())
@@ -152,7 +158,9 @@ fn write_hash(rom_path: &Path) -> anyhow::Result<()> {
         if file_name == HASH || file_name == SIG {
             continue;
         }
+        hasher.update("\x00");
         hasher.update(file_name.as_bytes());
+        hasher.update("\x00");
         let mut file = fs::File::open(path).context("open file")?;
         std::io::copy(&mut file, &mut hasher).context("read file")?;
     }
@@ -163,6 +171,35 @@ fn write_hash(rom_path: &Path) -> anyhow::Result<()> {
     let mut hash_file = fs::File::create(hash_path).context("create file")?;
     hash_file.write_all(hash).context("write file")?;
 
+    Ok(())
+}
+
+/// Sign the ROM hash.
+fn write_sig(config: &Config) -> anyhow::Result<()> {
+    let sys_path = config.vfs_path.join("sys");
+    let author_id = &config.author_id;
+    let pub_path = sys_path.join("pub").join(author_id);
+    if !pub_path.exists() {
+        println!("⚠️  no key found for {author_id}, cannot sign ROM");
+        return Ok(());
+    }
+    let priv_path = sys_path.join("priv").join(author_id);
+    if !priv_path.exists() {
+        println!("⚠️  there is only public key for {author_id}, cannot sign ROM");
+        return Ok(());
+    }
+
+    let key_bytes = fs::read(priv_path).context("read private key")?;
+    let private_key = RsaPrivateKey::from_pkcs1_der(&key_bytes).context("parse key")?;
+    let signing_key = SigningKey::<Sha256>::new(private_key);
+
+    let hash_path = config.rom_path.join(HASH);
+    let hash_bytes = fs::read(hash_path).context("read hash")?;
+
+    let sig = signing_key.sign_prehash(&hash_bytes).context("sign hash")?;
+    let sig_bytes = sig.to_bytes();
+    let sig_path = config.rom_path.join(SIG);
+    fs::write(sig_path, sig_bytes).context("write signature to file")?;
     Ok(())
 }
 
