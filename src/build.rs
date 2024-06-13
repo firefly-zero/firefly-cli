@@ -38,10 +38,12 @@ pub fn cmd_build(args: &BuildArgs) -> anyhow::Result<()> {
     write_hash(&config.rom_path).context("write hash")?;
     write_sig(&config).context("sign ROM")?;
     let new_sizes = collect_sizes(&config.rom_path);
+    check_sizes(&new_sizes)?;
     print_sizes(&old_sizes, &new_sizes);
     Ok(())
 }
 
+/// Serialize and write the ROM meta information.
 fn write_meta(config: &Config) -> anyhow::Result<()> {
     use firefly_meta::{validate_id, validate_name, Meta};
     if let Err(err) = validate_id(&config.app_id) {
@@ -90,6 +92,7 @@ fn write_installed(config: &Config) -> anyhow::Result<()> {
     Ok(())
 }
 
+/// Get a file from config, convert it if needed, and write into the ROM.
 fn convert_file(name: &str, config: &Config, file_config: &FileConfig) -> anyhow::Result<()> {
     let output_path = config.rom_path.join(name);
     // The input path is defined in the config
@@ -214,6 +217,23 @@ fn collect_sizes(root: &Path) -> HashMap<OsString, u64> {
     sizes
 }
 
+/// Check that there are now big or empty files in the ROM.
+fn check_sizes(sizes: &HashMap<OsString, u64>) -> anyhow::Result<()> {
+    const MB: u64 = 1024 * 1024;
+    for (name, size) in sizes {
+        if *size == 0 {
+            let name = name.to_str().unwrap_or("___");
+            bail!("the file {name} is empty");
+        }
+        if *size > 10 * MB {
+            let name = name.to_str().unwrap_or("___");
+            bail!("the file {name} is too big");
+        }
+    }
+    Ok(())
+}
+
+/// Show the table of file sizes and how they changed from the previous build.
 fn print_sizes(old_sizes: &HashMap<OsString, u64>, new_sizes: &HashMap<OsString, u64>) {
     let mut pairs: Vec<_> = new_sizes.iter().collect();
     pairs.sort();
