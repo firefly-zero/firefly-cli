@@ -6,6 +6,7 @@ use crate::images::convert_image;
 use crate::langs::build_bin;
 use crate::vfs::init_vfs;
 use anyhow::{bail, Context};
+use colored::Colorize;
 use data_encoding::HEXLOWER;
 use rsa::pkcs1::DecodeRsaPrivateKey;
 use rsa::pkcs1v15::SigningKey;
@@ -144,6 +145,7 @@ fn download_file(input_path: &Path, file_config: &FileConfig) -> anyhow::Result<
     Ok(())
 }
 
+/// Copy the public key for the author into the ROM.
 fn write_key(config: &Config) -> anyhow::Result<()> {
     let sys_path = config.vfs_path.join("sys");
     let author_id = &config.author_id;
@@ -158,6 +160,7 @@ fn write_key(config: &Config) -> anyhow::Result<()> {
     Ok(())
 }
 
+/// Generate SHA256 hash for all the ROM files.
 fn write_hash(rom_path: &Path) -> anyhow::Result<()> {
     let hash = hash_dir(rom_path)?;
     let hash_path = rom_path.join(HASH);
@@ -195,6 +198,7 @@ fn write_sig(config: &Config) -> anyhow::Result<()> {
     Ok(())
 }
 
+/// Get size in bytes for every file in the ROM directory.
 fn collect_sizes(root: &Path) -> HashMap<OsString, u64> {
     let mut sizes = HashMap::new();
     let Ok(entries) = fs::read_dir(root) else {
@@ -218,14 +222,34 @@ fn print_sizes(old_sizes: &HashMap<OsString, u64>, new_sizes: &HashMap<OsString,
         let Some(name) = name.to_str() else {
             continue;
         };
-        // If the size changed, show the diff
+
+        // If the size changed, show the diff size
         let suffix = if old_size == new_size {
             String::new()
         } else {
             #[allow(clippy::cast_possible_wrap)]
             let diff = *new_size as i64 - *old_size as i64;
-            format!(" ({diff:+})")
+            let suffix = format!(" ({diff:+})");
+            if *old_size == 0 {
+                suffix
+            } else if diff > 0 {
+                format!("{}", suffix.red())
+            } else {
+                format!("{}", suffix.green())
+            }
         };
-        println!("{name:16} {new_size:>7}{suffix}");
+
+        // convert big file size into Kb or Mb.
+        let new_size = if *new_size > 1024 * 1024 {
+            let new_size = new_size / 1024 / 1024;
+            format!("{new_size:>7} {}", "Mb".purple())
+        } else if *new_size > 1024 {
+            let new_size = new_size / 1024;
+            format!("{new_size:>7} {}", "Kb".blue())
+        } else {
+            format!("{new_size:>10}")
+        };
+
+        println!("{name:16} {new_size}{suffix}");
     }
 }
