@@ -5,6 +5,7 @@
 mod args;
 mod build;
 mod config;
+mod crypto;
 mod export;
 mod file_names;
 mod images;

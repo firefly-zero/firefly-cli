@@ -1,9 +1,16 @@
 use crate::args::ImportArgs;
-use crate::file_names::META;
+use crate::crypto::hash_dir;
+use crate::file_names::{HASH, KEY, META, SIG};
 use crate::vfs::{get_vfs_path, init_vfs};
 use anyhow::{bail, Context, Result};
+use data_encoding::HEXLOWER;
 use firefly_meta::Meta;
+use rsa::pkcs1::DecodeRsaPublicKey;
+use rsa::pkcs1v15::{Signature, VerifyingKey};
+use rsa::signature::hazmat::PrehashVerifier;
+use rsa::RsaPublicKey;
 use serde::Deserialize;
+use sha2::Sha256;
 use std::env::temp_dir;
 use std::fs::{self, create_dir_all, File};
 use std::io::Read;
@@ -32,6 +39,9 @@ pub fn cmd_import(args: &ImportArgs) -> Result<()> {
     _ = fs::remove_dir_all(&rom_path);
     create_dir_all(&rom_path).context("create ROM dir")?;
     archive.extract(&rom_path).context("extract archive")?;
+    if let Err(err) = verify(&rom_path) {
+        println!("⚠️  verification failed: {err}");
+    }
     if let Some(rom_path) = rom_path.to_str() {
         println!("✅ installed: {rom_path}");
     }
@@ -96,5 +106,31 @@ fn write_installed(meta: &Meta, vfs_path: &Path) -> anyhow::Result<()> {
         let output_path = vfs_path.join("sys").join("launcher");
         fs::write(output_path, &encoded).context("write launcher file")?;
     }
+    Ok(())
+}
+
+/// Verify SHA256 hash, public key, and signature.
+fn verify(rom_path: &Path) -> anyhow::Result<()> {
+    let hash_path = rom_path.join(HASH);
+    let hash_expected: &[u8] = &fs::read(hash_path).context("read hash file")?;
+    let hash_actual: &[u8] = &hash_dir(rom_path).context("calculate hash")?;
+    if hash_actual != hash_expected {
+        let exp = HEXLOWER.encode(hash_expected);
+        let act = HEXLOWER.encode(hash_actual);
+        bail!("invalid hash:\n  expected: {exp}\n  got:      {act}");
+    }
+
+    let key_path = rom_path.join(KEY);
+    let key_raw = fs::read(key_path).context("read key from ROM")?;
+    let public_key = RsaPublicKey::from_pkcs1_der(&key_raw).context("decode key")?;
+    let verifying_key = VerifyingKey::<Sha256>::new(public_key);
+
+    let sig_path = rom_path.join(SIG);
+    let sig_raw: &[u8] = &fs::read(sig_path).context("read signature")?;
+    let sig = Signature::try_from(sig_raw).context("bad signature")?;
+
+    verifying_key
+        .verify_prehash(hash_actual, &sig)
+        .context("verify signature")?;
     Ok(())
 }
