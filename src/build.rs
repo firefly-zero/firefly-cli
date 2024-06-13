@@ -33,6 +33,7 @@ pub fn cmd_build(args: &BuildArgs) -> anyhow::Result<()> {
         }
     }
     write_installed(&config).context("write app-name")?;
+    write_key(&config).context("write key")?;
     write_hash(&config.rom_path).context("write hash")?;
     write_sig(&config).context("sign ROM")?;
     let new_sizes = collect_sizes(&config.rom_path);
@@ -143,6 +144,20 @@ fn download_file(input_path: &Path, file_config: &FileConfig) -> anyhow::Result<
     Ok(())
 }
 
+fn write_key(config: &Config) -> anyhow::Result<()> {
+    let sys_path = config.vfs_path.join("sys");
+    let author_id = &config.author_id;
+    let pub_path = sys_path.join("pub").join(author_id);
+    if !pub_path.exists() {
+        // Don't show error here just yet.
+        // If the key is missed, the error will be reported later by write_sig.
+        return Ok(());
+    }
+    let key_path = config.rom_path.join(KEY);
+    fs::copy(pub_path, key_path).context("copy public key")?;
+    Ok(())
+}
+
 fn write_hash(rom_path: &Path) -> anyhow::Result<()> {
     let hash = hash_dir(rom_path)?;
     let hash_path = rom_path.join(HASH);
@@ -176,9 +191,6 @@ fn write_sig(config: &Config) -> anyhow::Result<()> {
     let sig_bytes = sig.to_bytes();
     let sig_path = config.rom_path.join(SIG);
     fs::write(sig_path, sig_bytes).context("write signature to file")?;
-
-    let key_path = config.rom_path.join(KEY);
-    fs::copy(pub_path, key_path).context("copy public key")?;
 
     Ok(())
 }

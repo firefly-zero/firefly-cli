@@ -1,4 +1,4 @@
-use crate::file_names::{HASH, KEY, SIG};
+use crate::file_names::{HASH, SIG};
 use anyhow::Context;
 use sha2::digest::consts::U32;
 use sha2::digest::generic_array::GenericArray;
@@ -18,7 +18,7 @@ pub fn hash_dir(rom_path: &Path) -> anyhow::Result<GenericArray<u8, U32>> {
     file_paths.sort();
     for path in file_paths {
         let file_name = path.file_name().context("get file name")?;
-        if file_name == HASH || file_name == SIG || file_name == KEY {
+        if file_name == HASH || file_name == SIG {
             continue;
         }
         hasher.update("\x00");
