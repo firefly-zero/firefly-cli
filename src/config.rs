@@ -91,4 +91,7 @@ pub enum Lang {
     Rust,
     Zig,
     TS,
+    C,
+    Cpp,
+    Python,
 }
