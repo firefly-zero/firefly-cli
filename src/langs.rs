@@ -19,6 +19,9 @@ pub fn build_bin(config: &Config, args: &BuildArgs) -> anyhow::Result<()> {
         Lang::Rust => build_rust(config),
         Lang::Zig => build_zig(config),
         Lang::TS => build_ts(config),
+        Lang::C => build_c(config),
+        Lang::Cpp => build_cpp(config),
+        Lang::Python => build_python(config),
     }?;
     let bin_path = config.rom_path.join(BIN);
     if !args.no_strip {
@@ -49,6 +52,21 @@ fn detect_lang(root: &Path) -> anyhow::Result<Lang> {
     }
     if root.join("package.json").exists() {
         return Ok(Lang::TS);
+    }
+    if root.join("pyproject.toml").exists() {
+        return Ok(Lang::Python);
+    }
+    if root.join("main.c").exists() {
+        return Ok(Lang::C);
+    }
+    if root.join("main.cpp").exists() {
+        return Ok(Lang::Cpp);
+    }
+    if root.join("src").join("main.c").exists() {
+        return Ok(Lang::C);
+    }
+    if root.join("src").join("main.cpp").exists() {
+        return Ok(Lang::Cpp);
     }
     bail!("failed to detect the programming language");
 }
@@ -91,6 +109,7 @@ fn find_tinygo_target(config: &Config) -> anyhow::Result<PathBuf> {
     Ok(target_path)
 }
 
+/// Build Rust project.
 fn build_rust(config: &Config) -> anyhow::Result<()> {
     if config.root_path.join("Cargo.toml").exists() {
         build_rust_inner(config, false)
@@ -178,12 +197,64 @@ fn find_rust_target_dir(root: &Path) -> anyhow::Result<PathBuf> {
     bail!("cannot find Rust's \"target\" output directory")
 }
 
+/// Build C project using Zig compiler.
+fn build_c(config: &Config) -> anyhow::Result<()> {
+    build_cpp_inner(config, "main.c")
+}
+
+/// Build C++ project using Zig compiler.
+fn build_cpp(config: &Config) -> anyhow::Result<()> {
+    build_cpp_inner(config, "main.cpp")
+}
+
+fn build_cpp_inner(config: &Config, fname: &str) -> anyhow::Result<()> {
+    let mut in_path = &config.root_path.join(fname);
+    let in_path_src = &config.root_path.join("src").join(fname);
+    if !in_path.exists() {
+        in_path = in_path_src;
+        if !in_path.exists() {
+            bail!("file {fname} not found");
+        };
+    }
+    let in_path = path_to_utf8(in_path)?;
+    let mut cmd_args = vec![
+        "build-lib",
+        "-rdynamic",
+        "-dynamic",
+        "-target",
+        "wasm32-freestanding",
+        "-OReleaseSmall",
+        in_path,
+    ];
+    if let Some(additional_args) = &config.compile_args {
+        for arg in additional_args {
+            cmd_args.push(arg.as_str());
+        }
+    }
+    let output = Command::new("zig")
+        .args(cmd_args)
+        .current_dir(&config.root_path)
+        .output()
+        .context("run zig build")?;
+    check_output(&output)?;
+
+    let from_path = config.root_path.join("main.wasm");
+    let out_path = config.rom_path.join(BIN);
+    std::fs::copy(&from_path, out_path).context("copy wasm binary")?;
+    std::fs::remove_file(from_path).context("remove wasm file")?;
+    Ok(())
+}
+
 fn build_zig(_config: &Config) -> anyhow::Result<()> {
-    todo!()
+    todo!("Zig is not supported yet")
 }
 
 fn build_ts(_config: &Config) -> anyhow::Result<()> {
-    todo!()
+    todo!("TypeScript is not supported yet")
+}
+
+fn build_python(_config: &Config) -> anyhow::Result<()> {
+    todo!("Python is not supported yet")
 }
 
 /// Convert a file system path to UTF-8 if possible.
