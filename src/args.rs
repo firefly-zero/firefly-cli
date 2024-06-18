@@ -5,7 +5,6 @@ use std::path::PathBuf;
 
 #[derive(Parser)]
 #[command(author, version, about, long_about = None)]
-#[command(propagate_version = true)]
 pub struct Cli {
     #[command(subcommand)]
     pub command: Commands,
@@ -20,10 +19,53 @@ pub enum Commands {
     Export(ExportArgs),
 
     /// Install locally an app from a zip archive.
+    #[clap(alias("install"))]
     Import(ImportArgs),
 
     /// Show the full path to the virtual filesystem.
     Vfs,
+
+    /// Commands to manage signing keys.
+    #[command(subcommand)]
+    #[clap(alias("keys"))]
+    Key(KeyCommands),
+}
+
+#[derive(Subcommand, Debug)]
+pub enum KeyCommands {
+    /// Generate a new key pair.
+    #[clap(alias("gen"), alias("generate"))]
+    New(KeyArgs),
+
+    /// Add a new key from catalog, URL, or file.
+    #[clap(alias("import"))]
+    Add(KeyArgs),
+
+    /// Export public key.
+    #[clap(alias("export"), alias("public"))]
+    Pub(KeyExportArgs),
+
+    /// Export private key.
+    #[clap(alias("private"))]
+    Priv(KeyExportArgs),
+
+    /// Remove the public and private key.
+    #[clap(alias("remove"))]
+    Rm(KeyArgs),
+}
+
+#[derive(Debug, Parser)]
+pub struct KeyArgs {
+    pub author_id: String,
+}
+
+#[derive(Debug, Parser)]
+pub struct KeyExportArgs {
+    pub author_id: String,
+
+    /// Path to the exported key file.
+    #[arg(short, long, default_value = None)]
+    pub output: Option<PathBuf>,
 }
 
 #[derive(Debug, Parser)]

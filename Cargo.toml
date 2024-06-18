@@ -29,10 +29,15 @@ data-encoding = "2.6.0"
 directories = "5.0.1"
 # Serialize app config into meta file in the ROM
 firefly-meta = "0.1.2"
-# Parse PNG inages
+# Parse PNG images
 image = { version = "0.25.1", default-features = false, features = ["png"] }
 # Random device name generation
 rand = "0.8.5"
+# Signatures
+rsa = { version = "0.9.6", default-features = false, features = [
+    "std",
+    "sha2",
+] }
 # Deserialize firefly.toml (required by `toml`)
 serde = { version = "1.0.197", features = ["serde_derive", "derive"] }
 # Deserialize JSON API responses from the firefly catalog.

@@ -5,9 +5,12 @@
 mod args;
 mod build;
 mod config;
+mod crypto;
 mod export;
+mod file_names;
 mod images;
 mod import;
+mod keys;
 mod langs;
 mod vfs;
 mod wasm;
@@ -17,8 +20,10 @@ use crate::build::cmd_build;
 use crate::export::cmd_export;
 use crate::import::cmd_import;
 use crate::vfs::cmd_vfs;
+use args::KeyCommands;
 use clap::Parser;
 use colored::Colorize;
+use keys::{cmd_key_add, cmd_key_new, cmd_key_priv, cmd_key_pub, cmd_key_rm};
 use std::fmt::Display;
 
 fn main() {
@@ -27,6 +32,11 @@ fn main() {
         Commands::Build(args) => cmd_build(args),
         Commands::Export(args) => cmd_export(args),
         Commands::Import(args) => cmd_import(args),
+        Commands::Key(KeyCommands::New(args)) => cmd_key_new(args),
+        Commands::Key(KeyCommands::Add(args)) => cmd_key_add(args),
+        Commands::Key(KeyCommands::Pub(args)) => cmd_key_pub(args),
+        Commands::Key(KeyCommands::Priv(args)) => cmd_key_priv(args),
+        Commands::Key(KeyCommands::Rm(args)) => cmd_key_rm(args),
         Commands::Vfs => cmd_vfs(),
     };
     if let Err(err) = res {

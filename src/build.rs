@@ -1,14 +1,23 @@
 use crate::args::BuildArgs;
 use crate::config::{Config, FileConfig};
+use crate::crypto::hash_dir;
+use crate::file_names::{HASH, KEY, META, SIG};
 use crate::images::convert_image;
 use crate::langs::build_bin;
 use crate::vfs::init_vfs;
 use anyhow::{bail, Context};
+use colored::Colorize;
 use data_encoding::HEXLOWER;
+use rsa::pkcs1::DecodeRsaPrivateKey;
+use rsa::pkcs1v15::SigningKey;
+use rsa::signature::hazmat::PrehashSigner;
+use rsa::signature::SignatureEncoding;
+use rsa::RsaPrivateKey;
 use sha2::{Digest, Sha256};
 use std::collections::HashMap;
 use std::ffi::OsString;
 use std::fs;
+use std::io::Write;
 use std::os::unix::fs::MetadataExt;
 use std::path::Path;
 
@@ -16,6 +25,7 @@ pub fn cmd_build(args: &BuildArgs) -> anyhow::Result<()> {
     init_vfs().context("init vfs")?;
     let config = Config::load(&args.root).context("load project config")?;
     let old_sizes = collect_sizes(&config.rom_path);
+    _ = fs::remove_dir_all(&config.rom_path);
     write_meta(&config).context("write metadata file")?;
     build_bin(&config, args).context("build binary")?;
     if let Some(files) = &config.files {
@@ -23,12 +33,17 @@ pub fn cmd_build(args: &BuildArgs) -> anyhow::Result<()> {
             convert_file(name, &config, file_config).context("convert file")?;
         }
     }
-    write_installed(&config)?;
+    write_installed(&config).context("write app-name")?;
+    write_key(&config).context("write key")?;
+    write_hash(&config.rom_path).context("write hash")?;
+    write_sig(&config).context("sign ROM")?;
     let new_sizes = collect_sizes(&config.rom_path);
+    check_sizes(&new_sizes)?;
     print_sizes(&old_sizes, &new_sizes);
     Ok(())
 }
 
+/// Serialize and write the ROM meta information.
 fn write_meta(config: &Config) -> anyhow::Result<()> {
     use firefly_meta::{validate_id, validate_name, Meta};
     if let Err(err) = validate_id(&config.app_id) {
@@ -55,7 +70,7 @@ fn write_meta(config: &Config) -> anyhow::Result<()> {
     let mut buf = vec![0; meta.size()];
     let encoded = meta.encode(&mut buf).context("serialize")?;
     fs::create_dir_all(&config.rom_path)?;
-    let output_path = config.rom_path.join("meta");
+    let output_path = config.rom_path.join(META);
     fs::write(output_path, encoded).context("write file")?;
     Ok(())
 }
@@ -77,6 +92,7 @@ fn write_installed(config: &Config) -> anyhow::Result<()> {
     Ok(())
 }
 
+/// Get a file from config, convert it if needed, and write into the ROM.
 fn convert_file(name: &str, config: &Config, file_config: &FileConfig) -> anyhow::Result<()> {
     let output_path = config.rom_path.join(name);
     // The input path is defined in the config
@@ -132,6 +148,60 @@ fn download_file(input_path: &Path, file_config: &FileConfig) -> anyhow::Result<
     Ok(())
 }
 
+/// Copy the public key for the author into the ROM.
+fn write_key(config: &Config) -> anyhow::Result<()> {
+    let sys_path = config.vfs_path.join("sys");
+    let author_id = &config.author_id;
+    let pub_path = sys_path.join("pub").join(author_id);
+    if !pub_path.exists() {
+        // Don't show error here just yet.
+        // If the key is missed, the error will be reported later by write_sig.
+        return Ok(());
+    }
+    let key_path = config.rom_path.join(KEY);
+    fs::copy(pub_path, key_path).context("copy public key")?;
+    Ok(())
+}
+
+/// Generate SHA256 hash for all the ROM files.
+fn write_hash(rom_path: &Path) -> anyhow::Result<()> {
+    let hash = hash_dir(rom_path)?;
+    let hash_path = rom_path.join(HASH);
+    let mut hash_file = fs::File::create(hash_path).context("create file")?;
+    hash_file.write_all(&hash).context("write file")
+}
+
+/// Sign the ROM hash.
+fn write_sig(config: &Config) -> anyhow::Result<()> {
+    let sys_path = config.vfs_path.join("sys");
+    let author_id = &config.author_id;
+    let pub_path = sys_path.join("pub").join(author_id);
+    if !pub_path.exists() {
+        println!("⚠️  no key found for {author_id}, cannot sign ROM");
+        return Ok(());
+    }
+    let priv_path = sys_path.join("priv").join(author_id);
+    if !priv_path.exists() {
+        println!("⚠️  there is only public key for {author_id}, cannot sign ROM");
+        return Ok(());
+    }
+
+    let key_bytes = fs::read(priv_path).context("read private key")?;
+    let private_key = RsaPrivateKey::from_pkcs1_der(&key_bytes).context("parse key")?;
+    let signing_key = SigningKey::<Sha256>::new(private_key);
+
+    let hash_path = config.rom_path.join(HASH);
+    let hash_bytes = fs::read(hash_path).context("read hash")?;
+
+    let sig = signing_key.sign_prehash(&hash_bytes).context("sign hash")?;
+    let sig_bytes = sig.to_bytes();
+    let sig_path = config.rom_path.join(SIG);
+    fs::write(sig_path, sig_bytes).context("write signature to file")?;
+
+    Ok(())
+}
+
+/// Get size in bytes for every file in the ROM directory.
 fn collect_sizes(root: &Path) -> HashMap<OsString, u64> {
     let mut sizes = HashMap::new();
     let Ok(entries) = fs::read_dir(root) else {
@@ -147,6 +217,23 @@ fn collect_sizes(root: &Path) -> HashMap<OsString, u64> {
     sizes
 }
 
+/// Check that there are now big or empty files in the ROM.
+fn check_sizes(sizes: &HashMap<OsString, u64>) -> anyhow::Result<()> {
+    const MB: u64 = 1024 * 1024;
+    for (name, size) in sizes {
+        if *size == 0 {
+            let name = name.to_str().unwrap_or("___");
+            bail!("the file {name} is empty");
+        }
+        if *size > 10 * MB {
+            let name = name.to_str().unwrap_or("___");
+            bail!("the file {name} is too big");
+        }
+    }
+    Ok(())
+}
+
+/// Show the table of file sizes and how they changed from the previous build.
 fn print_sizes(old_sizes: &HashMap<OsString, u64>, new_sizes: &HashMap<OsString, u64>) {
     let mut pairs: Vec<_> = new_sizes.iter().collect();
     pairs.sort();
@@ -155,14 +242,34 @@ fn print_sizes(old_sizes: &HashMap<OsString, u64>, new_sizes: &HashMap<OsString,
         let Some(name) = name.to_str() else {
             continue;
         };
-        // If the size changed, show the diff
+
+        // If the size changed, show the diff size
         let suffix = if old_size == new_size {
             String::new()
         } else {
             #[allow(clippy::cast_possible_wrap)]
             let diff = *new_size as i64 - *old_size as i64;
-            format!(" ({diff:+})")
+            let suffix = format!(" ({diff:+})");
+            if *old_size == 0 {
+                suffix
+            } else if diff > 0 {
+                format!("{}", suffix.red())
+            } else {
+                format!("{}", suffix.green())
+            }
         };
-        println!("{name:16} {new_size:>7}{suffix}");
+
+        // convert big file size into Kb or Mb.
+        let new_size = if *new_size > 1024 * 1024 {
+            let new_size = new_size / 1024 / 1024;
+            format!("{new_size:>7} {}", "Mb".purple())
+        } else if *new_size > 1024 {
+            let new_size = new_size / 1024;
+            format!("{new_size:>7} {}", "Kb".blue())
+        } else {
+            format!("{new_size:>10}")
+        };
+
+        println!("{name:16} {new_size}{suffix}");
     }
 }

@@ -32,7 +32,8 @@ pub fn init_vfs() -> anyhow::Result<()> {
 
 pub fn init_vfs_at(path: &Path) -> anyhow::Result<()> {
     fs::create_dir_all(path.join("roms")).context("create roms directory")?;
-    fs::create_dir_all(path.join("sys")).context("create sys directory")?;
+    fs::create_dir_all(path.join("sys").join("pub")).context("create sys/pub directory")?;
+    fs::create_dir_all(path.join("sys").join("priv")).context("create sys/priv directory")?;
     fs::create_dir_all(path.join("data")).context("create data directory")?;
 
     // Generate random device name if the name file doesn't exist yet.
@@ -104,7 +105,9 @@ mod tests {
         assert!(path.join("data").metadata().unwrap().is_dir());
         assert_eq!(path.join("roms").read_dir().unwrap().count(), 0);
         assert_eq!(path.join("data").read_dir().unwrap().count(), 0);
-        assert_eq!(path.join("sys").read_dir().unwrap().count(), 1);
+        assert_eq!(path.join("sys").read_dir().unwrap().count(), 3);
+        assert_eq!(path.join("sys").join("priv").read_dir().unwrap().count(), 0);
+        assert_eq!(path.join("sys").join("pub").read_dir().unwrap().count(), 0);
         let name_path = path.join("sys").join("name");
         let name = std::fs::read_to_string(name_path).unwrap();
         assert!(name.contains('-'));

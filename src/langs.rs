@@ -1,5 +1,6 @@
 use crate::args::BuildArgs;
 use crate::config::{Config, Lang};
+use crate::file_names::BIN;
 use crate::wasm::{optimize, strip_custom};
 use anyhow::{bail, Context};
 use std::env::temp_dir;
@@ -19,7 +20,7 @@ pub fn build_bin(config: &Config, args: &BuildArgs) -> anyhow::Result<()> {
         Lang::Zig => build_zig(config),
         Lang::TS => build_ts(config),
     }?;
-    let bin_path = config.rom_path.join("bin");
+    let bin_path = config.rom_path.join(BIN);
     if !args.no_strip {
         strip_custom(&bin_path)?;
     }
@@ -58,7 +59,7 @@ fn detect_lang(root: &Path) -> anyhow::Result<Lang> {
 fn build_go(config: &Config) -> anyhow::Result<()> {
     let target_path = find_tinygo_target(config)?;
     let target_path = path_to_utf8(&target_path)?;
-    let out_path = config.rom_path.join("bin");
+    let out_path = config.rom_path.join(BIN);
     let out_path = path_to_utf8(&out_path)?;
     let in_path = path_to_utf8(&config.root_path)?;
     let mut cmd_args = vec!["build", "-target", target_path, "-o", out_path, "."];
@@ -129,7 +130,7 @@ fn build_rust_inner(config: &Config, example: bool) -> anyhow::Result<()> {
         .context("run cargo build")?;
     check_output(&output)?;
     let cargo_out_path = find_rust_result(&config.root_path)?;
-    let out_path = config.rom_path.join("bin");
+    let out_path = config.rom_path.join(BIN);
     std::fs::copy(cargo_out_path, out_path)?;
     Ok(())
 }
