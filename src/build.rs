@@ -94,6 +94,9 @@ fn write_installed(config: &Config) -> anyhow::Result<()> {
 
 /// Get a file from config, convert it if needed, and write into the ROM.
 fn convert_file(name: &str, config: &Config, file_config: &FileConfig) -> anyhow::Result<()> {
+    if name == SIG || name == META || name == HASH || name == KEY {
+        bail!("ROM file name \"{name}\" is reserved");
+    }
     let output_path = config.rom_path.join(name);
     // The input path is defined in the config
     // and should be resolved relative to the project root.

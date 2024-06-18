@@ -10,6 +10,12 @@ use std::path::{Path, PathBuf};
 use std::process::{Command, Output};
 
 pub fn build_bin(config: &Config, args: &BuildArgs) -> anyhow::Result<()> {
+    // Don't build the binary if it will be copied directly in "files".
+    if let Some(files) = &config.files {
+        if files.contains_key(BIN) {
+            return Ok(());
+        }
+    }
     let lang: Lang = match &config.lang {
         Some(lang) => lang.clone(),
         None => detect_lang(&config.root_path)?,
