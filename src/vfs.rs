@@ -30,7 +30,7 @@ pub fn init_vfs() -> anyhow::Result<()> {
     init_vfs_at(&path)
 }
 
-pub fn init_vfs_at(path: &Path) -> anyhow::Result<()> {
+fn init_vfs_at(path: &Path) -> anyhow::Result<()> {
     fs::create_dir_all(path.join("roms")).context("create roms directory")?;
     fs::create_dir_all(path.join("sys").join("pub")).context("create sys/pub directory")?;
     fs::create_dir_all(path.join("sys").join("priv")).context("create sys/priv directory")?;
