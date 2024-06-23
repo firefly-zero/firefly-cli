@@ -84,7 +84,11 @@ fn fetch_archive(path: &str) -> Result<PathBuf> {
 
 fn read_meta_raw(archive: &mut ZipArchive<File>) -> Result<Vec<u8>> {
     let mut meta_raw = Vec::new();
-    let mut meta_file = archive.by_name(META).context("open meta")?;
+    let mut meta_file = if archive.index_for_name(META).is_some() {
+        archive.by_name(META).context("open meta")?
+    } else {
+        archive.by_name("meta").context("open meta")?
+    };
     meta_file.read_to_end(&mut meta_raw).context("read meta")?;
     if meta_raw.is_empty() {
         bail!("meta is empty");
