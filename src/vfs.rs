@@ -15,12 +15,19 @@ pub fn cmd_vfs() -> anyhow::Result<()> {
 }
 
 pub fn get_vfs_path() -> PathBuf {
+    let current_dir = std::env::current_dir().ok();
+    if let Some(current_dir) = &current_dir {
+        let path = current_dir.join(".firefly");
+        if path.is_dir() {
+            return path;
+        }
+    }
     match ProjectDirs::from("com", "firefly", "firefly") {
         Some(dirs) => dirs.data_dir().to_owned(),
-        None => match std::env::current_dir() {
+        None => match current_dir {
             // Make the path absolute if possible
-            Ok(current_dir) => current_dir.join(".firefly"),
-            Err(_) => PathBuf::from(".firefly"),
+            Some(current_dir) => current_dir.join(".firefly"),
+            None => PathBuf::from(".firefly"),
         },
     }
 }
@@ -92,6 +99,20 @@ fn leetify(s: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_get_vfs_path() {
+        let root = std::env::temp_dir().join("test_get_vfs_path");
+        let expected = root.join(".firefly");
+        std::env::set_current_dir(&root).unwrap();
+
+        let actual = get_vfs_path();
+        assert!(actual != expected);
+
+        std::fs::create_dir_all(&expected).unwrap();
+        let actual = get_vfs_path();
+        assert_eq!(actual, expected);
+    }
 
     #[test]
     fn test_init_vfs_at() {
