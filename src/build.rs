@@ -18,7 +18,6 @@ use std::collections::HashMap;
 use std::ffi::OsString;
 use std::fs;
 use std::io::Write;
-use std::os::unix::fs::MetadataExt;
 use std::path::Path;
 
 pub fn cmd_build(args: &BuildArgs) -> anyhow::Result<()> {
@@ -215,7 +214,7 @@ fn collect_sizes(root: &Path) -> HashMap<OsString, u64> {
             continue;
         };
         let Ok(meta) = entry.metadata() else { continue };
-        sizes.insert(entry.file_name(), meta.size());
+        sizes.insert(entry.file_name(), meta.len());
     }
     sizes
 }
