@@ -4,10 +4,6 @@ version: '3'
 tasks:
   release:
     desc: build and publish release
-    vars:
-      TRIPLE:
-        sh: "rustc -vV | sed -n 's|host: ||p'"
-      BIN_NAME: firefly_cli-{{.TRIPLE}}.bin
     cmds:
       - test {{.CLI_ARGS}}
       - grep -F '"{{.CLI_ARGS}}"' Cargo.toml
@@ -17,9 +13,6 @@ tasks:
       - git push
       - git push --tags
       - gh release create --generate-notes {{.CLI_ARGS}}
-      - cp target/release/firefly_cli {{.BIN_NAME}}
-      - defer: rm {{.BIN_NAME}}
-      - gh release upload {{.CLI_ARGS}} {{.BIN_NAME}}
   format:
     desc: run code formatters
     cmds:
