@@ -81,6 +81,7 @@ fn detect_lang(root: &Path) -> anyhow::Result<Lang> {
 ///
 /// [TinyGo]: https://tinygo.org/
 fn build_go(config: &Config) -> anyhow::Result<()> {
+    check_installed("Go", "tinygo", "version")?;
     let target_path = find_tinygo_target(config)?;
     let target_path = path_to_utf8(&target_path)?;
     let out_path = config.rom_path.join(BIN);
@@ -117,6 +118,7 @@ fn find_tinygo_target(config: &Config) -> anyhow::Result<PathBuf> {
 
 /// Build Rust project.
 fn build_rust(config: &Config) -> anyhow::Result<()> {
+    check_installed("Rust", "cargo", "version")?;
     if config.root_path.join("Cargo.toml").exists() {
         build_rust_inner(config, false)
     } else {
@@ -205,11 +207,13 @@ fn find_rust_target_dir(root: &Path) -> anyhow::Result<PathBuf> {
 
 /// Build C project using Zig compiler.
 fn build_c(config: &Config) -> anyhow::Result<()> {
+    check_installed("C", "zig", "version")?;
     build_cpp_inner(config, "main.c")
 }
 
 /// Build C++ project using Zig compiler.
 fn build_cpp(config: &Config) -> anyhow::Result<()> {
+    check_installed("C++", "zig", "version")?;
     build_cpp_inner(config, "main.cpp")
 }
 
@@ -252,6 +256,7 @@ fn build_cpp_inner(config: &Config, fname: &str) -> anyhow::Result<()> {
 }
 
 fn build_zig(_config: &Config) -> anyhow::Result<()> {
+    check_installed("Zig", "zig", "version")?;
     todo!("Zig is not supported yet")
 }
 
@@ -279,4 +284,21 @@ fn check_output(output: &Output) -> anyhow::Result<()> {
         bail!("subprocess exited with status code {code}");
     }
     Ok(())
+}
+
+/// Run the given binary with the given arg and return an error if it is not installed.
+fn check_installed(lang: &str, bin: &str, arg: &str) -> anyhow::Result<()> {
+    let output = Command::new(bin).args([arg]).output();
+    if let Ok(output) = output {
+        if output.status.success() {
+            return Ok(());
+        }
+    }
+    let mut msg =
+        format!("You're trying to build a {lang} app but you don't have {bin} installed.\n");
+    msg.push_str(&format!(
+        "Please, follow the getting started guide for {lang}:\n"
+    ));
+    msg.push_str("  https://docs.fireflyzero.com/dev/getting-started/");
+    bail!(msg);
 }
