@@ -101,9 +101,15 @@ mod tests {
     use super::*;
 
     #[test]
+    fn test_smoke_cmd_vfs() {
+        cmd_vfs().unwrap();
+    }
+
+    #[test]
     fn test_get_vfs_path() {
         let root = std::env::temp_dir().join("test_get_vfs_path");
         let expected = root.join(".firefly");
+        _ = std::fs::remove_dir(&expected);
         std::env::set_current_dir(&root).unwrap();
 
         let actual = get_vfs_path();
