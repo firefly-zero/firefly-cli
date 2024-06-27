@@ -15,6 +15,9 @@ mod langs;
 mod vfs;
 mod wasm;
 
+#[cfg(test)]
+mod test_helpers;
+
 use crate::args::{Cli, Commands};
 use crate::build::cmd_build;
 use crate::export::cmd_export;

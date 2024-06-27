@@ -9,6 +9,12 @@ use std::fs;
 use std::io::Write;
 use std::path::PathBuf;
 
+#[cfg(test)]
+const BIT_SIZE: usize = 128;
+
+#[cfg(not(test))]
+const BIT_SIZE: usize = 2048;
+
 pub fn cmd_key_new(args: &KeyArgs) -> anyhow::Result<()> {
     init_vfs().context("init vfs")?;
     let vfs_path = get_vfs_path();
@@ -32,17 +38,21 @@ pub fn cmd_key_new(args: &KeyArgs) -> anyhow::Result<()> {
     // generate and save private key
     let mut rng = rand::thread_rng();
     println!("⏳️ generating key pair...");
-    let priv_key = RsaPrivateKey::new(&mut rng, 2048).context("generate key")?;
+    let priv_key = RsaPrivateKey::new(&mut rng, BIT_SIZE).context("generate key")?;
     println!("⌛ saving keys...");
     let mut priv_file = fs::File::create(priv_path)?;
     let priv_bytes = priv_key.to_pkcs1_der().context("serialize priv key")?;
-    priv_file.write_all(priv_bytes.as_bytes())?;
+    priv_file
+        .write_all(priv_bytes.as_bytes())
+        .context("write priv key")?;
 
     // save public key
     let pub_key = RsaPublicKey::from(&priv_key);
     let mut pub_file = fs::File::create(pub_path)?;
     let pub_bytes = pub_key.to_pkcs1_der().context("serialize pub key")?;
-    pub_file.write_all(pub_bytes.as_bytes())?;
+    pub_file
+        .write_all(pub_bytes.as_bytes())
+        .context("write pub key")?;
 
     println!("✅ generated key pair for {author}");
     Ok(())
@@ -62,6 +72,12 @@ pub fn export_key(args: &KeyExportArgs, public: bool) -> anyhow::Result<()> {
         Some(output) => output,
         None => &PathBuf::new().join(format!("{author}.der")),
     };
+    if output_path.is_dir() {
+        bail!("the --output path must be a file, not directory");
+    }
+    if output_path.exists() {
+        bail!("the --output path already exists");
+    }
     let key_type = if public { "public" } else { "private" };
 
     // export the key file
@@ -187,4 +203,81 @@ fn save_raw_key(author: &str, raw_key: &[u8]) -> anyhow::Result<()> {
         fs::write(pub_path, raw_key).context("write public key")?;
     };
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::test_helpers::*;
+
+    #[test]
+    fn test_cmd_key_new() {
+        let vfs = make_tmp_vfs();
+        let args = KeyArgs {
+            author_id: "greg".to_string(),
+        };
+        cmd_key_new(&args).unwrap();
+        let key_path = vfs.join("sys").join("priv").join("greg");
+        assert!(key_path.is_file());
+        let key_path = vfs.join("sys").join("pub").join("greg");
+        assert!(key_path.is_file());
+    }
+
+    #[test]
+    fn test_cmd_key_pub() {
+        let vfs = make_tmp_vfs();
+        let args = KeyArgs {
+            author_id: "greg".to_string(),
+        };
+        cmd_key_new(&args).unwrap();
+
+        let key_path = vfs.join("greg.der");
+        let args = KeyExportArgs {
+            author_id: "greg".to_string(),
+            output:    Some(key_path.clone()),
+        };
+        cmd_key_pub(&args).unwrap();
+        assert!(&key_path.is_file());
+        let meta = key_path.metadata().unwrap();
+        assert_eq!(meta.len(), 26);
+    }
+
+    #[test]
+    fn test_cmd_key_priv() {
+        let vfs = make_tmp_vfs();
+        let args = KeyArgs {
+            author_id: "greg".to_string(),
+        };
+        cmd_key_new(&args).unwrap();
+
+        let key_path = vfs.join("greg.der");
+        let args = KeyExportArgs {
+            author_id: "greg".to_string(),
+            output:    Some(key_path.clone()),
+        };
+        cmd_key_priv(&args).unwrap();
+        assert!(&key_path.is_file());
+        let meta = key_path.metadata().unwrap();
+        let size = meta.len();
+        assert!(size >= 99 || size <= 101, "{size} != 100");
+    }
+
+    #[test]
+    fn test_cmd_key_rm() {
+        let vfs = make_tmp_vfs();
+        let args = KeyArgs {
+            author_id: "greg".to_string(),
+        };
+        cmd_key_new(&args).unwrap();
+        let key_path = vfs.join("sys").join("priv").join("greg");
+        assert!(key_path.is_file());
+        let key_path = vfs.join("sys").join("pub").join("greg");
+        assert!(key_path.is_file());
+
+        cmd_key_rm(&args).unwrap();
+        let key_path = vfs.join("sys").join("priv").join("greg");
+        assert!(!key_path.exists());
+        let key_path = vfs.join("sys").join("pub").join("greg");
+        assert!(!key_path.exists());
+    }
 }

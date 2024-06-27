@@ -107,7 +107,10 @@ mod tests {
 
     #[test]
     fn test_get_vfs_path() {
-        let root = std::env::temp_dir().join("test_get_vfs_path");
+        let mut rng = rand::thread_rng();
+        let n = rng.gen_range(0..100_000);
+        let root = std::env::temp_dir().join(format!("test_get_vfs_path-{n}"));
+        std::fs::create_dir_all(&root).unwrap();
         let expected = root.join(".firefly");
         _ = std::fs::remove_dir(&expected);
         std::env::set_current_dir(&root).unwrap();
