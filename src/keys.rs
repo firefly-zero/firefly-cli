@@ -1,5 +1,5 @@
 use crate::args::{KeyArgs, KeyExportArgs};
-use crate::vfs::{get_vfs_path, init_vfs};
+use crate::vfs::init_vfs;
 use anyhow::{bail, Context};
 use rsa::pkcs1::{
     DecodeRsaPrivateKey, DecodeRsaPublicKey, EncodeRsaPrivateKey, EncodeRsaPublicKey,
@@ -7,7 +7,7 @@ use rsa::pkcs1::{
 use rsa::{RsaPrivateKey, RsaPublicKey};
 use std::fs;
 use std::io::Write;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 #[cfg(test)]
 const BIT_SIZE: usize = 128;
@@ -15,17 +15,15 @@ const BIT_SIZE: usize = 128;
 #[cfg(not(test))]
 const BIT_SIZE: usize = 2048;
 
-pub fn cmd_key_new(args: &KeyArgs) -> anyhow::Result<()> {
-    init_vfs().context("init vfs")?;
-    let vfs_path = get_vfs_path();
-
+pub fn cmd_key_new(vfs: &Path, args: &KeyArgs) -> anyhow::Result<()> {
+    init_vfs(vfs).context("init vfs")?;
     let author = &args.author_id;
     if let Err(err) = firefly_meta::validate_id(author) {
         bail!("invalid author ID: {err}")
     }
 
     // generate and check paths for keys
-    let sys_path = vfs_path.join("sys");
+    let sys_path = vfs.join("sys");
     let priv_path = sys_path.join("priv").join(author);
     let pub_path = sys_path.join("pub").join(author);
     if priv_path.exists() {
@@ -58,15 +56,15 @@ pub fn cmd_key_new(args: &KeyArgs) -> anyhow::Result<()> {
     Ok(())
 }
 
-pub fn cmd_key_pub(args: &KeyExportArgs) -> anyhow::Result<()> {
-    export_key(args, true)
+pub fn cmd_key_pub(vfs: &Path, args: &KeyExportArgs) -> anyhow::Result<()> {
+    export_key(vfs, args, true)
 }
 
-pub fn cmd_key_priv(args: &KeyExportArgs) -> anyhow::Result<()> {
-    export_key(args, false)
+pub fn cmd_key_priv(vfs: &Path, args: &KeyExportArgs) -> anyhow::Result<()> {
+    export_key(vfs, args, false)
 }
 
-pub fn export_key(args: &KeyExportArgs, public: bool) -> anyhow::Result<()> {
+pub fn export_key(vfs: &Path, args: &KeyExportArgs, public: bool) -> anyhow::Result<()> {
     let author = &args.author_id;
     let output_path = match &args.output {
         Some(output) => output,
@@ -83,8 +81,7 @@ pub fn export_key(args: &KeyExportArgs, public: bool) -> anyhow::Result<()> {
     // export the key file
     {
         let part = if public { "pub" } else { "priv" };
-        let vfs_path = get_vfs_path();
-        let key_path = vfs_path.join("sys").join(part).join(author);
+        let key_path = vfs.join("sys").join(part).join(author);
         if !key_path.exists() {
             bail!("{key_type} key for {author} not found");
         }
@@ -104,16 +101,14 @@ pub fn export_key(args: &KeyExportArgs, public: bool) -> anyhow::Result<()> {
     Ok(())
 }
 
-pub fn cmd_key_rm(args: &KeyArgs) -> anyhow::Result<()> {
-    let vfs_path = get_vfs_path();
-
+pub fn cmd_key_rm(vfs: &Path, args: &KeyArgs) -> anyhow::Result<()> {
     let author = &args.author_id;
     if let Err(err) = firefly_meta::validate_id(author) {
         bail!("invalid author ID: {err}")
     }
 
     // generate and check paths for keys
-    let sys_path = vfs_path.join("sys");
+    let sys_path = vfs.join("sys");
     let priv_path = sys_path.join("priv").join(author);
     let pub_path = sys_path.join("pub").join(author);
     let mut found = true;
@@ -135,8 +130,8 @@ pub fn cmd_key_rm(args: &KeyArgs) -> anyhow::Result<()> {
     Ok(())
 }
 
-pub fn cmd_key_add(args: &KeyArgs) -> anyhow::Result<()> {
-    init_vfs().context("init vfs")?;
+pub fn cmd_key_add(vfs: &Path, args: &KeyArgs) -> anyhow::Result<()> {
+    init_vfs(vfs).context("init vfs")?;
     let key_path = &args.author_id;
     let (author, raw_key) = if key_path.starts_with("https://") {
         println!("⏳️ downloading the key from URL...");
@@ -156,7 +151,7 @@ pub fn cmd_key_add(args: &KeyArgs) -> anyhow::Result<()> {
     } else {
         bail!("the key file not found")
     };
-    save_raw_key(&author, &raw_key)?;
+    save_raw_key(vfs, &author, &raw_key)?;
     println!("✅ added new key");
     Ok(())
 }
@@ -179,15 +174,14 @@ fn download_key(url: &str) -> anyhow::Result<(String, Vec<u8>)> {
 }
 
 /// Save the given key into VFS.
-fn save_raw_key(author: &str, raw_key: &[u8]) -> anyhow::Result<()> {
+fn save_raw_key(vfs: &Path, author: &str, raw_key: &[u8]) -> anyhow::Result<()> {
     if raw_key.len() < 200 {
         bail!("the key is too small")
     }
     if raw_key.len() > 2048 {
         bail!("the key is too big")
     }
-    let vfs_path = get_vfs_path();
-    let sys_path = vfs_path.join("sys");
+    let sys_path = vfs.join("sys");
     let pub_path = sys_path.join("pub").join(author);
     if let Ok(key) = RsaPrivateKey::from_pkcs1_der(raw_key) {
         let path = sys_path.join("priv").join(author);
@@ -216,7 +210,7 @@ mod tests {
         let args = KeyArgs {
             author_id: "greg".to_string(),
         };
-        cmd_key_new(&args).unwrap();
+        cmd_key_new(&vfs, &args).unwrap();
         let key_path = vfs.join("sys").join("priv").join("greg");
         assert!(key_path.is_file());
         let key_path = vfs.join("sys").join("pub").join("greg");
@@ -229,14 +223,14 @@ mod tests {
         let args = KeyArgs {
             author_id: "greg".to_string(),
         };
-        cmd_key_new(&args).unwrap();
+        cmd_key_new(&vfs, &args).unwrap();
 
         let key_path = vfs.join("greg.der");
         let args = KeyExportArgs {
             author_id: "greg".to_string(),
             output:    Some(key_path.clone()),
         };
-        cmd_key_pub(&args).unwrap();
+        cmd_key_pub(&vfs, &args).unwrap();
         assert!(&key_path.is_file());
         let meta = key_path.metadata().unwrap();
         assert_eq!(meta.len(), 26);
@@ -248,14 +242,14 @@ mod tests {
         let args = KeyArgs {
             author_id: "greg".to_string(),
         };
-        cmd_key_new(&args).unwrap();
+        cmd_key_new(&vfs, &args).unwrap();
 
         let key_path = vfs.join("greg.der");
         let args = KeyExportArgs {
             author_id: "greg".to_string(),
             output:    Some(key_path.clone()),
         };
-        cmd_key_priv(&args).unwrap();
+        cmd_key_priv(&vfs, &args).unwrap();
         assert!(&key_path.is_file());
         let meta = key_path.metadata().unwrap();
         let size = meta.len();
@@ -268,13 +262,13 @@ mod tests {
         let args = KeyArgs {
             author_id: "greg".to_string(),
         };
-        cmd_key_new(&args).unwrap();
+        cmd_key_new(&vfs, &args).unwrap();
         let key_path = vfs.join("sys").join("priv").join("greg");
         assert!(key_path.is_file());
         let key_path = vfs.join("sys").join("pub").join("greg");
         assert!(key_path.is_file());
 
-        cmd_key_rm(&args).unwrap();
+        cmd_key_rm(&vfs, &args).unwrap();
         let key_path = vfs.join("sys").join("priv").join("greg");
         assert!(!key_path.exists());
         let key_path = vfs.join("sys").join("pub").join("greg");

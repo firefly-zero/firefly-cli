@@ -1,4 +1,3 @@
-use crate::vfs::get_vfs_path;
 use anyhow::Context;
 use serde::Deserialize;
 use std::collections::HashMap;
@@ -48,7 +47,7 @@ pub struct Config {
 }
 
 impl Config {
-    pub fn load(root: &Path) -> anyhow::Result<Self> {
+    pub fn load(vfs: PathBuf, root: &Path) -> anyhow::Result<Self> {
         let config_path = root.join("firefly.toml");
         let raw_config = fs::read_to_string(config_path).context("read config file")?;
         let mut config: Self = toml::from_str(raw_config.as_str()).context("parse config")?;
@@ -57,7 +56,7 @@ impl Config {
             Ok(current_dir) => current_dir.join(root),
             Err(_) => PathBuf::from(root),
         };
-        config.vfs_path = get_vfs_path();
+        config.vfs_path = vfs;
         config.rom_path = config
             .vfs_path
             .join("roms")

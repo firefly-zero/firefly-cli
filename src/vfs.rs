@@ -32,12 +32,7 @@ pub fn get_vfs_path() -> PathBuf {
     }
 }
 
-pub fn init_vfs() -> anyhow::Result<()> {
-    let path = get_vfs_path();
-    init_vfs_at(&path)
-}
-
-fn init_vfs_at(path: &Path) -> anyhow::Result<()> {
+pub fn init_vfs(path: &Path) -> anyhow::Result<()> {
     fs::create_dir_all(path.join("roms")).context("create roms directory")?;
     fs::create_dir_all(path.join("sys").join("pub")).context("create sys/pub directory")?;
     fs::create_dir_all(path.join("sys").join("priv")).context("create sys/priv directory")?;
@@ -128,7 +123,7 @@ mod tests {
         let path = std::env::temp_dir().join("test_init_vfs_at");
         _ = std::fs::remove_dir_all(&path);
         assert!(!path.exists());
-        init_vfs_at(&path).unwrap();
+        init_vfs(&path).unwrap();
         assert_eq!(path.read_dir().unwrap().count(), 3);
         assert!(path.join("sys").metadata().unwrap().is_dir());
         assert!(path.join("roms").metadata().unwrap().is_dir());

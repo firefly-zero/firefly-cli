@@ -1,6 +1,5 @@
 use crate::args::ExportArgs;
 use crate::config::Config;
-use crate::vfs::get_vfs_path;
 use anyhow::{Context, Result};
 use std::fs::{read_dir, File};
 use std::io::{Read, Write};
@@ -8,10 +7,9 @@ use std::path::{Path, PathBuf};
 use zip::write::FileOptions;
 use zip::{CompressionMethod, ZipWriter};
 
-pub fn cmd_export(args: &ExportArgs) -> Result<()> {
-    let (author_id, app_id) = get_id(args)?;
-    let vfs_path = get_vfs_path();
-    let rom_path = vfs_path.join("roms").join(&author_id).join(&app_id);
+pub fn cmd_export(vfs: &Path, args: &ExportArgs) -> Result<()> {
+    let (author_id, app_id) = get_id(vfs.to_path_buf(), args)?;
+    let rom_path = vfs.join("roms").join(&author_id).join(&app_id);
     let out_path: PathBuf = match &args.output {
         Some(out_path) => out_path.clone(),
         None => format!("{author_id}.{app_id}.zip").into(),
@@ -24,11 +22,11 @@ pub fn cmd_export(args: &ExportArgs) -> Result<()> {
     Ok(())
 }
 
-fn get_id(args: &ExportArgs) -> Result<(String, String)> {
+fn get_id(vfs: PathBuf, args: &ExportArgs) -> Result<(String, String)> {
     let res = if let (Some(author), Some(app)) = (&args.author, &args.app) {
         (author.to_string(), app.to_string())
     } else {
-        let config = Config::load(&args.root).context("read project config")?;
+        let config = Config::load(vfs, &args.root).context("read project config")?;
         (config.author_id, config.app_id)
     };
     Ok(res)
