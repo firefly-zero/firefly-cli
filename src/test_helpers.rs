@@ -8,6 +8,5 @@ pub fn make_tmp_vfs() -> PathBuf {
     _ = std::fs::remove_dir_all(&root);
     let vfs = root.join(".firefly");
     std::fs::create_dir_all(&vfs).unwrap();
-    std::env::set_current_dir(&root).unwrap();
     vfs
 }
