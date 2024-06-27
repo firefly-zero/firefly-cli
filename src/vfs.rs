@@ -15,22 +15,24 @@ pub fn cmd_vfs() -> anyhow::Result<()> {
 }
 
 pub fn get_vfs_path() -> PathBuf {
+    let current_dir = std::env::current_dir().ok();
+    if let Some(current_dir) = &current_dir {
+        let path = current_dir.join(".firefly");
+        if path.is_dir() {
+            return path;
+        }
+    }
     match ProjectDirs::from("com", "firefly", "firefly") {
         Some(dirs) => dirs.data_dir().to_owned(),
-        None => match std::env::current_dir() {
+        None => match current_dir {
             // Make the path absolute if possible
-            Ok(current_dir) => current_dir.join(".firefly"),
-            Err(_) => PathBuf::from(".firefly"),
+            Some(current_dir) => current_dir.join(".firefly"),
+            None => PathBuf::from(".firefly"),
         },
     }
 }
 
-pub fn init_vfs() -> anyhow::Result<()> {
-    let path = get_vfs_path();
-    init_vfs_at(&path)
-}
-
-fn init_vfs_at(path: &Path) -> anyhow::Result<()> {
+pub fn init_vfs(path: &Path) -> anyhow::Result<()> {
     fs::create_dir_all(path.join("roms")).context("create roms directory")?;
     fs::create_dir_all(path.join("sys").join("pub")).context("create sys/pub directory")?;
     fs::create_dir_all(path.join("sys").join("priv")).context("create sys/priv directory")?;
@@ -94,11 +96,34 @@ mod tests {
     use super::*;
 
     #[test]
+    fn test_smoke_cmd_vfs() {
+        cmd_vfs().unwrap();
+    }
+
+    #[test]
+    fn test_get_vfs_path() {
+        let mut rng = rand::thread_rng();
+        let n = rng.gen_range(0..100_000);
+        let root = std::env::temp_dir().join(format!("test_get_vfs_path-{n}"));
+        std::fs::create_dir_all(&root).unwrap();
+        let expected = root.join(".firefly");
+        _ = std::fs::remove_dir(&expected);
+        std::env::set_current_dir(&root).unwrap();
+
+        let actual = get_vfs_path();
+        assert!(actual != expected);
+
+        std::fs::create_dir_all(&expected).unwrap();
+        let actual = get_vfs_path();
+        assert_eq!(actual, expected);
+    }
+
+    #[test]
     fn test_init_vfs_at() {
         let path = std::env::temp_dir().join("test_init_vfs_at");
         _ = std::fs::remove_dir_all(&path);
         assert!(!path.exists());
-        init_vfs_at(&path).unwrap();
+        init_vfs(&path).unwrap();
         assert_eq!(path.read_dir().unwrap().count(), 3);
         assert!(path.join("sys").metadata().unwrap().is_dir());
         assert!(path.join("roms").metadata().unwrap().is_dir());

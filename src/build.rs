@@ -18,11 +18,11 @@ use std::collections::HashMap;
 use std::ffi::OsString;
 use std::fs;
 use std::io::Write;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
-pub fn cmd_build(args: &BuildArgs) -> anyhow::Result<()> {
-    init_vfs().context("init vfs")?;
-    let config = Config::load(&args.root).context("load project config")?;
+pub fn cmd_build(vfs: PathBuf, args: &BuildArgs) -> anyhow::Result<()> {
+    init_vfs(&vfs).context("init vfs")?;
+    let config = Config::load(vfs, &args.root).context("load project config")?;
     let old_sizes = collect_sizes(&config.rom_path);
     _ = fs::remove_dir_all(&config.rom_path);
     write_meta(&config).context("write metadata file")?;

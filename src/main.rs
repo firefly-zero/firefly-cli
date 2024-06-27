@@ -15,28 +15,31 @@ mod langs;
 mod vfs;
 mod wasm;
 
-use crate::args::{Cli, Commands};
+#[cfg(test)]
+mod test_helpers;
+
+use crate::args::{Cli, Commands, KeyCommands};
 use crate::build::cmd_build;
 use crate::export::cmd_export;
 use crate::import::cmd_import;
-use crate::vfs::cmd_vfs;
-use args::KeyCommands;
+use crate::keys::{cmd_key_add, cmd_key_new, cmd_key_priv, cmd_key_pub, cmd_key_rm};
+use crate::vfs::{cmd_vfs, get_vfs_path};
 use clap::Parser;
 use colored::Colorize;
-use keys::{cmd_key_add, cmd_key_new, cmd_key_priv, cmd_key_pub, cmd_key_rm};
 use std::fmt::Display;
 
 fn main() {
     let cli = Cli::parse();
+    let vfs = get_vfs_path();
     let res: anyhow::Result<()> = match &cli.command {
-        Commands::Build(args) => cmd_build(args),
-        Commands::Export(args) => cmd_export(args),
-        Commands::Import(args) => cmd_import(args),
-        Commands::Key(KeyCommands::New(args)) => cmd_key_new(args),
-        Commands::Key(KeyCommands::Add(args)) => cmd_key_add(args),
-        Commands::Key(KeyCommands::Pub(args)) => cmd_key_pub(args),
-        Commands::Key(KeyCommands::Priv(args)) => cmd_key_priv(args),
-        Commands::Key(KeyCommands::Rm(args)) => cmd_key_rm(args),
+        Commands::Build(args) => cmd_build(vfs, args),
+        Commands::Export(args) => cmd_export(&vfs, args),
+        Commands::Import(args) => cmd_import(&vfs, args),
+        Commands::Key(KeyCommands::New(args)) => cmd_key_new(&vfs, args),
+        Commands::Key(KeyCommands::Add(args)) => cmd_key_add(&vfs, args),
+        Commands::Key(KeyCommands::Pub(args)) => cmd_key_pub(&vfs, args),
+        Commands::Key(KeyCommands::Priv(args)) => cmd_key_priv(&vfs, args),
+        Commands::Key(KeyCommands::Rm(args)) => cmd_key_rm(&vfs, args),
         Commands::Vfs => cmd_vfs(),
     };
     if let Err(err) = res {

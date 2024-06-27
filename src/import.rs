@@ -1,7 +1,7 @@
 use crate::args::ImportArgs;
 use crate::crypto::hash_dir;
 use crate::file_names::{HASH, KEY, META, SIG};
-use crate::vfs::{get_vfs_path, init_vfs};
+use crate::vfs::init_vfs;
 use anyhow::{bail, Context, Result};
 use data_encoding::HEXLOWER;
 use firefly_meta::Meta;
@@ -25,17 +25,16 @@ struct CatalogApp {
     download: String,
 }
 
-pub fn cmd_import(args: &ImportArgs) -> Result<()> {
+pub fn cmd_import(vfs: &Path, args: &ImportArgs) -> Result<()> {
     let path = fetch_archive(&args.path).context("download ROM archive")?;
     let file = File::open(path).context("open archive file")?;
     let mut archive = ZipArchive::new(file).context("open archive")?;
 
     let meta_raw = read_meta_raw(&mut archive)?;
     let meta = Meta::decode(&meta_raw).context("parse meta")?;
-    let vfs_path = get_vfs_path();
-    let rom_path = vfs_path.join("roms").join(meta.author_id).join(meta.app_id);
+    let rom_path = vfs.join("roms").join(meta.author_id).join(meta.app_id);
 
-    init_vfs().context("init VFS")?;
+    init_vfs(vfs).context("init VFS")?;
     _ = fs::remove_dir_all(&rom_path);
     create_dir_all(&rom_path).context("create ROM dir")?;
     archive.extract(&rom_path).context("extract archive")?;
@@ -45,7 +44,7 @@ pub fn cmd_import(args: &ImportArgs) -> Result<()> {
     if let Some(rom_path) = rom_path.to_str() {
         println!("✅ installed: {rom_path}");
     }
-    write_installed(&meta, &vfs_path)?;
+    write_installed(&meta, vfs)?;
     Ok(())
 }
 

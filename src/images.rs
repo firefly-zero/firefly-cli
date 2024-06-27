@@ -171,12 +171,15 @@ const fn is_transparent(c: Rgba<u8>) -> bool {
 
 /// Pick the color to be used to represent transparency
 fn pick_transparent(palette: &[Color]) -> Result<u8> {
+    if palette.iter().all(Option::is_some) {
+        // no transparency needed
+        return Ok(17);
+    }
     for (color, i) in DEFAULT_PALETTE.iter().zip(0u8..) {
         if !palette.contains(color) {
             return Ok(i);
         }
     }
-
     if palette.len() > 16 {
         bail!("the image cannot contain more than 16 colors")
     }
@@ -184,4 +187,28 @@ fn pick_transparent(palette: &[Color]) -> Result<u8> {
         bail!("an image cannot contain all 16 colors and transparency")
     }
     bail!("image contains colors not from the default palette")
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_format_color() {
+        assert_eq!(format_color(None), "ALPHA");
+        assert_eq!(format_color(Some(Rgb([0x89, 0xab, 0xcd]))), "#89ABCD");
+    }
+
+    #[test]
+    fn test_pick_transparent() {
+        let c0 = DEFAULT_PALETTE[0];
+        let c1 = DEFAULT_PALETTE[1];
+        let c2 = DEFAULT_PALETTE[2];
+        let c3 = DEFAULT_PALETTE[3];
+        assert_eq!(pick_transparent(&[c0, c1]).unwrap(), 17);
+        assert_eq!(pick_transparent(&[c0, c1, None]).unwrap(), 2);
+        assert_eq!(pick_transparent(&[c0, None, c1]).unwrap(), 2);
+        assert_eq!(pick_transparent(&[c1, c0, None]).unwrap(), 2);
+        assert_eq!(pick_transparent(&[c0, c1, c2, c3, None]).unwrap(), 4);
+    }
 }
