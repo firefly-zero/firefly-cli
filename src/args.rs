@@ -89,6 +89,10 @@ pub struct BuildArgs {
     /// Don't strip debug info and custom sections.
     #[arg(long, default_value_t = false)]
     pub no_strip: bool,
+
+    /// Don't show a random tip.
+    #[arg(long, default_value_t = false)]
+    pub no_tip: bool,
 }
 
 #[derive(Debug, Parser)]

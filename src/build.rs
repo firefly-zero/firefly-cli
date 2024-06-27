@@ -8,6 +8,7 @@ use crate::vfs::init_vfs;
 use anyhow::{bail, Context};
 use colored::Colorize;
 use data_encoding::HEXLOWER;
+use rand::Rng;
 use rsa::pkcs1::DecodeRsaPrivateKey;
 use rsa::pkcs1v15::SigningKey;
 use rsa::signature::hazmat::PrehashSigner;
@@ -20,9 +21,44 @@ use std::fs;
 use std::io::Write;
 use std::path::{Path, PathBuf};
 
+static TIPS: &[&str] = &[
+    "use `firefly_cli export` to share the app with your friends",
+    "when the app is ready, consider adding it to https://catalog.fireflyzero.com",
+    "keep an eye on the binary size. Bigger binary often means slower code",
+    "if the app hits `unreachable`, use `log_debug` to find out where",
+    "you can use `wasm2wat` and `wasm-objdump` tools to inspect the app binary",
+    "you can use build_args option in firefly.toml to customize the build command",
+    "if your game has multiple levels/scenes, use a separate sprite file for each",
+    "prefer using 32 bit float over 64 bit float",
+    "using shapes instead of sprites might save memory and improve performance",
+    "include `hash` for `files` with `url` (in firefly.toml)",
+    "if your app is open-source, don't forget to add a LICENSE file",
+    "the desktop emulator has some useful CLI flags, like --fullscreen",
+    "pick a short name for the app so that it looks good in the launcher",
+    "setting a custom color palette may give your app a distinct memorable style",
+    "you can download fonts from https://fonts.fireflyzero.com/",
+    "the desktop emulator supports gamepads",
+    "if building is slow, try skipping optimizations: `--no-opt --no-strip`",
+    "backup your private key (but keep it secret!): firefly_cli key priv",
+    "if your compiler allows it, pick a small allocator and garbage collector",
+    "follow us on Mastodon for updates: https://fosstodon.org/@fireflyzero",
+    "create `.firefly` dir in the project root to store VFS in there",
+    // We're not paid for any of these links, it's just resources we love.
+    "good free sprite editor: https://apps.lospec.com/pixel-editor/",
+    "good collection of free game assets: https://opengameart.org/",
+    "https://youtu.be/dQw4w9WgXcQ",
+];
+
 pub fn cmd_build(vfs: PathBuf, args: &BuildArgs) -> anyhow::Result<()> {
     init_vfs(&vfs).context("init vfs")?;
     let config = Config::load(vfs, &args.root).context("load project config")?;
+    if config.author_id == "joearms" {
+        println!("⚠️  author_id in firefly.tom has the default value.");
+        println!("  Please, change it before sharing the app with the world.");
+    }
+    if !args.no_tip {
+        show_tip();
+    }
     let old_sizes = collect_sizes(&config.rom_path);
     _ = fs::remove_dir_all(&config.rom_path);
     write_meta(&config).context("write metadata file")?;
@@ -147,7 +183,7 @@ fn download_file(input_path: &Path, file_config: &FileConfig) -> anyhow::Result<
             bail!("sha256 hash mismatch: {actual_hash} != {expected_hash}");
         }
     }
-    std::fs::write(input_path, bytes).context("write file")?;
+    fs::write(input_path, bytes).context("write file")?;
     Ok(())
 }
 
@@ -275,4 +311,10 @@ fn print_sizes(old_sizes: &HashMap<OsString, u64>, new_sizes: &HashMap<OsString,
 
         println!("{name:16} {new_size}{suffix}");
     }
+}
+
+fn show_tip() {
+    let mut rng = rand::thread_rng();
+    let i = rng.gen_range(0..TIPS.len());
+    println!("💡 tip: {}.", TIPS[i]);
 }
