@@ -39,6 +39,7 @@ pub fn cmd_build(vfs: PathBuf, args: &BuildArgs) -> anyhow::Result<()> {
     let new_sizes = collect_sizes(&config.rom_path);
     check_sizes(&new_sizes)?;
     print_sizes(&old_sizes, &new_sizes);
+    println!("\n✅ installed: {}.{}", config.author_id, config.app_id);
     Ok(())
 }
 
