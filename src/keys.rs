@@ -175,7 +175,7 @@ fn download_key(url: &str) -> anyhow::Result<(String, Vec<u8>)> {
 
 /// Save the given key into VFS.
 fn save_raw_key(vfs: &Path, author: &str, raw_key: &[u8]) -> anyhow::Result<()> {
-    if raw_key.len() < 200 {
+    if raw_key.len() < 20 {
         bail!("the key is too small")
     }
     if raw_key.len() > 2048 {
@@ -257,21 +257,88 @@ mod tests {
     }
 
     #[test]
-    fn test_cmd_key_rm() {
+    fn test_cmd_key_add_pub() {
         let vfs = make_tmp_vfs();
         let args = KeyArgs {
             author_id: "greg".to_string(),
         };
+
+        // create key
         cmd_key_new(&vfs, &args).unwrap();
         let key_path = vfs.join("sys").join("priv").join("greg");
         assert!(key_path.is_file());
         let key_path = vfs.join("sys").join("pub").join("greg");
         assert!(key_path.is_file());
 
+        // export key
+        let export_path = vfs.join("greg.der");
+        let args = KeyExportArgs {
+            author_id: "greg".to_string(),
+            output:    Some(export_path.clone()),
+        };
+        cmd_key_pub(&vfs, &args).unwrap();
+
+        // drop key
+        let args = KeyArgs {
+            author_id: "greg".to_string(),
+        };
         cmd_key_rm(&vfs, &args).unwrap();
         let key_path = vfs.join("sys").join("priv").join("greg");
         assert!(!key_path.exists());
         let key_path = vfs.join("sys").join("pub").join("greg");
         assert!(!key_path.exists());
+
+        // import key from file
+        let args = KeyArgs {
+            author_id: export_path.to_str().unwrap().to_string(),
+        };
+        cmd_key_add(&vfs, &args).unwrap();
+        let key_path = vfs.join("sys").join("priv").join("greg");
+        assert!(!key_path.exists());
+        let key_path = vfs.join("sys").join("pub").join("greg");
+        assert!(key_path.exists());
+    }
+
+    #[test]
+    fn test_cmd_key_add_priv() {
+        let vfs = make_tmp_vfs();
+        let args = KeyArgs {
+            author_id: "greg".to_string(),
+        };
+
+        // create key
+        cmd_key_new(&vfs, &args).unwrap();
+        let key_path = vfs.join("sys").join("priv").join("greg");
+        assert!(key_path.is_file());
+        let key_path = vfs.join("sys").join("pub").join("greg");
+        assert!(key_path.is_file());
+
+        // export key
+        let export_path = vfs.join("greg.der");
+        let args = KeyExportArgs {
+            author_id: "greg".to_string(),
+            output:    Some(export_path.clone()),
+        };
+        cmd_key_priv(&vfs, &args).unwrap();
+
+        // drop key
+        let args = KeyArgs {
+            author_id: "greg".to_string(),
+        };
+        cmd_key_rm(&vfs, &args).unwrap();
+        let key_path = vfs.join("sys").join("priv").join("greg");
+        assert!(!key_path.exists());
+        let key_path = vfs.join("sys").join("pub").join("greg");
+        assert!(!key_path.exists());
+
+        // import key from file
+        let args = KeyArgs {
+            author_id: export_path.to_str().unwrap().to_string(),
+        };
+        cmd_key_add(&vfs, &args).unwrap();
+        let key_path = vfs.join("sys").join("priv").join("greg");
+        assert!(key_path.exists());
+        let key_path = vfs.join("sys").join("pub").join("greg");
+        assert!(key_path.exists());
     }
 }
