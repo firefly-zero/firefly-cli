@@ -228,7 +228,7 @@ mod tests {
         let key_path = vfs.join("greg.der");
         let args = KeyExportArgs {
             author_id: "greg".to_string(),
-            output:    Some(key_path.clone()),
+            output: Some(key_path.clone()),
         };
         cmd_key_pub(&vfs, &args).unwrap();
         assert!(&key_path.is_file());
@@ -247,7 +247,7 @@ mod tests {
         let key_path = vfs.join("greg.der");
         let args = KeyExportArgs {
             author_id: "greg".to_string(),
-            output:    Some(key_path.clone()),
+            output: Some(key_path.clone()),
         };
         cmd_key_priv(&vfs, &args).unwrap();
         assert!(&key_path.is_file());
@@ -274,7 +274,7 @@ mod tests {
         let export_path = vfs.join("greg.der");
         let args = KeyExportArgs {
             author_id: "greg".to_string(),
-            output:    Some(export_path.clone()),
+            output: Some(export_path.clone()),
         };
         cmd_key_pub(&vfs, &args).unwrap();
 
@@ -317,7 +317,7 @@ mod tests {
         let export_path = vfs.join("greg.der");
         let args = KeyExportArgs {
             author_id: "greg".to_string(),
-            output:    Some(export_path.clone()),
+            output: Some(export_path.clone()),
         };
         cmd_key_priv(&vfs, &args).unwrap();
 

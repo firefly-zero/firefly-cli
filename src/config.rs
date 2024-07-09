@@ -7,9 +7,9 @@ use std::path::{Path, PathBuf};
 #[derive(Deserialize, Debug)]
 #[serde(deny_unknown_fields)]
 pub struct Config {
-    pub app_id:      String,
-    pub author_id:   String,
-    pub app_name:    String,
+    pub app_id: String,
+    pub author_id: String,
+    pub app_name: String,
     pub author_name: String,
 
     /// The app version. Compared between devices when starting multiplayer.
