@@ -41,12 +41,22 @@ pub fn init_vfs(path: &Path) -> anyhow::Result<()> {
     // Generate random device name if the name file doesn't exist yet.
     let name_path = path.join("sys").join("name");
     if !name_path.exists() {
-        let name = generate_name();
+        let name = generate_valid_name();
         println!("new device name: {name}");
         fs::write(name_path, name).context("write name file")?;
     }
 
     Ok(())
+}
+
+/// Generate a random valid device name.
+fn generate_valid_name() -> String {
+    loop {
+        let name = generate_name();
+        if firefly_meta::validate_id(&name).is_ok() {
+            return name;
+        }
+    }
 }
 
 /// Generate a random device name.
