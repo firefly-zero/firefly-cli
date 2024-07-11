@@ -31,7 +31,7 @@ static TIPS: &[&str] = &[
     "if your game has multiple levels/scenes, use a separate sprite file for each",
     "prefer using 32 bit float over 64 bit float",
     "using shapes instead of sprites might save memory and improve performance",
-    "include `hash` for `files` with `url` (in firefly.toml)",
+    "if you specify `url` for a file in `firefly.toml`, provide `sha256` as well",
     "if your app is open-source, don't forget to add a LICENSE file",
     "the desktop emulator has some useful CLI flags, like --fullscreen",
     "pick a short name for the app so that it looks good in the launcher",
@@ -43,6 +43,9 @@ static TIPS: &[&str] = &[
     "if your compiler allows it, pick a small allocator and garbage collector",
     "follow us on Mastodon for updates: https://fosstodon.org/@fireflyzero",
     "create `.firefly` dir in the project root to store VFS in there",
+    "you can customize TinyGo build with a custom target.json in the project root",
+    "make sure to test your game with multiplayer",
+    "images using 4 or less colors are twice smaller",
     // We're not paid for any of these links, it's just resources we love.
     "good free sprite editor: https://apps.lospec.com/pixel-editor/",
     "good collection of free game assets: https://opengameart.org/",
