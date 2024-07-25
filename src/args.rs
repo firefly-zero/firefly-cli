@@ -25,6 +25,9 @@ pub enum Commands {
     /// Show the full path to the virtual filesystem.
     Vfs,
 
+    /// Show runtime stats for a running device (or emulator).
+    Monitor(MonitorArgs),
+
     /// Commands to manage signing keys.
     #[command(subcommand)]
     #[clap(alias("keys"))]
@@ -130,3 +133,6 @@ pub struct ImportArgs {
     #[arg()]
     pub path: String,
 }
+
+#[derive(Debug, Parser)]
+pub struct MonitorArgs {}
