@@ -6,6 +6,8 @@ use firefly_types::serial;
 use std::io::{self, Read, Write};
 use std::net::{IpAddr, Ipv4Addr, SocketAddr, TcpStream};
 use std::path::Path;
+use std::thread::sleep;
+use std::time::Duration;
 
 static IP: IpAddr = IpAddr::V4(Ipv4Addr::UNSPECIFIED);
 const TCP_PORT_MIN: u16 = 3210;
@@ -42,8 +44,12 @@ fn run_monitor(_args: &MonitorArgs) -> Result<()> {
     };
     loop {
         let mut buf = vec![0; 64];
-        stream.read(&mut buf)?;
-        let resp = serial::Response::decode(&buf)?;
+        let size = stream.read(&mut buf).context("read response")?;
+        if size == 0 {
+            stream = connect().context("reconnecting")?;
+            continue;
+        }
+        let resp = serial::Response::decode(&buf[..size]).context("decode response")?;
         match resp {
             serial::Response::Cheat(_) => {}
             serial::Response::Fuel(cb, fuel) => match cb {
@@ -60,7 +66,7 @@ fn run_monitor(_args: &MonitorArgs) -> Result<()> {
             }
             serial::Response::Memory(mem) => stats.mem = Some(mem),
         };
-        render_stats(&stats)?;
+        render_stats(&stats).context("render stats")?;
     }
 }
 
@@ -74,7 +80,13 @@ fn connect() -> Result<TcpStream, anyhow::Error> {
     let addrs: Vec<_> = (TCP_PORT_MIN..=TCP_PORT_MAX)
         .map(|port| SocketAddr::new(IP, port))
         .collect();
-    let mut stream = TcpStream::connect(&addrs[..]).context("connect to emulator")?;
+    let mut stream = match TcpStream::connect(&addrs[..]) {
+        Ok(stream) => stream,
+        Err(_) => {
+            sleep(Duration::from_secs(1));
+            TcpStream::connect(&addrs[..]).context("connect to emulator")?
+        }
+    };
 
     execute!(
         io::stdout(),
