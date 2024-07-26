@@ -96,10 +96,10 @@ fn render_stats(stats: &Stats) -> Result<()> {
         render_cpu(cpu).context("render cpu table")?;
     };
     if let Some(fuel) = &stats.update {
-        render_fuel(7, "update", fuel).context("render fuel table")?;
+        render_fuel(1, 7, "update", fuel).context("render fuel table")?;
     };
     if let Some(fuel) = &stats.render {
-        render_fuel(14, "render", fuel).context("render fuel table")?;
+        render_fuel(24, 7, "render", fuel).context("render fuel table")?;
     };
     if let Some(memory) = &stats.mem {
         render_memory(memory).context("render memory table")?;
@@ -111,105 +111,108 @@ fn render_cpu(cpu: &serial::CPU) -> anyhow::Result<()> {
     if cpu.total_ns == 0 {
         return Ok(());
     }
+    const X: u16 = 1;
+    const Y: u16 = 1;
     let idle = cpu.total_ns.saturating_sub(cpu.busy_ns);
     execute!(
         io::stdout(),
-        cursor::MoveTo(0, 1),
+        cursor::MoveTo(X, Y),
         // https://en.wikipedia.org/wiki/Box-drawing_characters
         style::Print("┌╴cpu╶───────────────┐"),
-        cursor::MoveTo(0, 2),
+        cursor::MoveTo(X, Y + 1),
         style::Print("│ lag"),
-        cursor::MoveTo(COL1, 2),
+        cursor::MoveTo(X + COL1, Y + 1),
         style::Print(&format_ns(cpu.lag_ns)),
-        cursor::MoveTo(COL2, 2),
+        cursor::MoveTo(X + COL2, Y + 1),
         style::Print(&format_ratio(cpu.lag_ns, cpu.total_ns)),
-        cursor::MoveTo(0, 3),
+        cursor::MoveTo(X, Y + 2),
         style::Print("│ busy"),
-        cursor::MoveTo(COL1, 3),
+        cursor::MoveTo(X + COL1, Y + 2),
         style::Print(&format_ns(cpu.busy_ns)),
-        cursor::MoveTo(COL2, 3),
+        cursor::MoveTo(X + COL2, Y + 2),
         style::Print(&format_ratio(cpu.busy_ns, cpu.total_ns)),
-        cursor::MoveTo(0, 4),
+        cursor::MoveTo(X, Y + 3),
         style::Print("│ idle"),
-        cursor::MoveTo(COL1, 4),
+        cursor::MoveTo(X + COL1, Y + 3),
         style::Print(&format_ns(idle)),
-        cursor::MoveTo(COL2, 4),
+        cursor::MoveTo(X + COL2, Y + 3),
         style::Print(&format_ratio(idle, cpu.total_ns)),
-        cursor::MoveTo(RBORD, 2),
+        cursor::MoveTo(X + RBORD, Y + 1),
         style::Print("│"),
-        cursor::MoveTo(RBORD, 3),
+        cursor::MoveTo(X + RBORD, Y + 2),
         style::Print("│"),
-        cursor::MoveTo(RBORD, 4),
+        cursor::MoveTo(X + RBORD, Y + 3),
         style::Print("│"),
-        cursor::MoveTo(0, 5),
+        cursor::MoveTo(X, Y + 4),
         style::Print("└────────────────────┘"),
     )?;
     Ok(())
 }
 
-fn render_fuel(start: u16, name: &str, fuel: &serial::Fuel) -> anyhow::Result<()> {
+fn render_fuel(x: u16, y: u16, name: &str, fuel: &serial::Fuel) -> anyhow::Result<()> {
     if fuel.calls == 0 {
         return Ok(());
     }
     execute!(
         io::stdout(),
-        cursor::MoveTo(0, start),
+        cursor::MoveTo(x, y),
         // https://en.wikipedia.org/wiki/Box-drawing_characters
         style::Print(format!("┌╴fuel: {name}╶──────┐")),
-        cursor::MoveTo(0, start + 1),
+        cursor::MoveTo(x, y + 1),
         style::Print("│ min"),
-        cursor::MoveTo(COL1, start + 1),
+        cursor::MoveTo(x + COL1, y + 1),
         style::Print(format_value(fuel.min)),
-        cursor::MoveTo(0, start + 2),
+        cursor::MoveTo(x, y + 2),
         style::Print("│ max"),
-        cursor::MoveTo(COL1, start + 2),
+        cursor::MoveTo(x + COL1, y + 2),
         style::Print(format_value(fuel.max)),
-        cursor::MoveTo(0, start + 3),
+        cursor::MoveTo(x, y + 3),
         style::Print("│ mean"),
-        cursor::MoveTo(COL1, start + 3),
+        cursor::MoveTo(x + COL1, y + 3),
         style::Print(format_value(fuel.mean)),
-        cursor::MoveTo(0, start + 4),
+        cursor::MoveTo(x, y + 4),
         style::Print("│ stdev"),
-        cursor::MoveTo(COL1, start + 4),
+        cursor::MoveTo(x + COL1, y + 4),
         style::Print(format_value(fuel.var.sqrt() as u32)),
-        cursor::MoveTo(0, start + 4),
-        cursor::MoveTo(RBORD, start + 1),
+        cursor::MoveTo(x, y + 4),
+        cursor::MoveTo(x + RBORD, y + 1),
         style::Print("│"),
-        cursor::MoveTo(RBORD, start + 2),
+        cursor::MoveTo(x + RBORD, y + 2),
         style::Print("│"),
-        cursor::MoveTo(RBORD, start + 3),
+        cursor::MoveTo(x + RBORD, y + 3),
         style::Print("│"),
-        cursor::MoveTo(RBORD, start + 4),
+        cursor::MoveTo(x + RBORD, y + 4),
         style::Print("│"),
-        cursor::MoveTo(0, start + 5),
+        cursor::MoveTo(x, y + 5),
         style::Print("└────────────────────┘"),
     )?;
     Ok(())
 }
 
 fn render_memory(memory: &serial::Memory) -> anyhow::Result<()> {
-    let start = 20;
     if memory.pages == 0 {
         return Ok(());
     }
+    const X: u16 = 24;
+    const Y: u16 = 1;
     execute!(
         io::stdout(),
-        cursor::MoveTo(0, start),
+        cursor::MoveTo(X, Y),
         // https://en.wikipedia.org/wiki/Box-drawing_characters
         style::Print(format!("┌╴memory╶────────────┐")),
-        cursor::MoveTo(0, start + 1),
+        cursor::MoveTo(X, Y + 1),
         style::Print("│ min"),
-        cursor::MoveTo(COL1, start + 1),
+        cursor::MoveTo(X + COL1, Y + 1),
         style::Print(format_bytes(memory.last_one)),
-        cursor::MoveTo(0, start + 2),
+        cursor::MoveTo(X, Y + 2),
         style::Print("│ max"),
-        cursor::MoveTo(COL1, start + 2),
+        cursor::MoveTo(X + COL1, Y + 2),
         style::Print(format_bytes(memory.pages as u32 * 64 * KB)),
-        cursor::MoveTo(RBORD, start + 1),
+        cursor::MoveTo(X + RBORD, Y + 1),
         style::Print("│"),
-        cursor::MoveTo(RBORD, start + 2),
+        cursor::MoveTo(X + RBORD, Y + 2),
         style::Print("│"),
-        cursor::MoveTo(0, start + 3),
+        cursor::MoveTo(X, Y + 3),
         style::Print("└────────────────────┘"),
     )?;
     Ok(())
