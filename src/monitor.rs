@@ -13,6 +13,8 @@ const TCP_PORT_MAX: u16 = 3217;
 const COL1: u16 = 8;
 const COL2: u16 = 16;
 const RBORD: u16 = 21;
+const KB: u32 = 1024;
+const MB: u32 = 1024 * KB;
 
 struct Stats {
     update: Option<serial::Fuel>,
@@ -99,6 +101,9 @@ fn render_stats(stats: &Stats) -> Result<()> {
     if let Some(fuel) = &stats.render {
         render_fuel(14, "render", fuel).context("render fuel table")?;
     };
+    if let Some(memory) = &stats.mem {
+        render_memory(memory).context("render memory table")?;
+    };
     Ok(())
 }
 
@@ -182,6 +187,34 @@ fn render_fuel(start: u16, name: &str, fuel: &serial::Fuel) -> anyhow::Result<()
     Ok(())
 }
 
+fn render_memory(memory: &serial::Memory) -> anyhow::Result<()> {
+    let start = 20;
+    if memory.pages == 0 {
+        return Ok(());
+    }
+    execute!(
+        io::stdout(),
+        cursor::MoveTo(0, start),
+        // https://en.wikipedia.org/wiki/Box-drawing_characters
+        style::Print(format!("┌╴memory╶────────────┐")),
+        cursor::MoveTo(0, start + 1),
+        style::Print("│ min"),
+        cursor::MoveTo(COL1, start + 1),
+        style::Print(format_bytes(memory.last_one)),
+        cursor::MoveTo(0, start + 2),
+        style::Print("│ max"),
+        cursor::MoveTo(COL1, start + 2),
+        style::Print(format_bytes(memory.pages as u32 * 64 * KB)),
+        cursor::MoveTo(RBORD, start + 1),
+        style::Print("│"),
+        cursor::MoveTo(RBORD, start + 2),
+        style::Print("│"),
+        cursor::MoveTo(0, start + 3),
+        style::Print("└────────────────────┘"),
+    )?;
+    Ok(())
+}
+
 fn format_ns(ns: u32) -> String {
     if ns > 10_000_000 {
         return format!("{:>4} ms", ns / 1_000_000);
@@ -204,6 +237,16 @@ fn format_ratio(n: u32, d: u32) -> String {
 fn format_value(x: u32) -> String {
     if x > 10_000 {
         return format!("{:>3}k", x / 1000);
+    }
+    format!("{x:>4}")
+}
+
+fn format_bytes(x: u32) -> String {
+    if x > 4 * MB {
+        return format!("{:>3} MB", x / MB);
+    }
+    if x > KB {
+        return format!("{:>3} KB", x / KB);
     }
     format!("{x:>4}")
 }
