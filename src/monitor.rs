@@ -87,39 +87,79 @@ fn run_monitor(_args: &MonitorArgs) -> Result<()> {
 
 fn render_stats(stats: &Stats) -> Result<()> {
     execute!(io::stdout(), terminal::Clear(ClearType::All))?;
-
     if let Some(cpu) = &stats.cpu {
-        execute!(
-            io::stdout(),
-            cursor::MoveTo(0, 1),
-            // https://en.wikipedia.org/wiki/Box-drawing_characters
-            style::Print("┌╴CPU╶──────────────┐"),
-            cursor::MoveTo(0, 2),
-            style::Print("│ lag"),
-            cursor::MoveTo(8, 2),
-            style::Print(&format_ns(cpu.lag_ns)),
-            cursor::MoveTo(15, 2),
-            style::Print(&format_ratio(cpu.lag_ns, cpu.total_ns)),
-            cursor::MoveTo(0, 3),
-            style::Print("│ busy"),
-            cursor::MoveTo(8, 3),
-            style::Print(&format_ns(cpu.busy_ns)),
-            cursor::MoveTo(15, 3),
-            style::Print(&format_ratio(cpu.busy_ns, cpu.total_ns)),
-            cursor::MoveTo(0, 4),
-            style::Print("│ total"),
-            cursor::MoveTo(8, 4),
-            style::Print(&format_ns(cpu.total_ns)),
-            cursor::MoveTo(20, 2),
-            style::Print("│"),
-            cursor::MoveTo(20, 3),
-            style::Print("│"),
-            cursor::MoveTo(20, 4),
-            style::Print("│"),
-            cursor::MoveTo(0, 5),
-            style::Print("└───────────────────┘"),
-        )?;
+        render_cpu(cpu).context("render cpu table")?;
     };
+    if let Some(fuel) = &stats.update {
+        render_fuel(7, "update", fuel).context("render fuel table")?;
+    };
+    if let Some(fuel) = &stats.render {
+        render_fuel(14, "render", fuel).context("render fuel table")?;
+    };
+    Ok(())
+}
+
+fn render_cpu(cpu: &serial::CPU) -> anyhow::Result<()> {
+    if cpu.total_ns == 0 {
+        return Ok(());
+    }
+    execute!(
+        io::stdout(),
+        cursor::MoveTo(0, 1),
+        // https://en.wikipedia.org/wiki/Box-drawing_characters
+        style::Print("┌╴cpu╶──────────────┐"),
+        cursor::MoveTo(0, 2),
+        style::Print("│ lag"),
+        cursor::MoveTo(8, 2),
+        style::Print(&format_ns(cpu.lag_ns)),
+        cursor::MoveTo(15, 2),
+        style::Print(&format_ratio(cpu.lag_ns, cpu.total_ns)),
+        cursor::MoveTo(0, 3),
+        style::Print("│ busy"),
+        cursor::MoveTo(8, 3),
+        style::Print(&format_ns(cpu.busy_ns)),
+        cursor::MoveTo(15, 3),
+        style::Print(&format_ratio(cpu.busy_ns, cpu.total_ns)),
+        cursor::MoveTo(0, 4),
+        style::Print("│ total"),
+        cursor::MoveTo(8, 4),
+        style::Print(&format_ns(cpu.total_ns)),
+        cursor::MoveTo(20, 2),
+        style::Print("│"),
+        cursor::MoveTo(20, 3),
+        style::Print("│"),
+        cursor::MoveTo(20, 4),
+        style::Print("│"),
+        cursor::MoveTo(0, 5),
+        style::Print("└───────────────────┘"),
+    )?;
+    Ok(())
+}
+
+fn render_fuel(start: u16, name: &str, fuel: &serial::Fuel) -> anyhow::Result<()> {
+    if fuel.calls == 0 {
+        return Ok(());
+    }
+    execute!(
+        io::stdout(),
+        cursor::MoveTo(0, start),
+        // https://en.wikipedia.org/wiki/Box-drawing_characters
+        style::Print(format!("┌╴fuel: {name}╶─────┐")),
+        cursor::MoveTo(0, start + 1),
+        style::Print("│ min"),
+        cursor::MoveTo(8, start + 1),
+        style::Print(format_value(fuel.min)),
+        cursor::MoveTo(0, start + 2),
+        style::Print("│ max"),
+        cursor::MoveTo(8, start + 2),
+        style::Print(format_value(fuel.max)),
+        cursor::MoveTo(0, start + 3),
+        style::Print("│ mean"),
+        cursor::MoveTo(8, start + 3),
+        style::Print(format_value(fuel.mean)),
+        cursor::MoveTo(0, start + 4),
+        style::Print("└───────────────────┘"),
+    )?;
     Ok(())
 }
 
@@ -141,4 +181,11 @@ fn format_ratio(n: u32, d: u32) -> String {
         return "  0%".to_string();
     }
     format!("{:>3}%", n as u64 * 100 / d as u64)
+}
+
+fn format_value(x: u32) -> String {
+    if x > 10_000 {
+        return format!("{:>3}k", x / 1000);
+    }
+    format!("{x:>4}")
 }
