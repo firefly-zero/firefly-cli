@@ -91,22 +91,33 @@ fn render_stats(stats: &Stats) -> Result<()> {
     if let Some(cpu) = &stats.cpu {
         execute!(
             io::stdout(),
-            cursor::MoveTo(1, 1),
-            style::Print("lag"),
-            cursor::MoveTo(8, 1),
-            style::Print(&format_ns(cpu.lag_ns)),
-            cursor::MoveTo(16, 1),
-            style::Print(&format_ratio(cpu.lag_ns, cpu.total_ns)),
-            cursor::MoveTo(1, 2),
-            style::Print("busy"),
+            cursor::MoveTo(0, 1),
+            // https://en.wikipedia.org/wiki/Box-drawing_characters
+            style::Print("┌╴CPU╶──────────────┐"),
+            cursor::MoveTo(0, 2),
+            style::Print("│ lag"),
             cursor::MoveTo(8, 2),
-            style::Print(&format_ns(cpu.busy_ns)),
-            cursor::MoveTo(16, 2),
-            style::Print(&format_ratio(cpu.busy_ns, cpu.total_ns)),
-            cursor::MoveTo(1, 3),
-            style::Print("total"),
+            style::Print(&format_ns(cpu.lag_ns)),
+            cursor::MoveTo(15, 2),
+            style::Print(&format_ratio(cpu.lag_ns, cpu.total_ns)),
+            cursor::MoveTo(0, 3),
+            style::Print("│ busy"),
             cursor::MoveTo(8, 3),
+            style::Print(&format_ns(cpu.busy_ns)),
+            cursor::MoveTo(15, 3),
+            style::Print(&format_ratio(cpu.busy_ns, cpu.total_ns)),
+            cursor::MoveTo(0, 4),
+            style::Print("│ total"),
+            cursor::MoveTo(8, 4),
             style::Print(&format_ns(cpu.total_ns)),
+            cursor::MoveTo(20, 2),
+            style::Print("│"),
+            cursor::MoveTo(20, 3),
+            style::Print("│"),
+            cursor::MoveTo(20, 4),
+            style::Print("│"),
+            cursor::MoveTo(0, 5),
+            style::Print("└───────────────────┘"),
         )?;
     };
     Ok(())
@@ -114,17 +125,20 @@ fn render_stats(stats: &Stats) -> Result<()> {
 
 fn format_ns(ns: u32) -> String {
     if ns > 1_000_000_000 {
-        return format!("{}s", ns / 1_000_000_000);
+        return format!("{:>3} s", ns / 1_000_000_000);
     }
     if ns > 1_000_000 {
-        return format!("{}ms", ns / 1_000_000);
+        return format!("{:>3} ms", ns / 1_000_000);
     }
     if ns > 1_000 {
-        return format!("{}μs", ns / 1_000);
+        return format!("{:>3} μs", ns / 1_000);
     }
-    format!("{}ns", ns)
+    format!("{:>3} ns", ns)
 }
 
 fn format_ratio(n: u32, d: u32) -> String {
-    format!("{}%", n as u64 * 100 / d as u64)
+    if d == 0 {
+        return "  0%".to_string();
+    }
+    format!("{:>3}%", n as u64 * 100 / d as u64)
 }
