@@ -30,7 +30,7 @@ data-encoding = "2.6.0"
 # Find the best place to sotre the VFS
 directories = "5.0.1"
 # Serialize app config into meta file in the ROM
-firefly-meta = "0.1.2"
+firefly-types = { path = "../firefly-types" }
 # Parse PNG images
 image = { version = "0.25.1", default-features = false, features = ["png"] }
 # Random device name generation

@@ -365,10 +365,8 @@ dependencies = [
 ]
 
 [[package]]
-name = "firefly-meta"
+name = "firefly-types"
 version = "0.1.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1ad5fbe1bbecd684a437ad98c2567f7fa81995a340af9492a0fcca98c600f7c0"
 dependencies = [
  "postcard",
  "serde",
@@ -384,7 +382,7 @@ dependencies = [
  "crossterm",
  "data-encoding",
  "directories",
- "firefly-meta",
+ "firefly-types",
  "image",
  "rand",
  "rsa",

@@ -4,7 +4,7 @@ use crate::file_names::{HASH, KEY, META, SIG};
 use crate::vfs::init_vfs;
 use anyhow::{bail, Context, Result};
 use data_encoding::HEXLOWER;
-use firefly_meta::Meta;
+use firefly_types::Meta;
 use rsa::pkcs1::DecodeRsaPublicKey;
 use rsa::pkcs1v15::{Signature, VerifyingKey};
 use rsa::signature::hazmat::PrehashVerifier;
@@ -97,7 +97,7 @@ fn read_meta_raw(archive: &mut ZipArchive<File>) -> Result<Vec<u8>> {
 
 /// Write the latest installed app name into internal DB.
 fn write_installed(meta: &Meta, vfs_path: &Path) -> anyhow::Result<()> {
-    let short_meta = firefly_meta::ShortMeta {
+    let short_meta = firefly_types::ShortMeta {
         app_id: meta.app_id,
         author_id: meta.author_id,
     };
@@ -116,7 +116,7 @@ fn write_installed(meta: &Meta, vfs_path: &Path) -> anyhow::Result<()> {
 fn verify(rom_path: &Path) -> anyhow::Result<()> {
     let hash_path = rom_path.join(HASH);
     let hash_expected: &[u8] = &fs::read(hash_path).context("read hash file")?;
-    let hash_actual: &[u8] = &hash_dir(rom_path).context("calculate hash")?;
+    let hash_actual: &[u8] = &hash_dir(rom_path).context("calculate hash")?[..];
     if hash_actual != hash_expected {
         let exp = HEXLOWER.encode(hash_expected);
         let act = HEXLOWER.encode(hash_actual);

@@ -84,7 +84,7 @@ pub fn cmd_build(vfs: PathBuf, args: &BuildArgs) -> anyhow::Result<()> {
 
 /// Serialize and write the ROM meta information.
 fn write_meta(config: &Config) -> anyhow::Result<()> {
-    use firefly_meta::{validate_id, validate_name, Meta};
+    use firefly_types::{validate_id, validate_name, Meta};
     if let Err(err) = validate_id(&config.app_id) {
         bail!("validate app_id: {err}");
     }
@@ -116,7 +116,7 @@ fn write_meta(config: &Config) -> anyhow::Result<()> {
 
 /// Write the latest installed app name into internal DB.
 fn write_installed(config: &Config) -> anyhow::Result<()> {
-    let short_meta = firefly_meta::ShortMeta {
+    let short_meta = firefly_types::ShortMeta {
         app_id: &config.app_id,
         author_id: &config.author_id,
     };
@@ -210,7 +210,7 @@ fn write_hash(rom_path: &Path) -> anyhow::Result<()> {
     let hash = hash_dir(rom_path)?;
     let hash_path = rom_path.join(HASH);
     let mut hash_file = fs::File::create(hash_path).context("create file")?;
-    hash_file.write_all(&hash).context("write file")
+    hash_file.write_all(&hash[..]).context("write file")
 }
 
 /// Sign the ROM hash.

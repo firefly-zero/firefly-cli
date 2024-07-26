@@ -7,10 +7,15 @@ use std::path::Path;
 use std::thread::sleep;
 use std::time::Duration;
 
-pub fn cmd_monitor(vfs: &Path, args: &MonitorArgs) -> Result<()> {
+pub fn cmd_monitor(_vfs: &Path, args: &MonitorArgs) -> Result<()> {
     execute!(io::stdout(), terminal::EnterAlternateScreen)?;
     execute!(io::stdout(), cursor::Hide)?;
+    let res = run_monitor(args);
+    execute!(io::stdout(), terminal::LeaveAlternateScreen)?;
+    res
+}
 
+fn run_monitor(args: &MonitorArgs) -> Result<()> {
     execute!(io::stdout(), cursor::MoveTo(0, 0))?;
     execute!(io::stdout(), style::Print("hello!!!"))?;
     sleep(Duration::from_secs(1));
@@ -19,7 +24,5 @@ pub fn cmd_monitor(vfs: &Path, args: &MonitorArgs) -> Result<()> {
     execute!(io::stdout(), cursor::MoveTo(0, 0))?;
     execute!(io::stdout(), style::Print("world"))?;
     sleep(Duration::from_secs(1));
-
-    execute!(io::stdout(), terminal::LeaveAlternateScreen)?;
     Ok(())
 }
