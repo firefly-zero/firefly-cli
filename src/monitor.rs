@@ -32,33 +32,7 @@ pub fn cmd_monitor(_vfs: &Path, args: &MonitorArgs) -> Result<()> {
 }
 
 fn run_monitor(_args: &MonitorArgs) -> Result<()> {
-    execute!(
-        io::stdout(),
-        terminal::Clear(ClearType::All),
-        cursor::MoveTo(0, 0),
-        style::Print("connecting..."),
-    )?;
-
-    let addrs: Vec<_> = (TCP_PORT_MIN..=TCP_PORT_MAX)
-        .map(|port| SocketAddr::new(IP, port))
-        .collect();
-    let mut stream = TcpStream::connect(&addrs[..]).context("connect to emulator")?;
-
-    execute!(
-        io::stdout(),
-        terminal::Clear(ClearType::All),
-        cursor::MoveTo(0, 0),
-        style::Print("waiting for stats..."),
-    )?;
-
-    // enable stats collection
-    {
-        let mut buf = vec![0; 64];
-        let req = serial::Request::Stats(true);
-        let buf = req.encode(&mut buf).context("encode request")?;
-        stream.write_all(&buf).context("send request")?;
-        stream.flush().context("flush request")?;
-    }
+    let mut stream = connect()?;
 
     let mut stats = Stats {
         update: None,
@@ -88,6 +62,37 @@ fn run_monitor(_args: &MonitorArgs) -> Result<()> {
         };
         render_stats(&stats)?;
     }
+}
+
+fn connect() -> Result<TcpStream, anyhow::Error> {
+    execute!(
+        io::stdout(),
+        terminal::Clear(ClearType::All),
+        cursor::MoveTo(0, 0),
+        style::Print("connecting..."),
+    )?;
+    let addrs: Vec<_> = (TCP_PORT_MIN..=TCP_PORT_MAX)
+        .map(|port| SocketAddr::new(IP, port))
+        .collect();
+    let mut stream = TcpStream::connect(&addrs[..]).context("connect to emulator")?;
+
+    execute!(
+        io::stdout(),
+        terminal::Clear(ClearType::All),
+        cursor::MoveTo(0, 0),
+        style::Print("waiting for stats..."),
+    )?;
+
+    // enable stats collection
+    {
+        let mut buf = vec![0; 64];
+        let req = serial::Request::Stats(true);
+        let buf = req.encode(&mut buf).context("encode request")?;
+        stream.write_all(&buf).context("send request")?;
+        stream.flush().context("flush request")?;
+    }
+
+    Ok(stream)
 }
 
 fn render_stats(stats: &Stats) -> Result<()> {
