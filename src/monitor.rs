@@ -10,6 +10,9 @@ use std::path::Path;
 static IP: IpAddr = IpAddr::V4(Ipv4Addr::UNSPECIFIED);
 const TCP_PORT_MIN: u16 = 3210;
 const TCP_PORT_MAX: u16 = 3217;
+const COL1: u16 = 8;
+const COL2: u16 = 16;
+const RBORD: u16 = 21;
 
 struct Stats {
     update: Option<serial::Fuel>,
@@ -103,35 +106,38 @@ fn render_cpu(cpu: &serial::CPU) -> anyhow::Result<()> {
     if cpu.total_ns == 0 {
         return Ok(());
     }
+    let idle = cpu.total_ns.saturating_sub(cpu.busy_ns);
     execute!(
         io::stdout(),
         cursor::MoveTo(0, 1),
         // https://en.wikipedia.org/wiki/Box-drawing_characters
-        style::Print("┌╴cpu╶──────────────┐"),
+        style::Print("┌╴cpu╶───────────────┐"),
         cursor::MoveTo(0, 2),
         style::Print("│ lag"),
-        cursor::MoveTo(8, 2),
+        cursor::MoveTo(COL1, 2),
         style::Print(&format_ns(cpu.lag_ns)),
-        cursor::MoveTo(15, 2),
+        cursor::MoveTo(COL2, 2),
         style::Print(&format_ratio(cpu.lag_ns, cpu.total_ns)),
         cursor::MoveTo(0, 3),
         style::Print("│ busy"),
-        cursor::MoveTo(8, 3),
+        cursor::MoveTo(COL1, 3),
         style::Print(&format_ns(cpu.busy_ns)),
-        cursor::MoveTo(15, 3),
+        cursor::MoveTo(COL2, 3),
         style::Print(&format_ratio(cpu.busy_ns, cpu.total_ns)),
         cursor::MoveTo(0, 4),
-        style::Print("│ total"),
-        cursor::MoveTo(8, 4),
-        style::Print(&format_ns(cpu.total_ns)),
-        cursor::MoveTo(20, 2),
+        style::Print("│ idle"),
+        cursor::MoveTo(COL1, 4),
+        style::Print(&format_ns(idle)),
+        cursor::MoveTo(COL2, 4),
+        style::Print(&format_ratio(idle, cpu.total_ns)),
+        cursor::MoveTo(RBORD, 2),
         style::Print("│"),
-        cursor::MoveTo(20, 3),
+        cursor::MoveTo(RBORD, 3),
         style::Print("│"),
-        cursor::MoveTo(20, 4),
+        cursor::MoveTo(RBORD, 4),
         style::Print("│"),
         cursor::MoveTo(0, 5),
-        style::Print("└───────────────────┘"),
+        style::Print("└────────────────────┘"),
     )?;
     Ok(())
 }
@@ -144,43 +150,49 @@ fn render_fuel(start: u16, name: &str, fuel: &serial::Fuel) -> anyhow::Result<()
         io::stdout(),
         cursor::MoveTo(0, start),
         // https://en.wikipedia.org/wiki/Box-drawing_characters
-        style::Print(format!("┌╴fuel: {name}╶─────┐")),
+        style::Print(format!("┌╴fuel: {name}╶──────┐")),
         cursor::MoveTo(0, start + 1),
         style::Print("│ min"),
-        cursor::MoveTo(8, start + 1),
+        cursor::MoveTo(COL1, start + 1),
         style::Print(format_value(fuel.min)),
         cursor::MoveTo(0, start + 2),
         style::Print("│ max"),
-        cursor::MoveTo(8, start + 2),
+        cursor::MoveTo(COL1, start + 2),
         style::Print(format_value(fuel.max)),
         cursor::MoveTo(0, start + 3),
         style::Print("│ mean"),
-        cursor::MoveTo(8, start + 3),
+        cursor::MoveTo(COL1, start + 3),
         style::Print(format_value(fuel.mean)),
         cursor::MoveTo(0, start + 4),
-        style::Print("└───────────────────┘"),
+        cursor::MoveTo(RBORD, start + 1),
+        style::Print("│"),
+        cursor::MoveTo(RBORD, start + 2),
+        style::Print("│"),
+        cursor::MoveTo(RBORD, start + 3),
+        style::Print("│"),
+        cursor::MoveTo(0, start + 4),
+        style::Print("└────────────────────┘"),
     )?;
     Ok(())
 }
 
 fn format_ns(ns: u32) -> String {
-    if ns > 1_000_000_000 {
-        return format!("{:>3} s", ns / 1_000_000_000);
+    if ns > 10_000_000 {
+        return format!("{:>4} ms", ns / 1_000_000);
     }
-    if ns > 1_000_000 {
-        return format!("{:>3} ms", ns / 1_000_000);
+    if ns > 10_000 {
+        return format!("{:>4} μs", ns / 1_000);
     }
-    if ns > 1_000 {
-        return format!("{:>3} μs", ns / 1_000);
-    }
-    format!("{:>3} ns", ns)
+    format!("{:>4} ns", ns)
 }
 
 fn format_ratio(n: u32, d: u32) -> String {
     if d == 0 {
         return "  0%".to_string();
     }
-    format!("{:>3}%", n as u64 * 100 / d as u64)
+    let r = (n as f64 * 100.) / (d as f64);
+    let r = r.round_ties_even() as u8;
+    format!("{:>3}%", r)
 }
 
 fn format_value(x: u32) -> String {
