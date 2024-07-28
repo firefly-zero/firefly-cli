@@ -23,12 +23,14 @@ anyhow = "1.0.81"
 clap = { version = "4.5.4", features = ["derive"] }
 # ANSI color codes for terminal output
 colored = "2.1.0"
+# TUI for the "monitor" command
+crossterm = "0.27.0"
 # Convert binary hash into hex
 data-encoding = "2.6.0"
 # Find the best place to sotre the VFS
 directories = "5.0.1"
 # Serialize app config into meta file in the ROM
-firefly-meta = "0.1.2"
+firefly-types = { version = "0.2.0" }
 # Parse PNG images
 image = { version = "0.25.1", default-features = false, features = ["png"] }
 # Random device name generation

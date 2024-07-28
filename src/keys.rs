@@ -18,7 +18,7 @@ const BIT_SIZE: usize = 2048;
 pub fn cmd_key_new(vfs: &Path, args: &KeyArgs) -> anyhow::Result<()> {
     init_vfs(vfs).context("init vfs")?;
     let author = &args.author_id;
-    if let Err(err) = firefly_meta::validate_id(author) {
+    if let Err(err) = firefly_types::validate_id(author) {
         bail!("invalid author ID: {err}")
     }
 
@@ -103,7 +103,7 @@ pub fn export_key(vfs: &Path, args: &KeyExportArgs, public: bool) -> anyhow::Res
 
 pub fn cmd_key_rm(vfs: &Path, args: &KeyArgs) -> anyhow::Result<()> {
     let author = &args.author_id;
-    if let Err(err) = firefly_meta::validate_id(author) {
+    if let Err(err) = firefly_types::validate_id(author) {
         bail!("invalid author ID: {err}")
     }
 
@@ -144,7 +144,7 @@ pub fn cmd_key_add(vfs: &Path, args: &KeyArgs) -> anyhow::Result<()> {
         let author = author.to_string();
         let key_raw = fs::read(&key_path)?;
         (author, key_raw)
-    } else if firefly_meta::validate_id(key_path).is_ok() {
+    } else if firefly_types::validate_id(key_path).is_ok() {
         println!("⏳️ downloading the key from catalog...");
         let url = format!("https://catalog.fireflyzero.com/keys/{key_path}.der");
         download_key(&url)?

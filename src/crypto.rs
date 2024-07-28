@@ -45,16 +45,16 @@ mod tests {
         let dir = make_tmp_dir();
         assert_eq!(dir.read_dir().unwrap().count(), 0);
         std::fs::write(dir.join("somefile"), "hello").unwrap();
-        let hash1: &[u8] = &hash_dir(&dir).unwrap();
-        let hash2: &[u8] = &hash_dir(&dir).unwrap();
+        let hash1: &[u8] = &hash_dir(&dir).unwrap()[..];
+        let hash2: &[u8] = &hash_dir(&dir).unwrap()[..];
         assert_eq!(hash1, hash2, "not idempotent");
 
         std::fs::write(dir.join("somefile"), "hell").unwrap();
-        let hash3: &[u8] = &hash_dir(&dir).unwrap();
+        let hash3: &[u8] = &hash_dir(&dir).unwrap()[..];
         assert!(hash2 != hash3, "doesn't change if file changed");
 
         std::fs::write(dir.join("somefile2"), "hell").unwrap();
-        let hash4: &[u8] = &hash_dir(&dir).unwrap();
+        let hash4: &[u8] = &hash_dir(&dir).unwrap()[..];
         assert!(hash3 != hash4, "doesn't change if fiels added");
     }
 }

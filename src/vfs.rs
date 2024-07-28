@@ -53,7 +53,7 @@ pub fn init_vfs(path: &Path) -> anyhow::Result<()> {
 fn generate_valid_name() -> String {
     loop {
         let name = generate_name();
-        if firefly_meta::validate_id(&name).is_ok() {
+        if firefly_types::validate_id(&name).is_ok() {
             return name;
         }
     }

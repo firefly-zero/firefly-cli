@@ -1,6 +1,7 @@
 #![deny(clippy::all, clippy::pedantic, clippy::nursery)]
 #![allow(clippy::module_name_repetitions)]
 #![allow(clippy::option_if_let_else)]
+#![allow(clippy::enum_glob_use)]
 
 mod args;
 mod build;
@@ -12,6 +13,7 @@ mod images;
 mod import;
 mod keys;
 mod langs;
+mod monitor;
 mod vfs;
 mod wasm;
 
@@ -23,6 +25,7 @@ use crate::build::cmd_build;
 use crate::export::cmd_export;
 use crate::import::cmd_import;
 use crate::keys::{cmd_key_add, cmd_key_new, cmd_key_priv, cmd_key_pub, cmd_key_rm};
+use crate::monitor::cmd_monitor;
 use crate::vfs::{cmd_vfs, get_vfs_path};
 use clap::Parser;
 use colored::Colorize;
@@ -35,6 +38,7 @@ fn main() {
         Commands::Build(args) => cmd_build(vfs, args),
         Commands::Export(args) => cmd_export(&vfs, args),
         Commands::Import(args) => cmd_import(&vfs, args),
+        Commands::Monitor(args) => cmd_monitor(&vfs, args),
         Commands::Key(KeyCommands::New(args)) => cmd_key_new(&vfs, args),
         Commands::Key(KeyCommands::Add(args)) => cmd_key_add(&vfs, args),
         Commands::Key(KeyCommands::Pub(args)) => cmd_key_pub(&vfs, args),
