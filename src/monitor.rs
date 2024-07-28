@@ -52,16 +52,17 @@ fn run_monitor(_args: &MonitorArgs) -> Result<()> {
         let resp = serial::Response::decode(&buf[..size]).context("decode response")?;
         match resp {
             serial::Response::Cheat(_) => {}
-            serial::Response::Fuel(cb, fuel) => match cb {
-                serial::Callback::Boot => {}
-                serial::Callback::Update => stats.update = Some(fuel),
-                serial::Callback::Render => stats.render = Some(fuel),
-                serial::Callback::RenderLine => {}
-                serial::Callback::Cheat => {}
-            },
+            serial::Response::Fuel(cb, fuel) => {
+                use serial::Callback::*;
+                match cb {
+                    Update => stats.update = Some(fuel),
+                    Render => stats.render = Some(fuel),
+                    RenderLine | Cheat | Boot => {}
+                }
+            }
             serial::Response::CPU(cpu) => {
                 if cpu.total_ns > 0 {
-                    stats.cpu = Some(cpu)
+                    stats.cpu = Some(cpu);
                 }
             }
             serial::Response::Memory(mem) => stats.mem = Some(mem),
@@ -80,13 +81,12 @@ fn connect() -> Result<TcpStream, anyhow::Error> {
     let addrs: Vec<_> = (TCP_PORT_MIN..=TCP_PORT_MAX)
         .map(|port| SocketAddr::new(IP, port))
         .collect();
-    let mut stream = match TcpStream::connect(&addrs[..]) {
-        Ok(stream) => stream,
-        Err(_) => {
-            sleep(Duration::from_secs(1));
-            TcpStream::connect(&addrs[..]).context("connect to emulator")?
-        }
+    let mut maybe_stream = TcpStream::connect(&addrs[..]);
+    if maybe_stream.is_err() {
+        sleep(Duration::from_secs(1));
+        maybe_stream = TcpStream::connect(&addrs[..]);
     };
+    let mut stream = maybe_stream.context("connect to emulator")?;
 
     execute!(
         io::stdout(),
@@ -100,7 +100,7 @@ fn connect() -> Result<TcpStream, anyhow::Error> {
         let mut buf = vec![0; 64];
         let req = serial::Request::Stats(true);
         let buf = req.encode(&mut buf).context("encode request")?;
-        stream.write_all(&buf).context("send request")?;
+        stream.write_all(buf).context("send request")?;
         stream.flush().context("flush request")?;
     }
 
@@ -125,11 +125,11 @@ fn render_stats(stats: &Stats) -> Result<()> {
 }
 
 fn render_cpu(cpu: &serial::CPU) -> anyhow::Result<()> {
+    const X: u16 = 1;
+    const Y: u16 = 1;
     if cpu.total_ns == 0 {
         return Ok(());
     }
-    const X: u16 = 1;
-    const Y: u16 = 1;
     let idle = cpu.total_ns.saturating_sub(cpu.busy_ns);
     execute!(
         io::stdout(),
@@ -190,6 +190,7 @@ fn render_fuel(x: u16, y: u16, name: &str, fuel: &serial::Fuel) -> anyhow::Resul
         cursor::MoveTo(x, y + 4),
         style::Print("│ stdev"),
         cursor::MoveTo(x + COL1, y + 4),
+        #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
         style::Print(format_value(fuel.var.sqrt() as u32)),
         cursor::MoveTo(x, y + 4),
         cursor::MoveTo(x + RBORD, y + 1),
@@ -207,16 +208,16 @@ fn render_fuel(x: u16, y: u16, name: &str, fuel: &serial::Fuel) -> anyhow::Resul
 }
 
 fn render_memory(memory: &serial::Memory) -> anyhow::Result<()> {
+    const X: u16 = 24;
+    const Y: u16 = 1;
     if memory.pages == 0 {
         return Ok(());
     }
-    const X: u16 = 24;
-    const Y: u16 = 1;
     execute!(
         io::stdout(),
         cursor::MoveTo(X, Y),
         // https://en.wikipedia.org/wiki/Box-drawing_characters
-        style::Print(format!("┌╴memory╶────────────┐")),
+        style::Print("┌╴memory╶────────────┐"),
         cursor::MoveTo(X, Y + 1),
         style::Print("│ floor"),
         cursor::MoveTo(X + COL1, Y + 1),
@@ -224,7 +225,7 @@ fn render_memory(memory: &serial::Memory) -> anyhow::Result<()> {
         cursor::MoveTo(X, Y + 2),
         style::Print("│ ceil"),
         cursor::MoveTo(X + COL1, Y + 2),
-        style::Print(format_bytes(memory.pages as u32 * 64 * KB)),
+        style::Print(format_bytes(u32::from(memory.pages) * 64 * KB)),
         cursor::MoveTo(X + COL2, Y + 2),
         style::Print(format!("{}p", memory.pages)),
         cursor::MoveTo(X + RBORD, Y + 1),
@@ -244,16 +245,18 @@ fn format_ns(ns: u32) -> String {
     if ns > 10_000 {
         return format!("{:>4} μs", ns / 1_000);
     }
-    format!("{:>4} ns", ns)
+    format!("{ns:>4} ns")
 }
 
 fn format_ratio(n: u32, d: u32) -> String {
     if d == 0 {
         return "  0%".to_string();
     }
-    let r = (n as f64 * 100.) / (d as f64);
-    let r = r.round_ties_even() as u8;
-    format!("{:>3}%", r)
+    let r = f64::from(n) * 100. / f64::from(d);
+    let r = r.round_ties_even();
+    #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+    let r = u8::try_from(r as u64).unwrap_or(255);
+    format!("{r:>3}%")
 }
 
 fn format_value(x: u32) -> String {

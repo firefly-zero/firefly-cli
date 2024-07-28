@@ -1,6 +1,7 @@
 #![deny(clippy::all, clippy::pedantic, clippy::nursery)]
 #![allow(clippy::module_name_repetitions)]
 #![allow(clippy::option_if_let_else)]
+#![allow(clippy::enum_glob_use)]
 
 mod args;
 mod build;
