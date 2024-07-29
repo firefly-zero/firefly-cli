@@ -32,6 +32,10 @@ pub enum Commands {
     #[command(subcommand)]
     #[clap(alias("keys"))]
     Key(KeyCommands),
+
+    /// Commands to interact with catalog.fireflyzero.com.
+    #[command(subcommand)]
+    Catalog(CatalogCommands),
 }
 
 #[derive(Subcommand, Debug)]
@@ -55,6 +59,17 @@ pub enum KeyCommands {
     /// Remove the public and private key.
     #[clap(alias("remove"))]
     Rm(KeyArgs),
+}
+
+#[derive(Subcommand, Debug)]
+pub enum CatalogCommands {
+    /// List all games available in the catalog.
+    #[clap(alias("ls"), alias("apps"))]
+    List(CatalogListArgs),
+
+    /// Show info about an app or author.
+    #[clap(alias("info"), alias("app"), alias("author"))]
+    Show(CatalogShowArgs),
 }
 
 #[derive(Debug, Parser)]
@@ -136,3 +151,13 @@ pub struct ImportArgs {
 
 #[derive(Debug, Parser)]
 pub struct MonitorArgs {}
+
+#[derive(Debug, Parser)]
+pub struct CatalogListArgs {}
+
+#[derive(Debug, Parser)]
+pub struct CatalogShowArgs {
+    /// The app/author ID to get info for. For example, "lux.snek".
+    #[arg()]
+    pub id: String,
+}

@@ -1,6 +1,5 @@
 use crate::args::MonitorArgs;
 use anyhow::{Context, Result};
-use crossterm::terminal::ClearType;
 use crossterm::{cursor, execute, style, terminal};
 use firefly_types::serial;
 use std::io::{self, Read, Write};
@@ -74,7 +73,7 @@ fn run_monitor(_args: &MonitorArgs) -> Result<()> {
 fn connect() -> Result<TcpStream, anyhow::Error> {
     execute!(
         io::stdout(),
-        terminal::Clear(ClearType::All),
+        terminal::Clear(terminal::ClearType::All),
         cursor::MoveTo(0, 0),
         style::Print("connecting..."),
     )?;
@@ -90,7 +89,7 @@ fn connect() -> Result<TcpStream, anyhow::Error> {
 
     execute!(
         io::stdout(),
-        terminal::Clear(ClearType::All),
+        terminal::Clear(terminal::ClearType::All),
         cursor::MoveTo(0, 0),
         style::Print("waiting for stats..."),
     )?;
@@ -108,7 +107,7 @@ fn connect() -> Result<TcpStream, anyhow::Error> {
 }
 
 fn render_stats(stats: &Stats) -> Result<()> {
-    execute!(io::stdout(), terminal::Clear(ClearType::All))?;
+    execute!(io::stdout(), terminal::Clear(terminal::ClearType::All))?;
     if let Some(cpu) = &stats.cpu {
         render_cpu(cpu).context("render cpu table")?;
     };

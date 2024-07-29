@@ -6,7 +6,7 @@ use crate::images::convert_image;
 use crate::langs::build_bin;
 use crate::vfs::init_vfs;
 use anyhow::{bail, Context};
-use colored::Colorize;
+use crossterm::style::Stylize;
 use data_encoding::HEXLOWER;
 use rand::Rng;
 use rsa::pkcs1::DecodeRsaPrivateKey;
@@ -123,10 +123,11 @@ fn write_installed(config: &Config) -> anyhow::Result<()> {
     let mut buf = vec![0; short_meta.size()];
     let encoded = short_meta.encode(&mut buf).context("serialize")?;
     let output_path = config.vfs_path.join("sys").join("new-app");
+    #[allow(clippy::needless_borrows_for_generic_args)]
     fs::write(output_path, &encoded).context("write new-app file")?;
     if config.launcher {
         let output_path = config.vfs_path.join("sys").join("launcher");
-        fs::write(output_path, &encoded).context("write launcher file")?;
+        fs::write(output_path, encoded).context("write launcher file")?;
     }
     Ok(())
 }
@@ -304,7 +305,7 @@ fn print_sizes(old_sizes: &HashMap<OsString, u64>, new_sizes: &HashMap<OsString,
         // convert big file size into Kb or Mb.
         let new_size = if *new_size > 1024 * 1024 {
             let new_size = new_size / 1024 / 1024;
-            format!("{new_size:>7} {}", "Mb".purple())
+            format!("{new_size:>7} {}", "Mb".magenta())
         } else if *new_size > 1024 {
             let new_size = new_size / 1024;
             format!("{new_size:>7} {}", "Kb".blue())

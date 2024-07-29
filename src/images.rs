@@ -28,7 +28,7 @@ static DEFAULT_PALETTE: &[Option<Rgb<u8>>] = &[
 ];
 
 pub fn convert_image(input_path: &Path, output_path: &Path) -> Result<()> {
-    let file = image::io::Reader::open(input_path).context("open image file")?;
+    let file = image::ImageReader::open(input_path).context("open image file")?;
     let img = file.decode().context("decode image")?;
     let img = img.to_rgba8();
     if img.width() % 8 != 0 {
