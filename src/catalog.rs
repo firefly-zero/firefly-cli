@@ -1,5 +1,6 @@
 use crate::args::{CatalogListArgs, CatalogShowArgs};
 use anyhow::{bail, Context, Result};
+use crossterm::style::Stylize;
 use serde::Deserialize;
 
 const LIST_URL: &str = "https://catalog.fireflyzero.com/apps.json";
@@ -8,9 +9,9 @@ const LIST_URL: &str = "https://catalog.fireflyzero.com/apps.json";
 struct ShortApp {
     id: String,
     name: String,
-    // author: String,
+    author: String,
     short: String,
-    // added: String,
+    added: String,
 }
 
 pub fn cmd_catalog_list(_args: &CatalogListArgs) -> Result<()> {
@@ -20,8 +21,17 @@ pub fn cmd_catalog_list(_args: &CatalogListArgs) -> Result<()> {
     }
     let apps: Vec<ShortApp> =
         serde_json::from_reader(&mut resp.into_reader()).context("parse JSON")?;
+    let id_width = apps.iter().map(|app| app.id.len()).max().unwrap();
     for app in apps {
-        println!("{} ({}): {}", app.name, app.id, app.short);
+        println!(
+            "{} | {:5$} | {} by {}: {}",
+            app.added,
+            app.id,
+            app.name.blue(),
+            app.author.cyan(),
+            app.short,
+            id_width,
+        );
     }
     Ok(())
 }
