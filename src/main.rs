@@ -5,6 +5,7 @@
 
 mod args;
 mod build;
+mod catalog;
 mod config;
 mod crypto;
 mod export;
@@ -22,11 +23,13 @@ mod test_helpers;
 
 use crate::args::{Cli, Commands, KeyCommands};
 use crate::build::cmd_build;
+use crate::catalog::{cmd_catalog_list, cmd_catalog_show};
 use crate::export::cmd_export;
 use crate::import::cmd_import;
 use crate::keys::{cmd_key_add, cmd_key_new, cmd_key_priv, cmd_key_pub, cmd_key_rm};
 use crate::monitor::cmd_monitor;
 use crate::vfs::{cmd_vfs, get_vfs_path};
+use args::CatalogCommands;
 use clap::Parser;
 use colored::Colorize;
 use std::fmt::Display;
@@ -44,6 +47,8 @@ fn main() {
         Commands::Key(KeyCommands::Pub(args)) => cmd_key_pub(&vfs, args),
         Commands::Key(KeyCommands::Priv(args)) => cmd_key_priv(&vfs, args),
         Commands::Key(KeyCommands::Rm(args)) => cmd_key_rm(&vfs, args),
+        Commands::Catalog(CatalogCommands::List(args)) => cmd_catalog_list(args),
+        Commands::Catalog(CatalogCommands::Show(args)) => cmd_catalog_show(args),
         Commands::Vfs => cmd_vfs(),
     };
     if let Err(err) = res {

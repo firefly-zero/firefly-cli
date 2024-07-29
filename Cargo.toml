@@ -22,6 +22,7 @@ anyhow = "1.0.81"
 # Framework for parsing CLI args
 clap = { version = "4.5.4", features = ["derive"] }
 # ANSI color codes for terminal output
+# TODO: replace with crossterm.
 colored = "2.1.0"
 # TUI for the "monitor" command
 crossterm = "0.27.0"
