@@ -6,7 +6,7 @@ use crate::images::convert_image;
 use crate::langs::build_bin;
 use crate::vfs::init_vfs;
 use anyhow::{bail, Context};
-use colored::Colorize;
+use crossterm::style::Stylize;
 use data_encoding::HEXLOWER;
 use rand::Rng;
 use rsa::pkcs1::DecodeRsaPrivateKey;
@@ -304,7 +304,7 @@ fn print_sizes(old_sizes: &HashMap<OsString, u64>, new_sizes: &HashMap<OsString,
         // convert big file size into Kb or Mb.
         let new_size = if *new_size > 1024 * 1024 {
             let new_size = new_size / 1024 / 1024;
-            format!("{new_size:>7} {}", "Mb".purple())
+            format!("{new_size:>7} {}", "Mb".magenta())
         } else if *new_size > 1024 {
             let new_size = new_size / 1024;
             format!("{new_size:>7} {}", "Kb".blue())

@@ -31,7 +31,7 @@ use crate::monitor::cmd_monitor;
 use crate::vfs::{cmd_vfs, get_vfs_path};
 use args::CatalogCommands;
 use clap::Parser;
-use colored::Colorize;
+use crossterm::style::Stylize;
 use std::fmt::Display;
 
 fn main() {
