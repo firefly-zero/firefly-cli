@@ -21,7 +21,7 @@ categories = [
 anyhow = "*"
 # Framework for parsing CLI args
 clap = { version = "*", features = ["derive"] }
-# TUI for the "monitor" command
+# TUI for the "monitor" command, colored terminal output
 crossterm = "*"
 # Convert binary hash into hex
 data-encoding = "*"
