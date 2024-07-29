@@ -31,12 +31,16 @@ struct App {
 #[derive(Deserialize)]
 struct Author {
     name: String,
+    pronouns: Option<String>,
+    links: HashMap<String, String>,
+    short: String,
+    about: Option<String>,
 }
 
 pub fn cmd_catalog_list(_args: &CatalogListArgs) -> Result<()> {
     let resp = ureq::get(LIST_URL).call().context("send request")?;
     if resp.status() != 200 || resp.header("Content-Type") != Some("application/json") {
-        bail!("cannot connect ot the catalog")
+        bail!("cannot connect to the catalog")
     }
     let apps: Vec<ShortApp> =
         serde_json::from_reader(&mut resp.into_reader()).context("parse JSON")?;
@@ -56,10 +60,18 @@ pub fn cmd_catalog_list(_args: &CatalogListArgs) -> Result<()> {
 }
 
 pub fn cmd_catalog_show(args: &CatalogShowArgs) -> Result<()> {
+    if args.id.contains('.') {
+        show_app(args)
+    } else {
+        show_author(args)
+    }
+}
+
+pub fn show_app(args: &CatalogShowArgs) -> Result<()> {
     let url = format!("{BASE_URL}{}.json", args.id);
     let resp = ureq::get(&url).call().context("send request")?;
     if resp.status() != 200 || resp.header("Content-Type") != Some("application/json") {
-        bail!("cannot connect ot the catalog")
+        bail!("the app not found")
     }
     let app: App = serde_json::from_reader(&mut resp.into_reader()).context("parse JSON")?;
     println!("{} {}", col("title"), app.name);
@@ -78,6 +90,30 @@ pub fn cmd_catalog_show(args: &CatalogShowArgs) -> Result<()> {
     }
     println!("{} {}", col("download"), app.download);
     println!("{}\n{}", col("description"), app.desc);
+    Ok(())
+}
+
+pub fn show_author(args: &CatalogShowArgs) -> Result<()> {
+    let url = format!("{BASE_URL}{}.json", args.id);
+    let resp = ureq::get(&url).call().context("send request")?;
+    if resp.status() != 200 || resp.header("Content-Type") != Some("application/json") {
+        bail!("the author not found")
+    }
+    let aut: Author = serde_json::from_reader(&mut resp.into_reader()).context("parse JSON")?;
+    println!("{} {}", col("name"), aut.name);
+    if let Some(pronouns) = aut.pronouns {
+        println!("{} {}", col("pronouns"), pronouns);
+    }
+    println!("{} {}", col("short"), aut.short);
+    if !aut.links.is_empty() {
+        println!("{}", col("links"));
+        for (name, url) in aut.links {
+            println!("  {}: {}", name.cyan(), url);
+        }
+    }
+    if let Some(about) = aut.about {
+        println!("{}\n{}", col("about"), about);
+    }
     Ok(())
 }
 

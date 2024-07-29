@@ -67,7 +67,7 @@ pub enum CatalogCommands {
     #[clap(alias("ls"))]
     List(CatalogListArgs),
 
-    /// Show info about a specific game.
+    /// Show info about an app or author.
     #[clap(alias("info"))]
     Show(CatalogShowArgs),
 }
@@ -157,7 +157,7 @@ pub struct CatalogListArgs {}
 
 #[derive(Debug, Parser)]
 pub struct CatalogShowArgs {
-    /// The app ID to get info for. For example, "lux.snek".
+    /// The app/author ID to get info for. For example, "lux.snek".
     #[arg()]
     pub id: String,
 }
