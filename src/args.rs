@@ -64,11 +64,11 @@ pub enum KeyCommands {
 #[derive(Subcommand, Debug)]
 pub enum CatalogCommands {
     /// List all games available in the catalog.
-    #[clap(alias("ls"))]
+    #[clap(alias("ls"), alias("apps"))]
     List(CatalogListArgs),
 
     /// Show info about an app or author.
-    #[clap(alias("info"))]
+    #[clap(alias("info"), alias("app"), alias("author"))]
     Show(CatalogShowArgs),
 }
 
