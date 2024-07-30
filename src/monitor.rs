@@ -1,16 +1,12 @@
 use crate::args::MonitorArgs;
+use crate::net::connect;
 use anyhow::{Context, Result};
 use crossterm::{cursor, execute, style, terminal};
 use firefly_types::serial;
 use std::io::{self, Read, Write};
-use std::net::{IpAddr, Ipv4Addr, SocketAddr, TcpStream};
+use std::net::TcpStream;
 use std::path::Path;
-use std::thread::sleep;
-use std::time::Duration;
 
-static IP: IpAddr = IpAddr::V4(Ipv4Addr::UNSPECIFIED);
-const TCP_PORT_MIN: u16 = 3210;
-const TCP_PORT_MAX: u16 = 3217;
 const COL1: u16 = 8;
 const COL2: u16 = 16;
 const RBORD: u16 = 21;
@@ -33,8 +29,7 @@ pub fn cmd_monitor(_vfs: &Path, args: &MonitorArgs) -> Result<()> {
 }
 
 fn run_monitor(_args: &MonitorArgs) -> Result<()> {
-    let mut stream = connect()?;
-
+    let mut stream = connect_verbose()?;
     let mut stats = Stats {
         update: None,
         render: None,
@@ -70,22 +65,15 @@ fn run_monitor(_args: &MonitorArgs) -> Result<()> {
     }
 }
 
-fn connect() -> Result<TcpStream, anyhow::Error> {
+/// Connect to a running emulator and enable stats.
+fn connect_verbose() -> Result<TcpStream, anyhow::Error> {
     execute!(
         io::stdout(),
         terminal::Clear(terminal::ClearType::All),
         cursor::MoveTo(0, 0),
         style::Print("connecting..."),
     )?;
-    let addrs: Vec<_> = (TCP_PORT_MIN..=TCP_PORT_MAX)
-        .map(|port| SocketAddr::new(IP, port))
-        .collect();
-    let mut maybe_stream = TcpStream::connect(&addrs[..]);
-    if maybe_stream.is_err() {
-        sleep(Duration::from_secs(1));
-        maybe_stream = TcpStream::connect(&addrs[..]);
-    };
-    let mut stream = maybe_stream.context("connect to emulator")?;
+    let mut stream = connect()?;
 
     execute!(
         io::stdout(),

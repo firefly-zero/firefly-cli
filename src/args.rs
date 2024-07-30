@@ -25,6 +25,9 @@ pub enum Commands {
     /// Show the full path to the virtual filesystem.
     Vfs,
 
+    /// Send a cheat code into a running game.
+    Cheat(CheatArgs),
+
     /// Show runtime stats for a running device (or emulator).
     Monitor(MonitorArgs),
 
@@ -153,7 +156,18 @@ pub struct ImportArgs {
 pub struct MonitorArgs {}
 
 #[derive(Debug, Parser)]
-pub struct CatalogListArgs {}
+pub struct CheatArgs {
+    #[arg()]
+    pub command: String,
+
+    #[arg()]
+    pub value: String,
+}
+
+#[derive(Debug, Parser)]
+pub struct CatalogListArgs {
+    // TODO(@orsinium): support JSON
+}
 
 #[derive(Debug, Parser)]
 pub struct CatalogShowArgs {
