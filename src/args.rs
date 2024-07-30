@@ -157,11 +157,21 @@ pub struct MonitorArgs {}
 
 #[derive(Debug, Parser)]
 pub struct CheatArgs {
+    /// The command to pass into the app.
+    ///
+    /// Either an integer or a command listed in firefly.toml.
     #[arg()]
     pub command: String,
 
+    /// The value to pass into the app.
+    ///
+    /// Either an integer, boolean, or a character.
     #[arg()]
     pub value: String,
+
+    /// Path to the project root.
+    #[arg(default_value = ".")]
+    pub root: PathBuf,
 }
 
 #[derive(Debug, Parser)]
