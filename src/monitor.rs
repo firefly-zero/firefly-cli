@@ -243,6 +243,9 @@ fn format_ratio(n: u32, d: u32) -> String {
     let r = r.round_ties_even();
     #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
     let r = u8::try_from(r as u64).unwrap_or(255);
+    if r == 0 && n > 0 {
+        return "  1%".to_string();
+    }
     format!("{r:>3}%")
 }
 
