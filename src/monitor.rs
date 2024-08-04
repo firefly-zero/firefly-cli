@@ -1,11 +1,12 @@
 use crate::args::MonitorArgs;
 use crate::net::connect;
 use anyhow::{Context, Result};
-use crossterm::{cursor, execute, style, terminal};
+use crossterm::{cursor, event, execute, style, terminal};
 use firefly_types::serial;
 use std::io::{self, Read, Write};
 use std::net::TcpStream;
 use std::path::Path;
+use std::time::Duration;
 
 const COL1: u16 = 8;
 const COL2: u16 = 16;
@@ -23,7 +24,9 @@ struct Stats {
 pub fn cmd_monitor(_vfs: &Path, args: &MonitorArgs) -> Result<()> {
     execute!(io::stdout(), terminal::EnterAlternateScreen)?;
     execute!(io::stdout(), cursor::Hide)?;
+    terminal::enable_raw_mode()?;
     let res = run_monitor(args);
+    terminal::disable_raw_mode()?;
     execute!(io::stdout(), terminal::LeaveAlternateScreen)?;
     res
 }
@@ -37,6 +40,9 @@ fn run_monitor(_args: &MonitorArgs) -> Result<()> {
         mem: None,
     };
     loop {
+        if should_exit() {
+            return Ok(());
+        }
         let mut buf = vec![0; 64];
         let size = stream.read(&mut buf).context("read response")?;
         if size == 0 {
@@ -92,6 +98,32 @@ fn connect_verbose() -> Result<TcpStream, anyhow::Error> {
     }
 
     Ok(stream)
+}
+
+/// Check if the `Q` or `Esc` button is pressed.
+fn should_exit() -> bool {
+    let timeout = Duration::from_millis(0);
+    while event::poll(timeout).unwrap_or_default() {
+        let Ok(event) = event::read() else {
+            continue;
+        };
+        let event::Event::Key(event) = event else {
+            continue;
+        };
+        if event.kind != event::KeyEventKind::Press {
+            continue;
+        }
+        if event.code == event::KeyCode::Char('q') {
+            return true;
+        }
+        if event.code == event::KeyCode::Char('c') {
+            return true;
+        }
+        if event.code == event::KeyCode::Esc {
+            return true;
+        }
+    }
+    false
 }
 
 fn render_stats(stats: &Stats) -> Result<()> {
