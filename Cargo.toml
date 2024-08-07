@@ -16,6 +16,10 @@ categories = [
     "wasm",
 ]
 
+[[bin]]
+name = "ff"
+path = "src/main.rs"
+
 [dependencies]
 # Simpler error handling
 anyhow = "1.0.86"
