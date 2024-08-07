@@ -25,6 +25,9 @@ pub enum Commands {
     /// Show the full path to the virtual filesystem.
     Vfs,
 
+    /// Send a cheat code into a running game.
+    Cheat(CheatArgs),
+
     /// Show runtime stats for a running device (or emulator).
     Monitor(MonitorArgs),
 
@@ -153,7 +156,28 @@ pub struct ImportArgs {
 pub struct MonitorArgs {}
 
 #[derive(Debug, Parser)]
-pub struct CatalogListArgs {}
+pub struct CheatArgs {
+    /// The command to pass into the app.
+    ///
+    /// Either an integer or a command listed in firefly.toml.
+    #[arg()]
+    pub command: String,
+
+    /// The value to pass into the app.
+    ///
+    /// Either an integer, boolean, or a character.
+    #[arg()]
+    pub value: String,
+
+    /// Path to the project root.
+    #[arg(default_value = ".")]
+    pub root: PathBuf,
+}
+
+#[derive(Debug, Parser)]
+pub struct CatalogListArgs {
+    // TODO(@orsinium): support JSON
+}
 
 #[derive(Debug, Parser)]
 pub struct CatalogShowArgs {

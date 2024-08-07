@@ -1,16 +1,13 @@
 use crate::args::MonitorArgs;
+use crate::net::connect;
 use anyhow::{Context, Result};
-use crossterm::{cursor, execute, style, terminal};
+use crossterm::{cursor, event, execute, style, terminal};
 use firefly_types::serial;
 use std::io::{self, Read, Write};
-use std::net::{IpAddr, Ipv4Addr, SocketAddr, TcpStream};
+use std::net::TcpStream;
 use std::path::Path;
-use std::thread::sleep;
 use std::time::Duration;
 
-static IP: IpAddr = IpAddr::V4(Ipv4Addr::UNSPECIFIED);
-const TCP_PORT_MIN: u16 = 3210;
-const TCP_PORT_MAX: u16 = 3217;
 const COL1: u16 = 8;
 const COL2: u16 = 16;
 const RBORD: u16 = 21;
@@ -27,14 +24,15 @@ struct Stats {
 pub fn cmd_monitor(_vfs: &Path, args: &MonitorArgs) -> Result<()> {
     execute!(io::stdout(), terminal::EnterAlternateScreen)?;
     execute!(io::stdout(), cursor::Hide)?;
+    terminal::enable_raw_mode()?;
     let res = run_monitor(args);
+    terminal::disable_raw_mode()?;
     execute!(io::stdout(), terminal::LeaveAlternateScreen)?;
     res
 }
 
 fn run_monitor(_args: &MonitorArgs) -> Result<()> {
-    let mut stream = connect()?;
-
+    let mut stream = connect_verbose()?;
     let mut stats = Stats {
         update: None,
         render: None,
@@ -42,6 +40,9 @@ fn run_monitor(_args: &MonitorArgs) -> Result<()> {
         mem: None,
     };
     loop {
+        if should_exit() {
+            return Ok(());
+        }
         let mut buf = vec![0; 64];
         let size = stream.read(&mut buf).context("read response")?;
         if size == 0 {
@@ -70,22 +71,15 @@ fn run_monitor(_args: &MonitorArgs) -> Result<()> {
     }
 }
 
-fn connect() -> Result<TcpStream, anyhow::Error> {
+/// Connect to a running emulator and enable stats.
+fn connect_verbose() -> Result<TcpStream, anyhow::Error> {
     execute!(
         io::stdout(),
         terminal::Clear(terminal::ClearType::All),
         cursor::MoveTo(0, 0),
         style::Print("connecting..."),
     )?;
-    let addrs: Vec<_> = (TCP_PORT_MIN..=TCP_PORT_MAX)
-        .map(|port| SocketAddr::new(IP, port))
-        .collect();
-    let mut maybe_stream = TcpStream::connect(&addrs[..]);
-    if maybe_stream.is_err() {
-        sleep(Duration::from_secs(1));
-        maybe_stream = TcpStream::connect(&addrs[..]);
-    };
-    let mut stream = maybe_stream.context("connect to emulator")?;
+    let mut stream = connect()?;
 
     execute!(
         io::stdout(),
@@ -104,6 +98,32 @@ fn connect() -> Result<TcpStream, anyhow::Error> {
     }
 
     Ok(stream)
+}
+
+/// Check if the `Q` or `Esc` button is pressed.
+fn should_exit() -> bool {
+    let timeout = Duration::from_millis(0);
+    while event::poll(timeout).unwrap_or_default() {
+        let Ok(event) = event::read() else {
+            continue;
+        };
+        let event::Event::Key(event) = event else {
+            continue;
+        };
+        if event.kind != event::KeyEventKind::Press {
+            continue;
+        }
+        if event.code == event::KeyCode::Char('q') {
+            return true;
+        }
+        if event.code == event::KeyCode::Char('c') {
+            return true;
+        }
+        if event.code == event::KeyCode::Esc {
+            return true;
+        }
+    }
+    false
 }
 
 fn render_stats(stats: &Stats) -> Result<()> {
@@ -255,6 +275,9 @@ fn format_ratio(n: u32, d: u32) -> String {
     let r = r.round_ties_even();
     #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
     let r = u8::try_from(r as u64).unwrap_or(255);
+    if r == 0 && n > 0 {
+        return "  1%".to_string();
+    }
     format!("{r:>3}%")
 }
 

@@ -33,6 +33,9 @@ pub struct Config {
     /// Mapping of local files to be included into the ROM.
     pub files: Option<HashMap<String, FileConfig>>,
 
+    /// Mapping of cheat commands to their integer representation.
+    pub cheats: Option<HashMap<String, i32>>,
+
     /// Path to the project root.
     #[serde(skip)]
     pub root_path: PathBuf,

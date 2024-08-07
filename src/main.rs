@@ -6,6 +6,7 @@
 mod args;
 mod build;
 mod catalog;
+mod cheat;
 mod config;
 mod crypto;
 mod export;
@@ -18,12 +19,14 @@ mod monitor;
 mod vfs;
 mod wasm;
 
+mod net;
 #[cfg(test)]
 mod test_helpers;
 
 use crate::args::{Cli, Commands, KeyCommands};
 use crate::build::cmd_build;
 use crate::catalog::{cmd_catalog_list, cmd_catalog_show};
+use crate::cheat::cmd_cheat;
 use crate::export::cmd_export;
 use crate::import::cmd_import;
 use crate::keys::{cmd_key_add, cmd_key_new, cmd_key_priv, cmd_key_pub, cmd_key_rm};
@@ -41,6 +44,7 @@ fn main() {
         Commands::Build(args) => cmd_build(vfs, args),
         Commands::Export(args) => cmd_export(&vfs, args),
         Commands::Import(args) => cmd_import(&vfs, args),
+        Commands::Cheat(args) => cmd_cheat(args),
         Commands::Monitor(args) => cmd_monitor(&vfs, args),
         Commands::Key(KeyCommands::New(args)) => cmd_key_new(&vfs, args),
         Commands::Key(KeyCommands::Add(args)) => cmd_key_add(&vfs, args),
