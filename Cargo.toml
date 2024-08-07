@@ -18,36 +18,39 @@ categories = [
 
 [dependencies]
 # Simpler error handling
-anyhow = "*"
+anyhow = "1.0.86"
 # Framework for parsing CLI args
-clap = { version = "*", features = ["derive"] }
+clap = { version = "4.5.13", features = ["derive"] }
 # TUI for the "monitor" command, colored terminal output
-crossterm = "*"
+crossterm = "0.28.1"
 # Convert binary hash into hex
-data-encoding = "*"
+data-encoding = "2.6.0"
 # Find the best place to sotre the VFS
-directories = "*"
+directories = "5.0.1"
 # Serialize app config into meta file in the ROM
-firefly-types = { version = "*" }
+firefly-types = { version = "0.2.0" }
 # Parse PNG images
-image = { version = "*", default-features = false, features = ["png"] }
+image = { version = "0.25.2", default-features = false, features = ["png"] }
 # Random device name generation
-rand = "*"
+rand = "0.8.5"
 # Signatures
-rsa = { version = "*", default-features = false, features = ["std", "sha2"] }
+rsa = { version = "0.9.6", default-features = false, features = [
+    "std",
+    "sha2",
+] }
 # Deserialize firefly.toml (required by `toml`)
-serde = { version = "*", features = ["serde_derive", "derive"] }
+serde = { version = "1.0.204", features = ["serde_derive", "derive"] }
 # Deserialize JSON API responses from the firefly catalog.
-serde_json = "*"
+serde_json = "1.0.122"
 # Calculate file checksum
-sha2 = "*"
+sha2 = "0.10.8"
 # Deserialize firefly.toml
-toml = "*"
+toml = "0.8.19"
 # Download remote files (`url` field in `firefly.toml`)
-ureq = "*"
+ureq = "2.10.0"
 # Build together post-processed wasm binaries
-wasm-encoder = "*"
+wasm-encoder = "0.215.0"
 # Parse wasm binaries for post-processing (removing custom sections)
-wasmparser = "*"
+wasmparser = "0.215.0"
 # Work with zip archives (distribution format for ROMs)
-zip = { version = "*", default-features = false, features = ["zstd"] }
+zip = { version = "2.1.6", default-features = false, features = ["zstd"] }
