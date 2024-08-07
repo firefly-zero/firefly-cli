@@ -23,13 +23,17 @@ Swiss army knife CLI tool for working with [Firefly Zero](https://fireflyzero.co
 
 ## 🔧 Usage
 
+Some of the most commonly used commands:
+
 ```bash
 # build an app and install it into VFS
-firefly_cli build
+ff build
 
 # export an app installed in VFS
-firefly_cli export --author sys --app input-test
+ff export --author sys --app input-test
 
 # install an exported app into VFS
-firefly_cli import sys.input-test.zip
+ff import sys.input-test.zip
 ```
+
+Run `ff --help` to see the full list of available commands.
