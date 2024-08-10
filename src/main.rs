@@ -7,6 +7,7 @@ mod args;
 mod build;
 mod catalog;
 mod cheat;
+mod cli;
 mod config;
 mod crypto;
 mod export;
@@ -16,12 +17,11 @@ mod import;
 mod keys;
 mod langs;
 mod monitor;
-mod vfs;
-mod wasm;
-
-mod cli;
 mod net;
 mod repl;
+mod repl_helper;
+mod vfs;
+mod wasm;
 
 #[cfg(test)]
 mod test_helpers;

@@ -1,5 +1,6 @@
 use crate::args::{Cli, ReplArgs};
 use crate::cli::{run_command, Error};
+use crate::repl_helper::Helper;
 use anyhow::{Context, Result};
 use clap::Parser;
 use crossterm::style::Stylize;
@@ -9,7 +10,8 @@ use rustyline::Editor;
 use std::path::Path;
 
 pub fn cmd_repl(vfs: &Path, _args: &ReplArgs) -> Result<()> {
-    let mut rl: Editor<(), FileHistory> = Editor::new().unwrap();
+    let mut rl: Editor<Helper, FileHistory> = Editor::new().unwrap();
+    rl.set_helper(Some(Helper::new()));
     if rl.load_history(".history.txt").is_err() {
         println!("{}", "No previous history.".yellow());
     }
