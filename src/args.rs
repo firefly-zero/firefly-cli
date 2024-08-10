@@ -31,6 +31,9 @@ pub enum Commands {
     /// Show runtime stats for a running device (or emulator).
     Monitor(MonitorArgs),
 
+    /// Run interactive session.
+    Repl(ReplArgs),
+
     /// Commands to manage signing keys.
     #[command(subcommand)]
     #[clap(alias("keys"))]
@@ -169,6 +172,13 @@ pub struct CheatArgs {
     #[arg()]
     pub value: String,
 
+    /// Path to the project root.
+    #[arg(default_value = ".")]
+    pub root: PathBuf,
+}
+
+#[derive(Debug, Parser)]
+pub struct ReplArgs {
     /// Path to the project root.
     #[arg(default_value = ".")]
     pub root: PathBuf,

@@ -38,6 +38,8 @@ rsa = { version = "0.9.6", default-features = false, features = [
     "std",
     "sha2",
 ] }
+# REPL
+rustyline = "14.0.0"
 # Deserialize firefly.toml (required by `toml`)
 serde = { version = "1.0.204", features = ["serde_derive", "derive"] }
 # Deserialize JSON API responses from the firefly catalog.
