@@ -1,7 +1,7 @@
 use crate::args::{Cli, ReplArgs};
 use crate::cli::{run_command, Error};
 use crate::repl_helper::Helper;
-use anyhow::{Context, Result};
+use anyhow::Result;
 use clap::Parser;
 use crossterm::style::Stylize;
 use rustyline::error::ReadlineError;
@@ -9,12 +9,13 @@ use rustyline::history::FileHistory;
 use rustyline::Editor;
 use std::path::Path;
 
+#[allow(clippy::unnecessary_wraps)]
 pub fn cmd_repl(vfs: &Path, _args: &ReplArgs) -> Result<()> {
     let mut rl: Editor<Helper, FileHistory> = Editor::new().unwrap();
     rl.set_helper(Some(Helper::new()));
-    if rl.load_history(".history.txt").is_err() {
-        println!("{}", "No previous history.".yellow());
-    }
+    // if rl.load_history(".history.txt").is_err() {
+    //     println!("{}", "No previous history.".yellow());
+    // }
     let mut was_ok = true;
     loop {
         let prompt = if was_ok { ">>> ".green() } else { ">>> ".red() };
@@ -54,6 +55,8 @@ pub fn cmd_repl(vfs: &Path, _args: &ReplArgs) -> Result<()> {
             }
         }
     }
-    rl.save_history(".history.txt").context("save history")?;
+
+    // TODO: save history somewhere
+    // rl.save_history(".history.txt").context("save history")?;
     Ok(())
 }
