@@ -31,6 +31,7 @@ pub fn cmd_repl(vfs: &Path, _args: &ReplArgs) -> Result<()> {
                         continue;
                     }
                 };
+                _ = rl.add_history_entry(&input);
                 let res = run_command(vfs.to_owned(), &cli.command);
                 if let Err(err) = res {
                     eprintln!("{} {}", "💥 Error:".red(), Error(err));

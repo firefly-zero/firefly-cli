@@ -4,40 +4,35 @@ use crossterm::style::Stylize;
 use rustyline::hint::Hint;
 use rustyline::Context;
 use std::borrow::Cow;
-use std::cell::RefCell;
 
 /// Helper is a struct that provides autocomplete and syntax highlighting for rustyline.
-///
-/// The name "Helper" is bad and meaningless but that's how rostyline calls it.
-/// I have no idea why the mix together into one class all the logic of autocomplete,
-/// syntax highlighting, validation, and everything else.
 pub struct Helper {
-    hints: RefCell<Vec<CommandHint>>,
+    hints: Vec<CommandHint>,
 }
 
 impl Helper {
     pub fn new() -> Self {
-        Self {
-            hints: Vec::new().into(),
+        let mut hints = Vec::new();
+        let cmds = [
+            // commands
+            "build", "export", "import", "vfs", "cheat", "monitor", "key", "catalog",
+            //
+            // subcommands
+            "new", "add", "pub", "priv", "rm", "list", "show",
+            //
+            // aliases
+            "install", "generate", "remove", "app", "author", "ls",
+        ];
+        for cmd in cmds {
+            let h = CommandHint(cmd.to_string());
+            hints.push(h);
         }
-    }
-
-    /// Add a new name to be used in autocomplete.
-    ///
-    /// This method is called by the Session for each new assignment.
-    /// We do not bother with autocomplete for local variables
-    /// because the lazy convention is to use single letters for them anyway.
-    pub fn add(&self, text: &str) {
-        let h = CommandHint(text.to_string());
-        self.hints.borrow_mut().push(h);
+        Self { hints }
     }
 }
 
 // These traits are required to be implemented for the type
 // to be able to pass it into `Editor.set_helper`.
-//
-// The official rustyline example uses `derive` with these traits
-// but somehow it doesn't work for me.
 impl rustyline::validate::Validator for Helper {}
 impl rustyline::Helper for Helper {}
 
@@ -81,7 +76,7 @@ impl rustyline::completion::Completer for Helper {
 
         // Take the last word and try to find all known names starting with it.
         let (_, word) = line.rsplit_once(' ').unwrap_or(("", line));
-        for hint in self.hints.borrow().iter() {
+        for hint in &self.hints {
             if hint.display().starts_with(word) {
                 res.push(hint.suffix(word.len()));
             }
