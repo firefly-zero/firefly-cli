@@ -1,9 +1,9 @@
-imports_granularity = "Module"
 newline_style = "Unix"
 use_field_init_shorthand = true
 force_explicit_abi = false
 
 ## Uncomment when stabilized:
+# imports_granularity = "Module"
 # group_imports = "One"
 # hex_literal_case = "Lower"
 # normalize_comments = true
