@@ -46,6 +46,7 @@ static TIPS: &[&str] = &[
     "you can customize TinyGo build with a custom target.json in the project root",
     "make sure to test your game with multiplayer",
     "images using 4 or less colors are twice smaller",
+    "use `firefly_cli monitor` to see RAM and CPU consumption of a running app",
     // We're not paid for any of these links, it's just resources we love.
     "good free sprite editor: https://apps.lospec.com/pixel-editor/",
     "good collection of free game assets: https://opengameart.org/",
