@@ -1,4 +1,5 @@
 use crate::args::InspectArgs;
+use crate::config::Config;
 use crate::file_names::{BIN, META};
 use crate::fs::{collect_sizes, format_size};
 use anyhow::{bail, Context, Result};
@@ -7,21 +8,15 @@ use firefly_types::Meta;
 use std::collections::HashMap;
 use std::ffi::OsString;
 use std::fs;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use wasmparser::Parser;
 use wasmparser::Payload::*;
 
 pub fn cmd_inspect(vfs: &Path, args: &InspectArgs) -> Result<()> {
-    let id = match &args.id {
-        Some(id) => id.to_owned(),
-        None => detect_id()?,
-    };
-    let Some((author_id, app_id)) = id.split_once('.') else {
-        bail!("invalid app id: dot not found");
-    };
-    let rom_path = vfs.join("roms").join(author_id).join(app_id);
+    let (author_id, app_id) = get_id(vfs.to_path_buf(), args)?;
+    let rom_path = vfs.join("roms").join(&author_id).join(&app_id);
     if !rom_path.exists() {
-        bail!("app {id} is not installed");
+        bail!("app {author_id}.{app_id} is not installed");
     }
 
     {
@@ -42,8 +37,17 @@ pub fn cmd_inspect(vfs: &Path, args: &InspectArgs) -> Result<()> {
     Ok(())
 }
 
-fn detect_id() -> Result<String> {
-    todo!()
+fn get_id(vfs: PathBuf, args: &InspectArgs) -> Result<(String, String)> {
+    let res = if let Some(id) = &args.id {
+        let Some((author_id, app_id)) = id.split_once('.') else {
+            bail!("invalid app id: dot not found");
+        };
+        (author_id.to_string(), app_id.to_string())
+    } else {
+        let config = Config::load(vfs, &args.root).context("read project config")?;
+        (config.author_id, config.app_id)
+    };
+    Ok(res)
 }
 
 #[derive(Default)]

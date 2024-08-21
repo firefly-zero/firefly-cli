@@ -164,6 +164,10 @@ pub struct InspectArgs {
     /// If not specified, the ID of the current project is used.
     #[arg(default_value = None)]
     pub id: Option<String>,
+
+    /// Path to the project root.
+    #[arg(long, default_value = ".")]
+    pub root: PathBuf,
 }
 
 #[derive(Debug, Parser)]
