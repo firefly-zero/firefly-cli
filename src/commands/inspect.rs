@@ -36,6 +36,7 @@ struct WasmStats {
     globals: u32,
     functions: u32,
     code_size: u32,
+    data_size: usize,
 }
 
 fn inspect_wasm(bin_path: &Path) -> anyhow::Result<WasmStats> {
@@ -68,6 +69,12 @@ fn inspect_wasm(bin_path: &Path) -> anyhow::Result<WasmStats> {
                     stats.exports.push(export.name.to_owned());
                 }
             }
+            DataSection(datas) => {
+                for data in datas {
+                    let data = data?;
+                    stats.data_size += data.data.len();
+                }
+            }
             CodeSectionStart { count, size, .. } => {
                 stats.code_size = size;
                 stats.functions = count;
@@ -83,6 +90,7 @@ fn inspect_wasm(bin_path: &Path) -> anyhow::Result<WasmStats> {
 fn print_wasm_stats(stats: &WasmStats) {
     println!("{}", "wasm binary:".blue());
     println!("  {}: {}", "code size".cyan(), stats.code_size);
+    println!("  {}: {}", "data size".cyan(), stats.data_size);
     println!("  {}: {}", "functions".cyan(), stats.functions);
     println!("  {}:   {}", "globals".cyan(), stats.globals);
     println!("  {}:    {} page(s)", "memory".cyan(), stats.memory);
