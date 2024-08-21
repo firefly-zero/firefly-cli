@@ -4,21 +4,15 @@
 #![allow(clippy::enum_glob_use)]
 
 mod args;
-mod build;
-mod catalog;
-mod cheat;
 mod cli;
+mod commands;
 mod config;
 mod crypto;
-mod export;
 mod file_names;
+mod fs;
 mod images;
-mod import;
-mod keys;
 mod langs;
-mod monitor;
 mod net;
-mod repl;
 mod repl_helper;
 mod vfs;
 mod wasm;

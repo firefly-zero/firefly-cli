@@ -31,6 +31,9 @@ pub enum Commands {
     /// Show runtime stats for a running device (or emulator).
     Monitor(MonitorArgs),
 
+    /// Inspect contents of the ROM: files, metadata, wasm binary.
+    Inspect(InspectArgs),
+
     /// Run interactive session.
     Repl(ReplArgs),
 
@@ -125,13 +128,9 @@ pub struct ExportArgs {
     #[arg(long, default_value = ".")]
     pub root: PathBuf,
 
-    /// Author ID.
+    /// Full app ID.
     #[arg(long, default_value = None)]
-    pub author: Option<String>,
-
-    /// App ID.
-    #[arg(long, default_value = None)]
-    pub app: Option<String>,
+    pub id: Option<String>,
 
     /// Path to the archive.
     #[arg(short, long, default_value = None)]
@@ -157,6 +156,19 @@ pub struct ImportArgs {
 
 #[derive(Debug, Parser)]
 pub struct MonitorArgs {}
+
+#[derive(Debug, Parser)]
+pub struct InspectArgs {
+    /// ID of the ROM to inspect.
+    ///
+    /// If not specified, the ID of the current project is used.
+    #[arg(default_value = None)]
+    pub id: Option<String>,
+
+    /// Path to the project root.
+    #[arg(long, default_value = ".")]
+    pub root: PathBuf,
+}
 
 #[derive(Debug, Parser)]
 pub struct CheatArgs {

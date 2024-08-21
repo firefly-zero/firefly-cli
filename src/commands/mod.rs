@@ -1,0 +1,21 @@
+mod build;
+mod catalog;
+mod cheat;
+mod export;
+mod import;
+mod inspect;
+mod keys;
+mod monitor;
+mod repl;
+mod vfs;
+
+pub use build::cmd_build;
+pub use catalog::{cmd_catalog_list, cmd_catalog_show};
+pub use cheat::cmd_cheat;
+pub use export::cmd_export;
+pub use import::cmd_import;
+pub use inspect::cmd_inspect;
+pub use keys::{cmd_key_add, cmd_key_new, cmd_key_priv, cmd_key_pub, cmd_key_rm};
+pub use monitor::cmd_monitor;
+pub use repl::cmd_repl;
+pub use vfs::cmd_vfs;

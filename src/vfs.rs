@@ -6,14 +6,6 @@ use std::collections::HashMap;
 use std::fs;
 use std::path::{Path, PathBuf};
 
-#[allow(clippy::unnecessary_wraps)]
-pub fn cmd_vfs() -> anyhow::Result<()> {
-    let path = get_vfs_path();
-    let path = path.to_str().unwrap();
-    println!("{path}");
-    Ok(())
-}
-
 pub fn get_vfs_path() -> PathBuf {
     let current_dir = std::env::current_dir().ok();
     if let Some(current_dir) = &current_dir {
@@ -104,11 +96,6 @@ fn leetify(s: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn test_smoke_cmd_vfs() {
-        cmd_vfs().unwrap();
-    }
 
     #[test]
     fn test_get_vfs_path() {

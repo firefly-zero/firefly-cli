@@ -1,6 +1,6 @@
 use crate::args::ExportArgs;
 use crate::config::Config;
-use anyhow::{Context, Result};
+use anyhow::{bail, Context, Result};
 use std::fs::{read_dir, File};
 use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
@@ -23,8 +23,11 @@ pub fn cmd_export(vfs: &Path, args: &ExportArgs) -> Result<()> {
 }
 
 fn get_id(vfs: PathBuf, args: &ExportArgs) -> Result<(String, String)> {
-    let res = if let (Some(author), Some(app)) = (&args.author, &args.app) {
-        (author.to_string(), app.to_string())
+    let res = if let Some(id) = &args.id {
+        let Some((author_id, app_id)) = id.split_once('.') else {
+            bail!("invalid app id: dot not found");
+        };
+        (author_id.to_string(), app_id.to_string())
     } else {
         let config = Config::load(vfs, &args.root).context("read project config")?;
         (config.author_id, config.app_id)
