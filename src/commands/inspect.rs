@@ -30,8 +30,9 @@ fn detect_id() -> Result<String> {
 
 #[derive(Default)]
 struct WasmStats {
-    imports: Vec<String>,
+    imports: Vec<(String, String)>,
     exports: Vec<String>,
+    memory: u64,
     globals: u32,
     functions: u32,
     code_size: u32,
@@ -48,12 +49,18 @@ fn inspect_wasm(bin_path: &Path) -> anyhow::Result<WasmStats> {
             ImportSection(imports) => {
                 for import in imports {
                     let import = import?;
-                    let name = format!("{}.{}", import.module, import.name);
+                    let name = (import.module.to_owned(), import.name.to_owned());
                     stats.imports.push(name);
                 }
             }
             GlobalSection(globals) => {
                 stats.globals = globals.count();
+            }
+            MemorySection(memories) => {
+                for memory in memories {
+                    let memory = memory?;
+                    stats.memory += memory.initial;
+                }
             }
             ExportSection(exports) => {
                 for export in exports {
@@ -77,12 +84,14 @@ fn print_wasm_stats(stats: &WasmStats) {
     println!("{}", "wasm binary:".blue());
     println!("  {}: {}", "code size".cyan(), stats.code_size);
     println!("  {}: {}", "functions".cyan(), stats.functions);
-    println!("  {}: {}", "globals".cyan(), stats.globals);
-    println!("  {}: {}", "imports".cyan(), stats.imports.len());
-    for import in &stats.imports {
-        println!("    {import}");
+    println!("  {}:   {}", "globals".cyan(), stats.globals);
+    println!("  {}:    {} page(s)", "memory".cyan(), stats.memory);
+    println!("  {}:   {}", "imports".cyan(), stats.imports.len());
+    for (mod_name, func_name) in &stats.imports {
+        let mod_name = mod_name.clone().magenta();
+        println!("    {mod_name}.{func_name}");
     }
-    println!("  {}: {}", "exports".cyan(), stats.exports.len());
+    println!("  {}:   {}", "exports".cyan(), stats.exports.len());
     for export in &stats.exports {
         println!("    {export}");
     }
