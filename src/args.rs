@@ -31,7 +31,7 @@ pub enum Commands {
     /// Show runtime stats for a running device (or emulator).
     Monitor(MonitorArgs),
 
-    /// Show runtime stats for a running device (or emulator).
+    /// Inspect contents of the ROM: files, metadata, wasm binary.
     Inspect(InspectArgs),
 
     /// Run interactive session.

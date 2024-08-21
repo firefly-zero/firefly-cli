@@ -1,10 +1,12 @@
 use crate::args::InspectArgs;
-use crate::file_names::BIN;
+use crate::file_names::{BIN, META};
 use crate::fs::{collect_sizes, format_size};
 use anyhow::{bail, Context, Result};
 use crossterm::style::Stylize;
+use firefly_types::Meta;
 use std::collections::HashMap;
 use std::ffi::OsString;
+use std::fs;
 use std::path::Path;
 use wasmparser::Parser;
 use wasmparser::Payload::*;
@@ -25,6 +27,12 @@ pub fn cmd_inspect(vfs: &Path, args: &InspectArgs) -> Result<()> {
     {
         let sizes = collect_sizes(&rom_path);
         print_sizes(&sizes);
+    }
+    {
+        let meta_path = rom_path.join(META);
+        let raw = fs::read(meta_path)?;
+        let meta = Meta::decode(&raw)?;
+        print_meta(&meta);
     }
     {
         let bin_path = rom_path.join(BIN);
@@ -97,6 +105,18 @@ fn inspect_wasm(bin_path: &Path) -> anyhow::Result<WasmStats> {
     Ok(stats)
 }
 
+fn print_meta(meta: &Meta) {
+    println!("{}", "metadata".blue());
+    println!("  {} {}", "author ID:   ".cyan(), meta.author_id);
+    println!("  {} {}", "app ID:      ".cyan(), meta.app_id);
+    println!("  {} {}", "author name: ".cyan(), meta.author_name);
+    println!("  {} {}", "app name:    ".cyan(), meta.app_name);
+    println!("  {} {}", "launcher:    ".cyan(), meta.launcher);
+    println!("  {} {}", "sudo:        ".cyan(), meta.sudo);
+    println!("  {} {}", "version:     ".cyan(), meta.version);
+    println!();
+}
+
 fn print_sizes(sizes: &HashMap<OsString, u64>) {
     println!("{}", "files".blue());
     let width = sizes.iter().map(|(n, _)| n.len()).max().unwrap_or_default();
@@ -109,9 +129,14 @@ fn print_sizes(sizes: &HashMap<OsString, u64>) {
 }
 
 fn print_wasm_stats(stats: &WasmStats) {
+    let code_size = format_size(stats.code_size.into());
+    let code_size = code_size.trim_start();
+    let data_size = format_size(stats.data_size as u64);
+    let data_size = data_size.trim_start();
+
     println!("{}", "wasm binary".blue());
-    println!("  {}: {}", "code size".cyan(), stats.code_size);
-    println!("  {}: {}", "data size".cyan(), stats.data_size);
+    println!("  {}: {}", "code size".cyan(), code_size);
+    println!("  {}: {}", "data size".cyan(), data_size);
     println!("  {}: {}", "functions".cyan(), stats.functions);
     println!("  {}:   {}", "globals".cyan(), stats.globals);
     println!("  {}:    {} page(s)", "memory".cyan(), stats.memory);
