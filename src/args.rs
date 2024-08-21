@@ -128,13 +128,9 @@ pub struct ExportArgs {
     #[arg(long, default_value = ".")]
     pub root: PathBuf,
 
-    /// Author ID.
+    /// Full app ID.
     #[arg(long, default_value = None)]
-    pub author: Option<String>,
-
-    /// App ID.
-    #[arg(long, default_value = None)]
-    pub app: Option<String>,
+    pub id: Option<String>,
 
     /// Path to the archive.
     #[arg(short, long, default_value = None)]
