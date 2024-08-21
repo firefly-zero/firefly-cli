@@ -1,15 +1,7 @@
 use crate::args::CatalogCommands;
 use crate::args::{Commands, KeyCommands};
-use crate::build::cmd_build;
-use crate::catalog::{cmd_catalog_list, cmd_catalog_show};
-use crate::cheat::cmd_cheat;
-use crate::export::cmd_export;
-use crate::import::cmd_import;
-use crate::inspect::cmd_inspect;
-use crate::keys::{cmd_key_add, cmd_key_new, cmd_key_priv, cmd_key_pub, cmd_key_rm};
-use crate::monitor::cmd_monitor;
-use crate::repl::cmd_repl;
-use crate::vfs::cmd_vfs;
+#[allow(clippy::wildcard_imports)]
+use crate::commands::*;
 use std::fmt::Display;
 use std::path::PathBuf;
 
