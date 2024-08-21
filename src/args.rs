@@ -31,6 +31,9 @@ pub enum Commands {
     /// Show runtime stats for a running device (or emulator).
     Monitor(MonitorArgs),
 
+    /// Show runtime stats for a running device (or emulator).
+    Inspect(InspectArgs),
+
     /// Run interactive session.
     Repl(ReplArgs),
 
@@ -157,6 +160,15 @@ pub struct ImportArgs {
 
 #[derive(Debug, Parser)]
 pub struct MonitorArgs {}
+
+#[derive(Debug, Parser)]
+pub struct InspectArgs {
+    /// ID of the ROM to inspect.
+    ///
+    /// If not specified, the ID of the current project is used.
+    #[arg(default_value = None)]
+    pub id: Option<String>,
+}
 
 #[derive(Debug, Parser)]
 pub struct CheatArgs {

@@ -266,11 +266,11 @@ fn check_sizes(sizes: &HashMap<OsString, u64>) -> anyhow::Result<()> {
     const MB: u64 = 1024 * 1024;
     for (name, size) in sizes {
         if *size == 0 {
-            let name = name.to_str().unwrap_or("___");
+            let name = name.to_str().unwrap_or("???");
             bail!("the file {name} is empty");
         }
         if *size > 10 * MB {
-            let name = name.to_str().unwrap_or("___");
+            let name = name.to_str().unwrap_or("???");
             bail!("the file {name} is too big");
         }
     }

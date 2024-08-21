@@ -5,6 +5,7 @@ use crate::catalog::{cmd_catalog_list, cmd_catalog_show};
 use crate::cheat::cmd_cheat;
 use crate::export::cmd_export;
 use crate::import::cmd_import;
+use crate::inspect::cmd_inspect;
 use crate::keys::{cmd_key_add, cmd_key_new, cmd_key_priv, cmd_key_pub, cmd_key_rm};
 use crate::monitor::cmd_monitor;
 use crate::repl::cmd_repl;
@@ -19,6 +20,7 @@ pub fn run_command(vfs: PathBuf, command: &Commands) -> anyhow::Result<()> {
         Commands::Import(args) => cmd_import(&vfs, args),
         Commands::Cheat(args) => cmd_cheat(args),
         Commands::Monitor(args) => cmd_monitor(&vfs, args),
+        Commands::Inspect(args) => cmd_inspect(&vfs, args),
         Commands::Repl(args) => cmd_repl(&vfs, args),
         Commands::Key(KeyCommands::New(args)) => cmd_key_new(&vfs, args),
         Commands::Key(KeyCommands::Add(args)) => cmd_key_add(&vfs, args),

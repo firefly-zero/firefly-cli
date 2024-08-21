@@ -14,6 +14,7 @@ mod export;
 mod file_names;
 mod images;
 mod import;
+mod inspect;
 mod keys;
 mod langs;
 mod monitor;
