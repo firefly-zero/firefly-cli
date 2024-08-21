@@ -1,7 +1,10 @@
 use crate::args::InspectArgs;
 use crate::file_names::BIN;
+use crate::fs::{collect_sizes, format_size};
 use anyhow::{bail, Context, Result};
 use crossterm::style::Stylize;
+use std::collections::HashMap;
+use std::ffi::OsString;
 use std::path::Path;
 use wasmparser::Parser;
 use wasmparser::Payload::*;
@@ -18,9 +21,16 @@ pub fn cmd_inspect(vfs: &Path, args: &InspectArgs) -> Result<()> {
     if !rom_path.exists() {
         bail!("app {id} is not installed");
     }
-    let bin_path = rom_path.join(BIN);
-    let wasm_stats = inspect_wasm(&bin_path)?;
-    print_wasm_stats(&wasm_stats);
+
+    {
+        let sizes = collect_sizes(&rom_path);
+        print_sizes(&sizes);
+    }
+    {
+        let bin_path = rom_path.join(BIN);
+        let wasm_stats = inspect_wasm(&bin_path)?;
+        print_wasm_stats(&wasm_stats);
+    }
     Ok(())
 }
 
@@ -87,8 +97,19 @@ fn inspect_wasm(bin_path: &Path) -> anyhow::Result<WasmStats> {
     Ok(stats)
 }
 
+fn print_sizes(sizes: &HashMap<OsString, u64>) {
+    println!("{}", "files".blue());
+    let width = sizes.iter().map(|(n, _)| n.len()).max().unwrap_or_default();
+    for (name, size) in sizes {
+        let name = name.to_str().unwrap_or("???");
+        let size = format_size(*size);
+        println!("  {name:width$} {size}");
+    }
+    println!();
+}
+
 fn print_wasm_stats(stats: &WasmStats) {
-    println!("{}", "wasm binary:".blue());
+    println!("{}", "wasm binary".blue());
     println!("  {}: {}", "code size".cyan(), stats.code_size);
     println!("  {}: {}", "data size".cyan(), stats.data_size);
     println!("  {}: {}", "functions".cyan(), stats.functions);

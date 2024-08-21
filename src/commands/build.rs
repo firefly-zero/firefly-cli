@@ -2,6 +2,7 @@ use crate::args::BuildArgs;
 use crate::config::{Config, FileConfig};
 use crate::crypto::hash_dir;
 use crate::file_names::{HASH, KEY, META, SIG};
+use crate::fs::{collect_sizes, format_size};
 use crate::images::convert_image;
 use crate::langs::build_bin;
 use crate::vfs::init_vfs;
@@ -245,22 +246,6 @@ fn write_sig(config: &Config) -> anyhow::Result<()> {
     Ok(())
 }
 
-/// Get size in bytes for every file in the ROM directory.
-fn collect_sizes(root: &Path) -> HashMap<OsString, u64> {
-    let mut sizes = HashMap::new();
-    let Ok(entries) = fs::read_dir(root) else {
-        return sizes;
-    };
-    for entry in entries {
-        let Ok(entry) = entry else {
-            continue;
-        };
-        let Ok(meta) = entry.metadata() else { continue };
-        sizes.insert(entry.file_name(), meta.len());
-    }
-    sizes
-}
-
 /// Check that there are now big or empty files in the ROM.
 fn check_sizes(sizes: &HashMap<OsString, u64>) -> anyhow::Result<()> {
     const MB: u64 = 1024 * 1024;
@@ -303,17 +288,7 @@ fn print_sizes(old_sizes: &HashMap<OsString, u64>, new_sizes: &HashMap<OsString,
             }
         };
 
-        // convert big file size into Kb or Mb.
-        let new_size = if *new_size > 1024 * 1024 {
-            let new_size = new_size / 1024 / 1024;
-            format!("{new_size:>7} {}", "Mb".magenta())
-        } else if *new_size > 1024 {
-            let new_size = new_size / 1024;
-            format!("{new_size:>7} {}", "Kb".blue())
-        } else {
-            format!("{new_size:>10}")
-        };
-
+        let new_size = format_size(*new_size);
         println!("{name:16} {new_size}{suffix}");
     }
 }

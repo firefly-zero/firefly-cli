@@ -9,6 +9,7 @@ mod commands;
 mod config;
 mod crypto;
 mod file_names;
+mod fs;
 mod images;
 mod langs;
 mod net;
