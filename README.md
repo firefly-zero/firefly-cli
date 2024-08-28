@@ -7,7 +7,7 @@ Swiss army knife CLI tool for working with [Firefly Zero](https://fireflyzero.co
 ## 📥 Installation
 
 * Grab the binary from the latest [release](https://github.com/firefly-zero/firefly-cli/releases) and put it somewhere into `$PATH`.
-* Or install using crates (the [Rust](https://www.rust-lang.org/tools/install) package manager):
+* Or install using cargo (the [Rust](https://www.rust-lang.org/tools/install) package manager):
 
     ```bash
     cargo install firefly_cli
