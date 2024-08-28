@@ -28,7 +28,7 @@ Swiss army knife CLI tool for working with [Firefly Zero](https://fireflyzero.co
 firefly_cli build
 
 # export an app installed in VFS
-firefly_cli export --author sys --app input-test
+firefly_cli export --id sys.input-test
 
 # install an exported app into VFS
 firefly_cli import sys.input-test.zip
