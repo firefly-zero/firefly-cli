@@ -21,6 +21,8 @@ Swiss army knife CLI tool for working with [Firefly Zero](https://fireflyzero.co
     cargo install --path .
     ```
 
+See the [Installation](https://docs.fireflyzero.com/user/installation/) page in the Firefly Zero docs for a more detailed guide.
+
 ## 🔧 Usage
 
 ```bash
@@ -33,3 +35,5 @@ firefly_cli export --id sys.input-test
 # install an exported app into VFS
 firefly_cli import sys.input-test.zip
 ```
+
+There are more commands. Most of them are covered in the [dev docs](https://docs.fireflyzero.com/dev/). Specifically, in [Getting Started](https://docs.fireflyzero.com/dev/getting-started/) and [Debugging](https://docs.fireflyzero.com/dev/debugging/). Run `firefly_cli --help` to get the full list of available commands.
