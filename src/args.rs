@@ -42,6 +42,10 @@ pub enum Commands {
     #[clap(alias("keys"))]
     Key(KeyCommands),
 
+    /// Commands to set, get, and generate device name.
+    #[command(subcommand)]
+    Name(NameCommands),
+
     /// Commands to interact with catalog.fireflyzero.com.
     #[command(subcommand)]
     Catalog(CatalogCommands),
@@ -71,6 +75,21 @@ pub enum KeyCommands {
 }
 
 #[derive(Subcommand, Debug)]
+pub enum NameCommands {
+    /// Show the current device name.
+    #[clap(alias("show"), alias("echo"))]
+    Get(NameGetArgs),
+
+    /// Set a new device name.
+    #[clap(alias("change"))]
+    Set(NameSetArgs),
+
+    /// Set a new device name.
+    #[clap(alias("gen"), alias("new"))]
+    Generate(NameGenerateArgs),
+}
+
+#[derive(Subcommand, Debug)]
 pub enum CatalogCommands {
     /// List all games available in the catalog.
     #[clap(alias("ls"), alias("apps"))]
@@ -94,6 +113,17 @@ pub struct KeyExportArgs {
     #[arg(short, long, default_value = None)]
     pub output: Option<PathBuf>,
 }
+
+#[derive(Debug, Parser)]
+pub struct NameGetArgs {}
+
+#[derive(Debug, Parser)]
+pub struct NameSetArgs {
+    pub name: String,
+}
+
+#[derive(Debug, Parser)]
+pub struct NameGenerateArgs {}
 
 #[derive(Debug, Parser)]
 pub struct BuildArgs {

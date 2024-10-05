@@ -42,7 +42,7 @@ pub fn init_vfs(path: &Path) -> anyhow::Result<()> {
 }
 
 /// Generate a random valid device name.
-fn generate_valid_name() -> String {
+pub fn generate_valid_name() -> String {
     loop {
         let name = generate_name();
         if firefly_types::validate_id(&name).is_ok() {

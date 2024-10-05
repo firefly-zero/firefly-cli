@@ -151,6 +151,7 @@ fn print_wasm_stats(stats: &WasmStats) {
     }
     println!("  {}:   {}", "exports".cyan(), stats.exports.len());
     for export in &stats.exports {
+        // TODO: when we stabilize the list of callbacks, highlight unknown exports.
         println!("    {export}");
     }
 }

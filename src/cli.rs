@@ -1,6 +1,4 @@
-use crate::args::CatalogCommands;
-use crate::args::{Commands, KeyCommands};
-#[allow(clippy::wildcard_imports)]
+use crate::args::*;
 use crate::commands::*;
 use std::fmt::Display;
 use std::path::PathBuf;
@@ -21,6 +19,9 @@ pub fn run_command(vfs: PathBuf, command: &Commands) -> anyhow::Result<()> {
         Commands::Key(KeyCommands::Rm(args)) => cmd_key_rm(&vfs, args),
         Commands::Catalog(CatalogCommands::List(args)) => cmd_catalog_list(args),
         Commands::Catalog(CatalogCommands::Show(args)) => cmd_catalog_show(args),
+        Commands::Name(NameCommands::Get(args)) => cmd_name_get(&vfs, args),
+        Commands::Name(NameCommands::Set(args)) => cmd_name_set(&vfs, args),
+        Commands::Name(NameCommands::Generate(args)) => cmd_name_generate(&vfs, args),
         Commands::Vfs => cmd_vfs(),
     }
 }
