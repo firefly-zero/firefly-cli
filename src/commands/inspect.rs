@@ -13,7 +13,7 @@ use wasmparser::Parser;
 use wasmparser::Payload::*;
 
 pub fn cmd_inspect(vfs: &Path, args: &InspectArgs) -> Result<()> {
-    let (author_id, app_id) = get_id(vfs.to_path_buf(), args)?;
+    let (author_id, app_id) = get_id(vfs.to_path_buf(), args).context("get app ID")?;
     let rom_path = vfs.join("roms").join(&author_id).join(&app_id);
     if !rom_path.exists() {
         bail!("app {author_id}.{app_id} is not installed");
@@ -25,14 +25,18 @@ pub fn cmd_inspect(vfs: &Path, args: &InspectArgs) -> Result<()> {
     }
     {
         let meta_path = rom_path.join(META);
-        let raw = fs::read(meta_path)?;
-        let meta = Meta::decode(&raw)?;
+        let raw = fs::read(meta_path).context("read meta")?;
+        let meta = Meta::decode(&raw).context("decode meta")?;
         print_meta(&meta);
     }
     {
         let bin_path = rom_path.join(BIN);
-        let wasm_stats = inspect_wasm(&bin_path)?;
+        let wasm_stats = inspect_wasm(&bin_path).context("inspect wasm binary")?;
         print_wasm_stats(&wasm_stats);
+    }
+    {
+        let images_stats = inspect_images(&rom_path).context("inspect images")?;
+        print_images_stats(&images_stats);
     }
     Ok(())
 }
@@ -109,6 +113,39 @@ fn inspect_wasm(bin_path: &Path) -> anyhow::Result<WasmStats> {
     Ok(stats)
 }
 
+struct ImageStats {
+    name: String,
+    bpp: u8,
+}
+
+fn inspect_images(rom_path: &Path) -> anyhow::Result<Vec<ImageStats>> {
+    let dir = fs::read_dir(rom_path)?;
+    let mut stats = Vec::new();
+    for entry in dir {
+        let entry = entry?;
+        if let Some(stat) = inspect_image(&entry.path()) {
+            stats.push(stat);
+        };
+    }
+    Ok(stats)
+}
+
+fn inspect_image(path: &Path) -> Option<ImageStats> {
+    let img = fs::read(path).ok()?;
+    if img.len() < 8 {
+        return None;
+    }
+    if img[0] != 0x21 {
+        return None;
+    }
+    let fname = path.file_name()?;
+    let fname: String = fname.to_str()?.to_string();
+    Some(ImageStats {
+        name: fname,
+        bpp: img[1],
+    })
+}
+
 fn print_meta(meta: &Meta) {
     println!("{}", "metadata".blue());
     println!("  {} {}", "author ID:   ".cyan(), meta.author_id);
@@ -154,4 +191,20 @@ fn print_wasm_stats(stats: &WasmStats) {
         // TODO: when we stabilize the list of callbacks, highlight unknown exports.
         println!("    {export}");
     }
+}
+
+fn print_images_stats(stats: &Vec<ImageStats>) {
+    if stats.is_empty() {
+        return;
+    }
+    println!();
+    println!("{}", "images".blue());
+    for stat in stats {
+        print_image_stats(stat);
+    }
+}
+
+fn print_image_stats(stats: &ImageStats) {
+    println!("  {}", stats.name.clone().green());
+    println!("    {}: {}", "bpp".cyan(), stats.bpp);
 }
