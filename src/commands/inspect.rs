@@ -118,9 +118,8 @@ struct ImageStats {
     bpp: u8,
     width: u16,
     height: u16,
-    // swaps: Vec<u8>,
+    swaps: Vec<Option<u8>>,
     pixels: usize,
-    transp: u8,
 }
 
 fn inspect_images(rom_path: &Path) -> anyhow::Result<Vec<ImageStats>> {
@@ -153,6 +152,11 @@ fn inspect_image(path: &Path) -> Option<ImageStats> {
         2 => 2,
         _ => 8,
     };
+    let max_colors = match bpp {
+        1 => 1,
+        2 => 4,
+        _ => 16,
+    };
     let Some(swaps) = &image_bytes.get(..swaps_len) else {
         return None;
     };
@@ -164,17 +168,18 @@ fn inspect_image(path: &Path) -> Option<ImageStats> {
     };
     let pixels = image_bytes.len() * ppb;
     let height = pixels as u16 / width;
+    let swaps = parse_swaps(transp, swaps);
+    let swaps = swaps[..max_colors].to_vec();
 
     let name = path.file_name()?;
     let name: String = name.to_str()?.to_string();
     Some(ImageStats {
         name,
         bpp,
-        // swaps: swaps;
         width,
         height,
+        swaps,
         pixels,
-        transp,
     })
 }
 
@@ -242,5 +247,82 @@ fn print_image_stats(stats: &ImageStats) {
     println!("    {}:  {}", "width".cyan(), stats.width);
     println!("    {}: {}", "height".cyan(), stats.height);
     println!("    {}: {}", "pixels".cyan(), stats.pixels);
-    println!("    {}: {}", "transp".cyan(), stats.transp);
+    println!("    {}", "colors".cyan());
+    for (i, swap) in stats.swaps.iter().enumerate() {
+        if let Some(swap) = swap {
+            let name = get_color_name(*swap);
+            let swap = swap + 1;
+            println!("      {i:>2} -> {swap:>2}  {name}");
+        } else {
+            println!("      {i:>2} ->  0  transparent");
+        }
+    }
+}
+
+#[allow(clippy::get_first)]
+fn parse_swaps(transp: u8, swaps: &[u8]) -> [Option<u8>; 16] {
+    [
+        // 0-4
+        parse_color_l(transp, swaps.get(0)),
+        parse_color_r(transp, swaps.get(0)),
+        parse_color_l(transp, swaps.get(1)),
+        parse_color_r(transp, swaps.get(1)),
+        // 4-8
+        parse_color_l(transp, swaps.get(2)),
+        parse_color_r(transp, swaps.get(2)),
+        parse_color_l(transp, swaps.get(3)),
+        parse_color_r(transp, swaps.get(3)),
+        // 8-12
+        parse_color_l(transp, swaps.get(4)),
+        parse_color_r(transp, swaps.get(4)),
+        parse_color_l(transp, swaps.get(5)),
+        parse_color_r(transp, swaps.get(5)),
+        // 12-16
+        parse_color_l(transp, swaps.get(6)),
+        parse_color_r(transp, swaps.get(6)),
+        parse_color_l(transp, swaps.get(7)),
+        parse_color_r(transp, swaps.get(7)),
+    ]
+}
+
+/// Parse the high bits of a byte as a color.
+fn parse_color_r(transp: u8, c: Option<&u8>) -> Option<u8> {
+    let c = c?;
+    let c = c & 0b1111;
+    if c == transp {
+        return None;
+    }
+    Some(c)
+}
+
+/// Parse the low bits of a byte as a color.
+fn parse_color_l(transp: u8, c: Option<&u8>) -> Option<u8> {
+    let c = c?;
+    let c = (c >> 4) & 0b1111;
+    if c == transp {
+        return None;
+    }
+    Some(c)
+}
+
+const fn get_color_name(swap: u8) -> &'static str {
+    match swap {
+        0 => "black        #1A1C2C",
+        1 => "purple       #5D275D",
+        2 => "red          #B13E53",
+        3 => "orange       #EF7D57",
+        4 => "yellow       #FFCD75",
+        5 => "light green  #A7F070",
+        6 => "green        #38B764",
+        7 => "dark green   #257179",
+        8 => "dark blue    #29366F",
+        9 => "blue         #3B5DC9",
+        10 => "light blue   #41A6F6",
+        11 => "cyan         #73EFF7",
+        12 => "white        #F4F4F4",
+        13 => "light gray   #94B0C2",
+        14 => "gray         #566C86",
+        15 => "dark gray    #333C57",
+        _ => "???",
+    }
 }
