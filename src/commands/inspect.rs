@@ -116,6 +116,11 @@ fn inspect_wasm(bin_path: &Path) -> anyhow::Result<WasmStats> {
 struct ImageStats {
     name: String,
     bpp: u8,
+    width: u16,
+    height: u16,
+    // swaps: Vec<u8>,
+    pixels: usize,
+    transp: u8,
 }
 
 fn inspect_images(rom_path: &Path) -> anyhow::Result<Vec<ImageStats>> {
@@ -130,31 +135,58 @@ fn inspect_images(rom_path: &Path) -> anyhow::Result<Vec<ImageStats>> {
     Ok(stats)
 }
 
+#[expect(clippy::cast_possible_truncation)]
 fn inspect_image(path: &Path) -> Option<ImageStats> {
-    let img = fs::read(path).ok()?;
-    if img.len() < 8 {
+    let image_bytes = fs::read(path).ok()?;
+    if image_bytes.len() < 8 {
         return None;
     }
-    if img[0] != 0x21 {
+    if image_bytes[0] != 0x21 {
         return None;
     }
-    let fname = path.file_name()?;
-    let fname: String = fname.to_str()?.to_string();
+    let bpp = image_bytes[1];
+    let width = u16::from(image_bytes[2]) | (u16::from(image_bytes[3]) << 8);
+    let transp = image_bytes[4];
+    let image_bytes = &image_bytes[5..];
+    let swaps_len = match bpp {
+        1 => 1,
+        2 => 2,
+        _ => 8,
+    };
+    let Some(swaps) = &image_bytes.get(..swaps_len) else {
+        return None;
+    };
+    let image_bytes = &image_bytes[swaps_len..];
+    let ppb = match bpp {
+        1 => 8,
+        2 => 4,
+        _ => 2,
+    };
+    let pixels = image_bytes.len() * ppb;
+    let height = pixels as u16 / width;
+
+    let name = path.file_name()?;
+    let name: String = name.to_str()?.to_string();
     Some(ImageStats {
-        name: fname,
-        bpp: img[1],
+        name,
+        bpp,
+        // swaps: swaps;
+        width,
+        height,
+        pixels,
+        transp,
     })
 }
 
 fn print_meta(meta: &Meta) {
     println!("{}", "metadata".blue());
-    println!("  {} {}", "author ID:   ".cyan(), meta.author_id);
-    println!("  {} {}", "app ID:      ".cyan(), meta.app_id);
-    println!("  {} {}", "author name: ".cyan(), meta.author_name);
-    println!("  {} {}", "app name:    ".cyan(), meta.app_name);
-    println!("  {} {}", "launcher:    ".cyan(), meta.launcher);
-    println!("  {} {}", "sudo:        ".cyan(), meta.sudo);
-    println!("  {} {}", "version:     ".cyan(), meta.version);
+    println!("  {}:   {}", "author ID".cyan(), meta.author_id);
+    println!("  {}:      {}", "app ID".cyan(), meta.app_id);
+    println!("  {}: {}", "author name".cyan(), meta.author_name);
+    println!("  {}:    {}", "app name".cyan(), meta.app_name);
+    println!("  {}:    {}", "launcher".cyan(), meta.launcher);
+    println!("  {}:        {}", "sudo".cyan(), meta.sudo);
+    println!("  {}:     {}", "version".cyan(), meta.version);
     println!();
 }
 
@@ -205,6 +237,10 @@ fn print_images_stats(stats: &Vec<ImageStats>) {
 }
 
 fn print_image_stats(stats: &ImageStats) {
-    println!("  {}", stats.name.clone().green());
-    println!("    {}: {}", "bpp".cyan(), stats.bpp);
+    println!("  {}", stats.name.clone().magenta());
+    println!("    {}:    {}", "bpp".cyan(), stats.bpp);
+    println!("    {}:  {}", "width".cyan(), stats.width);
+    println!("    {}: {}", "height".cyan(), stats.height);
+    println!("    {}: {}", "pixels".cyan(), stats.pixels);
+    println!("    {}: {}", "transp".cyan(), stats.transp);
 }
