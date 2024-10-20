@@ -1,4 +1,5 @@
 use crate::args::BuildArgs;
+use crate::audio::convert_wav;
 use crate::config::{Config, FileConfig};
 use crate::crypto::hash_dir;
 use crate::file_names::{HASH, KEY, META, SIG};
@@ -125,7 +126,6 @@ fn write_installed(config: &Config) -> anyhow::Result<()> {
     let mut buf = vec![0; short_meta.size()];
     let encoded = short_meta.encode(&mut buf).context("serialize")?;
     let output_path = config.vfs_path.join("sys").join("new-app");
-    #[allow(clippy::needless_borrows_for_generic_args)]
     fs::write(output_path, &encoded).context("write new-app file")?;
     if config.launcher {
         let output_path = config.vfs_path.join("sys").join("launcher");
@@ -158,6 +158,9 @@ fn convert_file(name: &str, config: &Config, file_config: &FileConfig) -> anyhow
     match extension {
         "png" => {
             convert_image(input_path, &output_path)?;
+        }
+        "wav" => {
+            convert_wav(input_path, &output_path)?;
         }
         // firefly formats for fonts and images
         "fff" | "ffi" | "ffz" => {
@@ -276,7 +279,7 @@ fn print_sizes(old_sizes: &HashMap<OsString, u64>, new_sizes: &HashMap<OsString,
         let suffix = if old_size == new_size {
             String::new()
         } else {
-            #[allow(clippy::cast_possible_wrap)]
+            #[expect(clippy::cast_possible_wrap)]
             let diff = *new_size as i64 - *old_size as i64;
             let suffix = format!(" ({diff:+})");
             if *old_size == 0 {

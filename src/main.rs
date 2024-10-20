@@ -1,10 +1,15 @@
-#![deny(clippy::all, clippy::pedantic, clippy::nursery)]
-#![allow(clippy::module_name_repetitions)]
-#![allow(clippy::option_if_let_else)]
-#![allow(clippy::enum_glob_use)]
-#![allow(clippy::wildcard_imports)]
+#![forbid(unsafe_code)]
+#![deny(
+    clippy::all,
+    clippy::pedantic,
+    clippy::nursery,
+    clippy::allow_attributes
+)]
+#![allow(clippy::enum_glob_use, clippy::wildcard_imports)]
+#![expect(clippy::module_name_repetitions, clippy::option_if_let_else)]
 
 mod args;
+mod audio;
 mod cli;
 mod commands;
 mod config;

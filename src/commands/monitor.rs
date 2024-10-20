@@ -209,7 +209,7 @@ fn render_fuel(x: u16, y: u16, name: &str, fuel: &serial::Fuel) -> anyhow::Resul
         cursor::MoveTo(x, y + 4),
         style::Print("│ stdev"),
         cursor::MoveTo(x + COL1, y + 4),
-        #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+        #[expect(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
         style::Print(format_value(fuel.var.sqrt() as u32)),
         cursor::MoveTo(x, y + 4),
         cursor::MoveTo(x + RBORD, y + 1),
@@ -273,7 +273,7 @@ fn format_ratio(n: u32, d: u32) -> String {
     }
     let r = f64::from(n) * 100. / f64::from(d);
     let r = r.round_ties_even();
-    #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+    #[expect(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
     let r = u8::try_from(r as u64).unwrap_or(255);
     if r == 0 && n > 0 {
         return "  1%".to_string();

@@ -55,7 +55,7 @@ fn fetch_archive(path: &str) -> Result<PathBuf> {
     }
 
     // App ID is given. Fetch download URL from the catalog.
-    #[allow(clippy::case_sensitive_file_extension_comparisons)]
+    #[expect(clippy::case_sensitive_file_extension_comparisons)]
     if !path.ends_with(".zip") {
         let url = format!("https://catalog.fireflyzero.com/{path}.json");
         let resp = ureq::get(&url).call().context("send HTTP request")?;
@@ -104,7 +104,6 @@ fn write_installed(meta: &Meta, vfs_path: &Path) -> anyhow::Result<()> {
     let mut buf = vec![0; short_meta.size()];
     let encoded = short_meta.encode(&mut buf).context("serialize")?;
     let output_path = vfs_path.join("sys").join("new-app");
-    #[allow(clippy::needless_borrows_for_generic_args)]
     fs::write(output_path, &encoded).context("write new-app file")?;
     if meta.launcher {
         let output_path = vfs_path.join("sys").join("launcher");
