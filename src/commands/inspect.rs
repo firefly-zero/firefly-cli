@@ -38,6 +38,10 @@ pub fn cmd_inspect(vfs: &Path, args: &InspectArgs) -> Result<()> {
         let images_stats = inspect_images(&rom_path).context("inspect images")?;
         print_images_stats(&images_stats);
     }
+    {
+        let audios_stats = inspect_audios(&rom_path).context("inspect audios")?;
+        print_audios_stats(&audios_stats);
+    }
     Ok(())
 }
 
@@ -183,6 +187,61 @@ fn inspect_image(path: &Path) -> Option<ImageStats> {
     })
 }
 
+struct AudioStats {
+    name: String,
+    channels: u8,
+    depth: u8,
+    adpcm: bool,
+    sample_rate: u16,
+    duration: f32,
+}
+
+fn inspect_audios(rom_path: &Path) -> anyhow::Result<Vec<AudioStats>> {
+    let dir = fs::read_dir(rom_path)?;
+    let mut stats = Vec::new();
+    for entry in dir {
+        let entry = entry?;
+        if let Some(stat) = inspect_audio(&entry.path()) {
+            stats.push(stat);
+        };
+    }
+    Ok(stats)
+}
+
+fn inspect_audio(path: &Path) -> Option<AudioStats> {
+    let audio_bytes = fs::read(path).ok()?;
+    if audio_bytes.len() < 4 {
+        return None;
+    }
+    if audio_bytes[0] != 0x31 {
+        return None;
+    }
+    let stereo = audio_bytes[1] & 0b_100 != 0;
+    let channels: u8 = if stereo { 2 } else { 1 };
+    let is16 = audio_bytes[1] & 0b_010 != 0;
+    let depth: u8 = if is16 { 16 } else { 8 };
+    let adpcm = audio_bytes[1] & 0b_001 != 0;
+    let sample_rate = u16::from_le_bytes([audio_bytes[2], audio_bytes[3]]);
+
+    let audio_bytes = &audio_bytes[4..];
+    #[expect(clippy::cast_precision_loss)]
+    let mut duration = audio_bytes.len() as f32 / f32::from(u16::from(channels) * sample_rate);
+    if is16 {
+        duration /= 2.0;
+    }
+
+    let name = path.file_name()?;
+    let name: String = name.to_str()?.to_string();
+    Some(AudioStats {
+        name,
+        channels,
+        depth,
+        adpcm,
+        sample_rate,
+        duration,
+    })
+}
+
 fn print_meta(meta: &Meta) {
     println!("{}", "metadata".blue());
     println!("  {}:   {}", "author ID".cyan(), meta.author_id);
@@ -257,6 +316,31 @@ fn print_image_stats(stats: &ImageStats) {
             println!("      {i:>2} ->  0  transparent");
         }
     }
+}
+
+fn print_audios_stats(stats: &Vec<AudioStats>) {
+    if stats.is_empty() {
+        return;
+    }
+    println!();
+    println!("{}", "audio".blue());
+    for stat in stats {
+        print_audio_stats(stat);
+    }
+}
+
+fn print_audio_stats(stats: &AudioStats) {
+    println!("  {}", stats.name.clone().magenta());
+    let mono = if stats.channels == 1 {
+        "mono"
+    } else {
+        "stereo"
+    };
+    println!("    {}:    {} ({mono})", "channels".cyan(), stats.channels);
+    println!("    {}:   {} bits", "bit depth".cyan(), stats.depth);
+    println!("    {}: {}", "sample rate".cyan(), stats.sample_rate);
+    println!("    {}:  {}", "compressed".cyan(), stats.adpcm);
+    println!("    {}:    {:0.1}s", "duration".cyan(), stats.duration);
 }
 
 fn parse_swaps(transp: u8, swaps: &[u8]) -> [Option<u8>; 16] {
