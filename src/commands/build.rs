@@ -1,4 +1,5 @@
 use crate::args::BuildArgs;
+use crate::audio::convert_wav;
 use crate::config::{Config, FileConfig};
 use crate::crypto::hash_dir;
 use crate::file_names::{HASH, KEY, META, SIG};
@@ -158,6 +159,9 @@ fn convert_file(name: &str, config: &Config, file_config: &FileConfig) -> anyhow
     match extension {
         "png" => {
             convert_image(input_path, &output_path)?;
+        }
+        "wav" => {
+            convert_wav(input_path, &output_path)?;
         }
         // firefly formats for fonts and images
         "fff" | "ffi" | "ffz" => {

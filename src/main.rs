@@ -5,6 +5,7 @@
 #![allow(clippy::wildcard_imports)]
 
 mod args;
+mod audio;
 mod cli;
 mod commands;
 mod config;
