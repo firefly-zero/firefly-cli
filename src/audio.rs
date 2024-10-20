@@ -62,7 +62,7 @@ pub fn convert_wav(input_path: &Path, output_path: &Path) -> Result<()> {
             bail!("unsupported sample format: {letter}{bits}",);
         }
     }
-    todo!()
+    Ok(())
 }
 
 fn write_u8(f: &mut File, v: u8) -> std::io::Result<()> {
