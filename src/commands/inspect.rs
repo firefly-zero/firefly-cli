@@ -134,7 +134,6 @@ fn inspect_images(rom_path: &Path) -> anyhow::Result<Vec<ImageStats>> {
     Ok(stats)
 }
 
-#[expect(clippy::cast_possible_truncation)]
 fn inspect_image(path: &Path) -> Option<ImageStats> {
     let image_bytes = fs::read(path).ok()?;
     if image_bytes.len() < 8 {
@@ -167,6 +166,7 @@ fn inspect_image(path: &Path) -> Option<ImageStats> {
         _ => 2,
     };
     let pixels = image_bytes.len() * ppb;
+    #[expect(clippy::cast_possible_truncation)]
     let height = pixels as u16 / width;
     let swaps = parse_swaps(transp, swaps);
     let swaps = swaps[..max_colors].to_vec();
@@ -259,8 +259,8 @@ fn print_image_stats(stats: &ImageStats) {
     }
 }
 
-#[allow(clippy::get_first)]
 fn parse_swaps(transp: u8, swaps: &[u8]) -> [Option<u8>; 16] {
+    #[expect(clippy::get_first)]
     [
         // 0-4
         parse_color_l(transp, swaps.get(0)),

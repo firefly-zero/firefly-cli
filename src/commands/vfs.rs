@@ -1,6 +1,6 @@
 use crate::vfs::get_vfs_path;
 
-#[allow(clippy::unnecessary_wraps)]
+#[expect(clippy::unnecessary_wraps)]
 pub fn cmd_vfs() -> anyhow::Result<()> {
     let path = get_vfs_path();
     let path = path.to_str().unwrap();

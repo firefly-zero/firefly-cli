@@ -9,7 +9,7 @@ use rustyline::history::FileHistory;
 use rustyline::Editor;
 use std::path::Path;
 
-#[allow(clippy::unnecessary_wraps)]
+#[expect(clippy::unnecessary_wraps)]
 pub fn cmd_repl(vfs: &Path, _args: &ReplArgs) -> Result<()> {
     let mut rl: Editor<Helper, FileHistory> = Editor::new().unwrap();
     rl.set_helper(Some(Helper::new()));

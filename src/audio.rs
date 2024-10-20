@@ -48,7 +48,7 @@ pub fn convert_wav(input_path: &Path, output_path: &Path) -> Result<()> {
             let samples = reader.samples::<f32>();
             for sample in samples {
                 let sample = sample?;
-                #[allow(clippy::cast_possible_truncation)]
+                #[expect(clippy::cast_possible_truncation)]
                 let sample = (f32::from(i16::MAX) * sample) as i16;
                 write_i16(&mut out, sample)?;
             }
