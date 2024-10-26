@@ -36,6 +36,9 @@ pub struct Config {
     /// Mapping of cheat commands to their integer representation.
     pub cheats: Option<HashMap<String, i32>>,
 
+    /// Mapping of badge IDs to badges.
+    pub badges: Option<HashMap<u32, BadgeConfig>>,
+
     /// Path to the project root.
     #[serde(skip)]
     pub root_path: PathBuf,
@@ -84,6 +87,31 @@ pub struct FileConfig {
     /// If the file should be copied as-is, without any processing.
     #[serde(default)]
     pub copy: bool,
+}
+
+#[derive(Deserialize, Debug)]
+#[serde(deny_unknown_fields)]
+pub struct BadgeConfig {
+    /// Human-readable achievement name.
+    pub name: String,
+
+    /// Human-readable achievement description. Typically, a hint on how to earn it.
+    pub descr: Option<String>,
+
+    /// The order in which achievement should be displayed, ascending.
+    ///
+    /// Defaults to the achievement's ID.
+    ///
+    /// Earned achievments bubble up.
+    pub position: Option<u16>,
+
+    /// How much XP earning the achievement brings to the player.
+    #[serde(default)]
+    pub xp: u8,
+
+    /// If the achievement should be hidden until earned.
+    #[serde(default)]
+    pub hidden: bool,
 }
 
 #[derive(Deserialize, Debug, Clone)]
