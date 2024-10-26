@@ -242,7 +242,7 @@ fn inspect_audio(path: &Path) -> Option<AudioStats> {
     })
 }
 
-fn print_meta(meta: &Meta) {
+fn print_meta(meta: &Meta<'_>) {
     println!("{}", "metadata".blue());
     println!("  {}:   {}", "author ID".cyan(), meta.author_id);
     println!("  {}:      {}", "app ID".cyan(), meta.app_id);

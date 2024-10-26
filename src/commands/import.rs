@@ -96,7 +96,7 @@ fn read_meta_raw(archive: &mut ZipArchive<File>) -> Result<Vec<u8>> {
 }
 
 /// Write the latest installed app name into internal DB.
-fn write_installed(meta: &Meta, vfs_path: &Path) -> anyhow::Result<()> {
+fn write_installed(meta: &Meta<'_>, vfs_path: &Path) -> anyhow::Result<()> {
     let short_meta = firefly_types::ShortMeta {
         app_id: meta.app_id,
         author_id: meta.author_id,
