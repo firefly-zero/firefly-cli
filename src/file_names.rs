@@ -12,3 +12,7 @@ pub const META: &str = "_meta";
 
 /// The public key that can verify the author's signature.
 pub const KEY: &str = "_key";
+
+pub const BADGES: &str = "_badges";
+
+pub const BOARDS: &str = "_badges";

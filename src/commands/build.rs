@@ -2,7 +2,7 @@ use crate::args::BuildArgs;
 use crate::audio::convert_wav;
 use crate::config::{Config, FileConfig};
 use crate::crypto::hash_dir;
-use crate::file_names::{HASH, KEY, META, SIG};
+use crate::file_names::*;
 use crate::fs::{collect_sizes, format_size};
 use crate::images::convert_image;
 use crate::langs::build_bin;
@@ -17,6 +17,7 @@ use rsa::signature::hazmat::PrehashSigner;
 use rsa::signature::SignatureEncoding;
 use rsa::RsaPrivateKey;
 use sha2::{Digest, Sha256};
+use std::borrow::Cow;
 use std::collections::HashMap;
 use std::ffi::OsString;
 use std::fs;
@@ -74,6 +75,7 @@ pub fn cmd_build(vfs: PathBuf, args: &BuildArgs) -> anyhow::Result<()> {
             convert_file(name, &config, file_config).context("convert file")?;
         }
     }
+    write_badges(&config).context("write badges")?;
     write_installed(&config).context("write app-name")?;
     write_key(&config).context("write key")?;
     write_hash(&config.rom_path).context("write hash")?;
@@ -193,6 +195,51 @@ fn download_file(input_path: &Path, file_config: &FileConfig) -> anyhow::Result<
         }
     }
     fs::write(input_path, bytes).context("write file")?;
+    Ok(())
+}
+
+fn write_badges(config: &Config) -> anyhow::Result<()> {
+    // some basic validations
+    let Some(configs) = &config.badges else {
+        return Ok(());
+    };
+    if configs.is_empty() {
+        return Ok(());
+    }
+    if configs.get(&1).is_none() {
+        bail!("badge IDs must start at 1")
+    }
+    let len = configs.len();
+    if len > 200 {
+        bail!("too many badges")
+    }
+    let len = u16::try_from(len).unwrap();
+
+    // collect and convert badges
+    let mut badges: Vec<firefly_types::Badge<'_>> = Vec::new();
+    for id in 1u16..=len {
+        let Some(badge) = configs.get(&id) else {
+            bail!("badge IDs must be consequentive but ID {id} is missed");
+        };
+        let badge = firefly_types::Badge {
+            position: badge.position.unwrap_or(id),
+            xp: badge.xp,
+            hidden: badge.hidden,
+            name: &badge.name,
+            descr: &badge.descr,
+        };
+        if let Err(err) = badge.validate() {
+            bail!("validate badge #{id}: {err}");
+        }
+        badges.push(badge);
+    }
+
+    // write badges to the file
+    let badges = firefly_types::Badges::new(Cow::Owned(badges));
+    let mut buf = vec![0; badges.size()];
+    let encoded = badges.encode(&mut buf).context("serialize")?;
+    let output_path = config.rom_path.join(BADGES);
+    fs::write(output_path, encoded).context("write file")?;
     Ok(())
 }
 

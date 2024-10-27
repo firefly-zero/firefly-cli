@@ -99,7 +99,8 @@ pub struct BadgeConfig {
     pub name: String,
 
     /// Human-readable achievement description. Typically, a hint on how to earn it.
-    pub descr: Option<String>,
+    #[serde(default)]
+    pub descr: String,
 
     /// The order in which achievement should be displayed, ascending.
     ///
