@@ -13,6 +13,8 @@ pub const META: &str = "_meta";
 /// The public key that can verify the author's signature.
 pub const KEY: &str = "_key";
 
+/// Description of badges (aka achievements) provided by the app.
 pub const BADGES: &str = "_badges";
 
-pub const BOARDS: &str = "_badges";
+/// Description of boards (aka scoreboards or leaderboards) provided by the app.
+pub const BOARDS: &str = "_boards";

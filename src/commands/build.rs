@@ -76,6 +76,7 @@ pub fn cmd_build(vfs: PathBuf, args: &BuildArgs) -> anyhow::Result<()> {
         }
     }
     write_badges(&config).context("write badges")?;
+    write_boards(&config).context("write boards")?;
     write_installed(&config).context("write app-name")?;
     write_key(&config).context("write key")?;
     write_hash(&config.rom_path).context("write hash")?;
@@ -239,6 +240,53 @@ fn write_badges(config: &Config) -> anyhow::Result<()> {
     let mut buf = vec![0; badges.size()];
     let encoded = badges.encode(&mut buf).context("serialize")?;
     let output_path = config.rom_path.join(BADGES);
+    fs::write(output_path, encoded).context("write file")?;
+    Ok(())
+}
+
+fn write_boards(config: &Config) -> anyhow::Result<()> {
+    // some basic validations
+    let Some(configs) = &config.boards else {
+        return Ok(());
+    };
+    if configs.is_empty() {
+        return Ok(());
+    }
+    if configs.get(&1).is_none() {
+        bail!("board IDs must start at 1")
+    }
+    let len = configs.len();
+    if len > 200 {
+        bail!("too many boards")
+    }
+    let len = u16::try_from(len).unwrap();
+
+    // collect and convert boards
+    let mut boards: Vec<firefly_types::Board<'_>> = Vec::new();
+    for id in 1u16..=len {
+        let Some(board) = configs.get(&id) else {
+            bail!("board IDs must be consequentive but ID {id} is missed");
+        };
+        let board = firefly_types::Board {
+            position: board.position.unwrap_or(id),
+            min: board.min.unwrap_or(1),
+            max: board.max.unwrap_or(u32::MAX),
+            asc: board.asc,
+            time: board.time,
+            decimals: board.decimals,
+            name: &board.name,
+        };
+        if let Err(err) = board.validate() {
+            bail!("validate board #{id}: {err}");
+        }
+        boards.push(board);
+    }
+
+    // write boards to the file
+    let boards = firefly_types::Boards::new(Cow::Owned(boards));
+    let mut buf = vec![0; boards.size()];
+    let encoded = boards.encode(&mut buf).context("serialize")?;
+    let output_path = config.rom_path.join(BOARDS);
     fs::write(output_path, encoded).context("write file")?;
     Ok(())
 }
