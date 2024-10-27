@@ -8,6 +8,7 @@ use crate::images::convert_image;
 use crate::langs::build_bin;
 use crate::vfs::init_vfs;
 use anyhow::{bail, Context};
+use chrono::Datelike;
 use crossterm::style::Stylize;
 use data_encoding::HEXLOWER;
 use firefly_types::Encode;
@@ -79,6 +80,7 @@ pub fn cmd_build(vfs: PathBuf, args: &BuildArgs) -> anyhow::Result<()> {
     write_badges(&config).context("write badges")?;
     write_boards(&config).context("write boards")?;
     write_installed(&config).context("write app-name")?;
+    write_stats(&config).context("write stats")?;
     write_key(&config).context("write key")?;
     write_hash(&config.rom_path).context("write hash")?;
     write_sig(&config).context("sign ROM")?;
@@ -201,28 +203,13 @@ fn download_file(input_path: &Path, file_config: &FileConfig) -> anyhow::Result<
 }
 
 fn write_badges(config: &Config) -> anyhow::Result<()> {
-    // some basic validations
-    let Some(configs) = &config.badges else {
-        return Ok(());
-    };
+    let configs = config.badges_vec()?;
     if configs.is_empty() {
         return Ok(());
     }
-    if configs.get(&1).is_none() {
-        bail!("badge IDs must start at 1")
-    }
-    let len = configs.len();
-    if len > 200 {
-        bail!("too many badges")
-    }
-    let len = u16::try_from(len).unwrap();
-
     // collect and convert badges
     let mut badges: Vec<firefly_types::Badge<'_>> = Vec::new();
-    for id in 1u16..=len {
-        let Some(badge) = configs.get(&id) else {
-            bail!("badge IDs must be consequentive but ID {id} is missed");
-        };
+    for (badge, id) in configs.iter().zip(1u16..) {
         let badge = firefly_types::Badge {
             position: badge.position.unwrap_or(id),
             xp: badge.xp,
@@ -245,6 +232,7 @@ fn write_badges(config: &Config) -> anyhow::Result<()> {
     Ok(())
 }
 
+/// Write boards (aka scoreboards or leaderboards) info into the ROM.
 fn write_boards(config: &Config) -> anyhow::Result<()> {
     // some basic validations
     let Some(configs) = &config.boards else {
@@ -289,6 +277,74 @@ fn write_boards(config: &Config) -> anyhow::Result<()> {
     let encoded = boards.encode(&mut buf).context("serialize")?;
     let output_path = config.rom_path.join(BOARDS);
     fs::write(output_path, encoded).context("write file")?;
+    Ok(())
+}
+
+/// Create or update app stats.
+fn write_stats(config: &Config) -> anyhow::Result<()> {
+    let path = config
+        .vfs_path
+        .join("data")
+        .join(&config.author_id)
+        .join(&config.app_id)
+        .join("stats");
+    if path.exists() {
+        update_stats(&path, config).context("update stats")
+    } else {
+        create_stats(&path, config).context("create stats")
+    }
+}
+
+fn update_stats(path: &Path, config: &Config) -> anyhow::Result<()> {
+    let raw = fs::read(path).context("read stats file")?;
+    let mut stats = firefly_types::Stats::decode(&raw).context("parse stats")?;
+
+    stats.xp = stats.xp.min(1000);
+    let today = chrono::Local::now().date_naive();
+    #[expect(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+    let today = (
+        today.year() as u16,
+        today.month0() as u8,
+        today.day0() as u8,
+    );
+    stats.updated_on = today;
+
+    let mut buf = vec![0; stats.size()];
+    let encoded = stats.encode(&mut buf).context("serialize")?;
+    fs::write(path, encoded).context("write file")?;
+    Ok(())
+}
+
+fn create_stats(path: &Path, config: &Config) -> anyhow::Result<()> {
+    let today = chrono::Local::now().date_naive();
+    #[expect(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+    let today = (
+        today.year() as u16,
+        today.month0() as u8,
+        today.day0() as u8,
+    );
+    let mut badges = Vec::new();
+    let badges_config = config.badges_vec()?;
+    for badge in badges_config {
+        badges.push(firefly_types::BadgeProgress {
+            new: false,
+            done: 0,
+            goal: badge.steps.unwrap_or(1),
+        });
+    }
+    let stats = firefly_types::Stats {
+        minutes: [0; 4],
+        longest_play: [0; 4],
+        launches: [0; 4],
+        installed_on: today,
+        updated_on: today,
+        launched_on: (0, 0, 0),
+        xp: 0,
+        badges: badges.into_boxed_slice(),
+    };
+    let mut buf = vec![0; stats.size()];
+    let encoded = stats.encode(&mut buf).context("serialize")?;
+    fs::write(path, encoded).context("write file")?;
     Ok(())
 }
 

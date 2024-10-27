@@ -1,4 +1,4 @@
-use anyhow::Context;
+use anyhow::{bail, Context, Result};
 use serde::Deserialize;
 use std::collections::HashMap;
 use std::fs;
@@ -73,6 +73,28 @@ impl Config {
             .join(&config.app_id);
         Ok(config)
     }
+
+    pub fn badges_vec(&self) -> Result<Vec<&BadgeConfig>> {
+        let Some(badges_config) = &self.badges else {
+            return Ok(Vec::new());
+        };
+        if badges_config.get(&1).is_none() || badges_config.get(&0).is_some() {
+            bail!("badge IDs must start at 1")
+        }
+        let len = badges_config.len();
+        if len > 200 {
+            bail!("too many badges")
+        }
+        let len = u16::try_from(len).unwrap();
+        let mut badges = Vec::new();
+        for id in 1u16..=len {
+            let Some(badge) = badges_config.get(&id) else {
+                bail!("badge IDs must be consequentive but ID {id} is missed");
+            };
+            badges.push(badge);
+        }
+        Ok(badges)
+    }
 }
 
 #[derive(Deserialize, Debug)]
@@ -108,6 +130,11 @@ pub struct BadgeConfig {
     ///
     /// Earned achievments bubble up.
     pub position: Option<u16>,
+
+    /// How many steps there are to earn the badge.
+    ///
+    /// Defaults to 1.
+    pub steps: Option<u16>,
 
     /// How much XP earning the achievement brings to the player.
     #[serde(default)]
