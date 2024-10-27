@@ -3,6 +3,7 @@ use crate::net::connect;
 use anyhow::{Context, Result};
 use crossterm::{cursor, event, execute, style, terminal};
 use firefly_types::serial;
+use firefly_types::Encode;
 use std::io::{self, Read, Write};
 use std::net::TcpStream;
 use std::path::Path;

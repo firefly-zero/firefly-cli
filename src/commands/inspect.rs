@@ -4,6 +4,7 @@ use crate::file_names::{BIN, META};
 use crate::fs::{collect_sizes, format_size};
 use anyhow::{bail, Context, Result};
 use crossterm::style::Stylize;
+use firefly_types::Encode;
 use firefly_types::Meta;
 use std::collections::HashMap;
 use std::ffi::OsString;

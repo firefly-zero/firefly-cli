@@ -10,6 +10,7 @@ use crate::vfs::init_vfs;
 use anyhow::{bail, Context};
 use crossterm::style::Stylize;
 use data_encoding::HEXLOWER;
+use firefly_types::Encode;
 use rand::Rng;
 use rsa::pkcs1::DecodeRsaPrivateKey;
 use rsa::pkcs1v15::SigningKey;
