@@ -295,11 +295,11 @@ fn write_stats(config: &Config) -> anyhow::Result<()> {
     }
 }
 
+/// Update an existing stats file putting new information into it.
 fn update_stats(path: &Path, config: &Config) -> anyhow::Result<()> {
     let raw = fs::read(path).context("read stats file")?;
-    let mut stats = firefly_types::Stats::decode(&raw).context("parse stats")?;
+    let stats = firefly_types::Stats::decode(&raw).context("parse stats")?;
 
-    stats.xp = stats.xp.min(1000);
     let today = chrono::Local::now().date_naive();
     #[expect(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
     let today = (
@@ -307,7 +307,44 @@ fn update_stats(path: &Path, config: &Config) -> anyhow::Result<()> {
         today.month0() as u8,
         today.day0() as u8,
     );
-    stats.updated_on = today;
+    // The current date might be behind the current date on the device,
+    // and it might be reflected in the dates recorded in the stats.
+    // If that happens, try to stay closer to the device time.
+    let today = today
+        .max(stats.installed_on)
+        .max(stats.launched_on)
+        .max(stats.updated_on);
+
+    let mut badges = Vec::new();
+    let badges_config = config.badges_vec()?;
+    for (i, badge_config) in badges_config.iter().enumerate() {
+        let steps = badge_config.steps.unwrap_or(1);
+        let new_badge = if let Some(old_badge) = stats.badges.get(i) {
+            firefly_types::BadgeProgress {
+                new: old_badge.new,
+                done: old_badge.done.max(steps),
+                goal: steps,
+            }
+        } else {
+            firefly_types::BadgeProgress {
+                new: false,
+                done: 0,
+                goal: steps,
+            }
+        };
+        badges.push(new_badge);
+    }
+
+    let stats = firefly_types::Stats {
+        minutes: stats.minutes,
+        longest_play: stats.longest_play,
+        launches: stats.launches,
+        installed_on: stats.installed_on,
+        updated_on: today,
+        launched_on: stats.launched_on,
+        xp: stats.xp.min(1000),
+        badges: badges.into_boxed_slice(),
+    };
 
     let mut buf = vec![0; stats.size()];
     let encoded = stats.encode(&mut buf).context("serialize")?;
@@ -315,6 +352,7 @@ fn update_stats(path: &Path, config: &Config) -> anyhow::Result<()> {
     Ok(())
 }
 
+/// Create a new stats file with good defaults.
 fn create_stats(path: &Path, config: &Config) -> anyhow::Result<()> {
     let today = chrono::Local::now().date_naive();
     #[expect(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
