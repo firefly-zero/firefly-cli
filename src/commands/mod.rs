@@ -1,3 +1,4 @@
+mod badges;
 mod build;
 mod catalog;
 mod cheat;
@@ -10,6 +11,7 @@ mod name;
 mod repl;
 mod vfs;
 
+pub use badges::cmd_badges;
 pub use build::cmd_build;
 pub use catalog::{cmd_catalog_list, cmd_catalog_show};
 pub use cheat::cmd_cheat;

@@ -8,6 +8,7 @@ pub fn run_command(vfs: PathBuf, command: &Commands) -> anyhow::Result<()> {
         Commands::Build(args) => cmd_build(vfs, args),
         Commands::Export(args) => cmd_export(&vfs, args),
         Commands::Import(args) => cmd_import(&vfs, args),
+        Commands::Badges(args) => cmd_badges(&vfs, args),
         Commands::Cheat(args) => cmd_cheat(args),
         Commands::Monitor(args) => cmd_monitor(&vfs, args),
         Commands::Inspect(args) => cmd_inspect(&vfs, args),
