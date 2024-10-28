@@ -210,6 +210,9 @@ fn write_badges(config: &Config) -> anyhow::Result<()> {
     // collect and convert badges
     let mut badges: Vec<firefly_types::Badge<'_>> = Vec::new();
     for (badge, id) in configs.iter().zip(1u16..) {
+        if badge.steps == Some(0) {
+            bail!("validate badge #{id}: steps must not be zero");
+        }
         let badge = firefly_types::Badge {
             position: badge.position.unwrap_or(id),
             xp: badge.xp,

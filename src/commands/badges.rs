@@ -16,20 +16,42 @@ pub fn cmd_badges(vfs: &Path, args: &BadgesArgs) -> Result<()> {
     if !badges_path.exists() {
         bail!("the app does not have badges");
     }
+
+    let stats_path = vfs.join("sys").join(author_id).join(app_id).join("stats");
+    let stats = if stats_path.exists() {
+        let raw = std::fs::read(stats_path).context("read stats file")?;
+        let stats = firefly_types::Stats::decode(&raw).context("decode stats")?;
+        Some(stats)
+    } else {
+        None
+    };
+
     let raw = std::fs::read(badges_path).context("read badges file")?;
     let badges = firefly_types::Badges::decode(&raw).context("decode badges")?;
-    let mut badges = badges.badges.to_vec();
-    badges.sort_by_key(|b| b.position);
-    for badge in &badges {
-        if badge.hidden && !args.hidden {
-            continue;
-        }
+    let mut badges: Vec<_> = badges.badges.iter().zip(1..).collect();
+    badges.sort_by_key(|(badge, _id)| badge.position);
+    for (badge, id) in &badges {
         if badge.hidden {
+            if !args.hidden {
+                continue;
+            }
             print!("{}", "[hidden] ".grey());
         }
-        println!("{} ({} XP)", badge.name.cyan(), badge.xp);
+        println!("#{id} {} ({} XP)", badge.name.cyan(), badge.xp);
         println!("{}", badge.descr);
-        println!("{}", badge.position);
+        if let Some(stats) = &stats {
+            let Some(progress) = stats.badges.get(id - 1) else {
+                bail!("there are fewer badges in stats file than in the rom");
+            };
+            let emoji = if progress.earned() {
+                "✅"
+            } else if progress.done == 0 {
+                "🚫"
+            } else {
+                "⌛"
+            };
+            println!("{emoji} {}/{}", progress.done, progress.goal);
+        }
         println!();
     }
     Ok(())
