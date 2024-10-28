@@ -140,9 +140,12 @@ pub struct BadgeConfig {
     #[serde(default)]
     pub xp: u8,
 
-    /// If the achievement should be hidden until earned.
+    /// The number of steps required for the badge to be shown.
+    ///
+    /// If 0 (default), the badge is always shown. If equal to the number of steps
+    /// required to earn the badge, the badge will be shown only when earned.
     #[serde(default)]
-    pub hidden: bool,
+    pub hidden: u16,
 }
 
 #[derive(Deserialize, Debug)]
