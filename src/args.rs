@@ -22,9 +22,19 @@ pub enum Commands {
     #[clap(alias("install"))]
     Import(ImportArgs),
 
-    /// List all badges defined in the given app.
+    /// List all badges (aka achievements) defined in the given app.
     #[clap(alias("badge"), alias("achievements"), alias("achievement"))]
     Badges(BadgesArgs),
+
+    /// List all boards (aka scoreboards or leaderboards) defined in the given app.
+    #[clap(
+        alias("board"),
+        alias("scoreboard"),
+        alias("leaderboard"),
+        alias("scoreboards"),
+        alias("leaderboards")
+    )]
+    Boards(BoardsArgs),
 
     /// Show the full path to the virtual filesystem.
     Vfs,
@@ -179,6 +189,12 @@ pub struct BadgesArgs {
     /// Show hidden badges.
     #[arg(long, default_value_t = false)]
     pub hidden: bool,
+}
+
+#[derive(Debug, Parser)]
+pub struct BoardsArgs {
+    /// Full app ID.
+    pub id: String,
 }
 
 #[derive(Debug, Parser)]

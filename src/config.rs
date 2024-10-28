@@ -158,12 +158,12 @@ pub struct BoardConfig {
     pub position: Option<u16>,
 
     /// The minimum value for a score to be added to the board.
-    pub min: Option<u32>,
+    pub min: Option<u16>,
 
     /// The maximum value for a score to be added to the board.
     ///
     /// Useful for filtering out obvious cheating.
-    pub max: Option<u32>,
+    pub max: Option<u16>,
 
     /// If the scores should go in ascending order.
     ///
