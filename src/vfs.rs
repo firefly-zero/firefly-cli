@@ -168,9 +168,11 @@ mod tests {
         assert!(path.join("data").metadata().unwrap().is_dir());
         assert_eq!(path.join("roms").read_dir().unwrap().count(), 0);
         assert_eq!(path.join("data").read_dir().unwrap().count(), 0);
-        assert_eq!(path.join("sys").read_dir().unwrap().count(), 3);
+        assert_eq!(path.join("sys").read_dir().unwrap().count(), 4);
         assert_eq!(path.join("sys").join("priv").read_dir().unwrap().count(), 0);
         assert_eq!(path.join("sys").join("pub").read_dir().unwrap().count(), 0);
+        assert!(path.join("sys").join("name").exists());
+        assert!(path.join("sys").join("config").exists());
         let name_path = path.join("sys").join("name");
         let name = std::fs::read_to_string(name_path).unwrap();
         assert!(name.contains('-'));
