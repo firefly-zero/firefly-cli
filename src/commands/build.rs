@@ -338,6 +338,22 @@ fn update_stats(path: &Path, config: &Config) -> anyhow::Result<()> {
         badges.push(new_badge);
     }
 
+    let mut scores = Vec::new();
+    if let Some(boards_config) = &config.boards {
+        for i in 0..boards_config.len() {
+            let score = if let Some(old_score) = stats.scores.get(i) {
+                old_score.clone()
+            } else {
+                let fs = firefly_types::FriendScore { index: 0, score: 0 };
+                firefly_types::BoardScores {
+                    me: Box::new([0u16; 8]),
+                    friends: Box::new([fs; 8]),
+                }
+            };
+            scores.push(score);
+        }
+    }
+
     let stats = firefly_types::Stats {
         minutes: stats.minutes,
         longest_play: stats.longest_play,
@@ -347,6 +363,7 @@ fn update_stats(path: &Path, config: &Config) -> anyhow::Result<()> {
         launched_on: stats.launched_on,
         xp: stats.xp.min(1000),
         badges: badges.into_boxed_slice(),
+        scores: scores.into_boxed_slice(),
     };
 
     let mut buf = vec![0; stats.size()];
@@ -373,6 +390,17 @@ fn create_stats(path: &Path, config: &Config) -> anyhow::Result<()> {
             goal: badge.steps.unwrap_or(1),
         });
     }
+    let mut scores = Vec::new();
+    if let Some(boards_config) = &config.boards {
+        for _ in 0..boards_config.len() {
+            let fs = firefly_types::FriendScore { index: 0, score: 0 };
+            let score = firefly_types::BoardScores {
+                me: Box::new([0u16; 8]),
+                friends: Box::new([fs; 8]),
+            };
+            scores.push(score);
+        }
+    }
     let stats = firefly_types::Stats {
         minutes: [0; 4],
         longest_play: [0; 4],
@@ -382,6 +410,7 @@ fn create_stats(path: &Path, config: &Config) -> anyhow::Result<()> {
         launched_on: (0, 0, 0),
         xp: 0,
         badges: badges.into_boxed_slice(),
+        scores: scores.into_boxed_slice(),
     };
     let mut buf = vec![0; stats.size()];
     let encoded = stats.encode(&mut buf).context("serialize")?;
