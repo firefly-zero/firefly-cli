@@ -37,10 +37,10 @@ pub struct Config {
     pub cheats: Option<HashMap<String, i32>>,
 
     /// Mapping of badge IDs to badges.
-    pub badges: Option<HashMap<u16, BadgeConfig>>,
+    pub badges: Option<HashMap<String, BadgeConfig>>,
 
     /// Mapping of board IDs to boards.
-    pub boards: Option<HashMap<u16, BoardConfig>>,
+    pub boards: Option<HashMap<String, BoardConfig>>,
 
     /// Path to the project root.
     #[serde(skip)]
@@ -78,7 +78,7 @@ impl Config {
         let Some(badges_config) = &self.badges else {
             return Ok(Vec::new());
         };
-        if badges_config.get(&1).is_none() || badges_config.get(&0).is_some() {
+        if badges_config.get("0").is_some() {
             bail!("badge IDs must start at 1")
         }
         let len = badges_config.len();
@@ -88,7 +88,7 @@ impl Config {
         let len = u16::try_from(len).unwrap();
         let mut badges = Vec::new();
         for id in 1u16..=len {
-            let Some(badge) = badges_config.get(&id) else {
+            let Some(badge) = badges_config.get(&id.to_string()) else {
                 bail!("badge IDs must be consequentive but ID {id} is missed");
             };
             badges.push(badge);

@@ -244,7 +244,7 @@ fn write_boards(config: &Config) -> anyhow::Result<()> {
     if configs.is_empty() {
         return Ok(());
     }
-    if configs.get(&1).is_none() {
+    if configs.get("0").is_some() {
         bail!("board IDs must start at 1")
     }
     let len = configs.len();
@@ -256,7 +256,7 @@ fn write_boards(config: &Config) -> anyhow::Result<()> {
     // collect and convert boards
     let mut boards: Vec<firefly_types::Board<'_>> = Vec::new();
     for id in 1u16..=len {
-        let Some(board) = configs.get(&id) else {
+        let Some(board) = configs.get(&id.to_string()) else {
             bail!("board IDs must be consequentive but ID {id} is missed");
         };
         let board = firefly_types::Board {
@@ -285,12 +285,15 @@ fn write_boards(config: &Config) -> anyhow::Result<()> {
 
 /// Create or update app stats.
 fn write_stats(config: &Config) -> anyhow::Result<()> {
-    let path = config
+    let data_path = config
         .vfs_path
         .join("data")
         .join(&config.author_id)
-        .join(&config.app_id)
-        .join("stats");
+        .join(&config.app_id);
+    if !data_path.exists() {
+        fs::create_dir_all(&data_path).context("create data dir")?;
+    }
+    let path = data_path.join("stats");
     if path.exists() {
         update_stats(&path, config).context("update stats")
     } else {
