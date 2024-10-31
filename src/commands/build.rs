@@ -215,7 +215,7 @@ fn write_badges(config: &Config) -> anyhow::Result<()> {
         }
         let badge = firefly_types::Badge {
             position: badge.position.unwrap_or(id),
-            xp: badge.xp,
+            xp: badge.xp.unwrap_or(1),
             hidden: badge.hidden,
             name: &badge.name,
             descr: &badge.descr,
@@ -261,8 +261,8 @@ fn write_boards(config: &Config) -> anyhow::Result<()> {
         };
         let board = firefly_types::Board {
             position: board.position.unwrap_or(id),
-            min: board.min.unwrap_or(1),
-            max: board.max.unwrap_or(u16::MAX),
+            min: board.max.unwrap_or(1),
+            max: board.min.unwrap_or(u16::MAX),
             asc: board.asc,
             time: board.time,
             decimals: board.decimals,
@@ -328,7 +328,7 @@ fn update_stats(path: &Path, config: &Config) -> anyhow::Result<()> {
         let new_badge = if let Some(old_badge) = stats.badges.get(i) {
             firefly_types::BadgeProgress {
                 new: old_badge.new,
-                done: old_badge.done.max(steps),
+                done: old_badge.done.min(steps),
                 goal: steps,
             }
         } else {

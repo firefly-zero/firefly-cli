@@ -10,7 +10,7 @@ pub fn cmd_boards(vfs: &Path, args: &BoardsArgs) -> Result<()> {
     };
 
     // read stats
-    let stats_path = vfs.join("sys").join(author_id).join(app_id).join("stats");
+    let stats_path = vfs.join("data").join(author_id).join(app_id).join("stats");
     let raw = std::fs::read(stats_path).context("read stats file")?;
     let stats = firefly_types::Stats::decode(&raw).context("decode stats")?;
 

@@ -10,7 +10,7 @@ pub fn cmd_badges(vfs: &Path, args: &BadgesArgs) -> Result<()> {
     };
 
     // read stats
-    let stats_path = vfs.join("sys").join(author_id).join(app_id).join("stats");
+    let stats_path = vfs.join("data").join(author_id).join(app_id).join("stats");
     let raw = std::fs::read(stats_path).context("read stats file")?;
     let stats = firefly_types::Stats::decode(&raw).context("decode stats")?;
 
@@ -33,7 +33,7 @@ pub fn cmd_badges(vfs: &Path, args: &BadgesArgs) -> Result<()> {
         let Some(progress) = stats.badges.get(id - 1) else {
             bail!("there are fewer badges in stats file than in the rom");
         };
-        if badge.hidden < progress.goal {
+        if progress.done < badge.hidden {
             if !args.hidden {
                 continue;
             }

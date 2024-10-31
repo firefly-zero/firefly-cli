@@ -137,8 +137,7 @@ pub struct BadgeConfig {
     pub steps: Option<u16>,
 
     /// How much XP earning the achievement brings to the player.
-    #[serde(default)]
-    pub xp: u8,
+    pub xp: Option<u8>,
 
     /// The number of steps required for the badge to be shown.
     ///
