@@ -36,9 +36,6 @@ pub fn cmd_boards(vfs: &Path, args: &BoardsArgs) -> Result<()> {
         println!("#{id} {}", board.name.cyan());
         let mut scores = merge_scores(scores);
         scores.sort_by_key(|s| s.value);
-        if !board.asc {
-            scores.reverse();
-        }
         for score in scores {
             if score.value > board.max {
                 continue;
@@ -46,12 +43,14 @@ pub fn cmd_boards(vfs: &Path, args: &BoardsArgs) -> Result<()> {
             if score.value < board.min {
                 continue;
             }
+            #[expect(clippy::cast_sign_loss)]
+            let val = score.value as u16;
             let val: String = if board.time {
-                format_time(score.value)
+                format_time(val)
             } else if board.decimals > 0 {
-                format_decimal(score.value, board.decimals)
+                format_decimal(val, board.decimals)
             } else {
-                score.value.to_string()
+                val.to_string()
             };
             let name: String = if &score.name == "me" {
                 score.name.magenta().to_string()
@@ -67,7 +66,7 @@ pub fn cmd_boards(vfs: &Path, args: &BoardsArgs) -> Result<()> {
 
 struct Score {
     name: String,
-    value: u16,
+    value: i16,
 }
 
 fn merge_scores(scores: &firefly_types::BoardScores) -> Vec<Score> {

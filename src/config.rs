@@ -157,19 +157,12 @@ pub struct BoardConfig {
     pub position: Option<u16>,
 
     /// The minimum value for a score to be added to the board.
-    pub min: Option<u16>,
+    pub min: Option<i16>,
 
     /// The maximum value for a score to be added to the board.
     ///
     /// Useful for filtering out obvious cheating.
-    pub max: Option<u16>,
-
-    /// If the scores should go in ascending order.
-    ///
-    /// If false (default), uses descending ("larger is better") order.
-    /// Ascending order makes sense for time in racing games.
-    #[serde(default)]
-    pub asc: bool,
+    pub max: Option<i16>,
 
     /// If the score should be formatted as time.
     #[serde(default)]

@@ -261,9 +261,8 @@ fn write_boards(config: &Config) -> anyhow::Result<()> {
         };
         let board = firefly_types::Board {
             position: board.position.unwrap_or(id),
-            min: board.max.unwrap_or(1),
-            max: board.min.unwrap_or(u16::MAX),
-            asc: board.asc,
+            min: board.max.unwrap_or(i16::MIN),
+            max: board.min.unwrap_or(i16::MAX),
             time: board.time,
             decimals: board.decimals,
             name: &board.name,
@@ -349,7 +348,7 @@ fn update_stats(path: &Path, config: &Config) -> anyhow::Result<()> {
             } else {
                 let fs = firefly_types::FriendScore { index: 0, score: 0 };
                 firefly_types::BoardScores {
-                    me: Box::new([0u16; 8]),
+                    me: Box::new([0i16; 8]),
                     friends: Box::new([fs; 8]),
                 }
             };
@@ -398,7 +397,7 @@ fn create_stats(path: &Path, config: &Config) -> anyhow::Result<()> {
         for _ in 0..boards_config.len() {
             let fs = firefly_types::FriendScore { index: 0, score: 0 };
             let score = firefly_types::BoardScores {
-                me: Box::new([0u16; 8]),
+                me: Box::new([0i16; 8]),
                 friends: Box::new([fs; 8]),
             };
             scores.push(score);
