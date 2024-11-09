@@ -248,7 +248,7 @@ fn write_boards(config: &Config) -> anyhow::Result<()> {
         bail!("board IDs must start at 1")
     }
     let len = configs.len();
-    if len > 200 {
+    if len > 20 {
         bail!("too many boards")
     }
     let len = u16::try_from(len).unwrap();

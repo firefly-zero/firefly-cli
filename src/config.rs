@@ -82,7 +82,7 @@ impl Config {
             bail!("badge IDs must start at 1")
         }
         let len = badges_config.len();
-        if len > 200 {
+        if len > 20 {
             bail!("too many badges")
         }
         let len = u16::try_from(len).unwrap();
