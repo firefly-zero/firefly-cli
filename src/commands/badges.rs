@@ -28,7 +28,14 @@ pub fn cmd_badges(vfs: &Path, args: &BadgesArgs) -> Result<()> {
     let mut badges: Vec<_> = badges.badges.iter().zip(1..).collect();
     badges.sort_by_key(|(badge, _id)| badge.position);
 
-    // display badges
+    display_badges(&badges, &stats, args)
+}
+
+fn display_badges(
+    badges: &[(&firefly_types::Badge<'_>, usize)],
+    stats: &firefly_types::Stats,
+    args: &BadgesArgs,
+) -> Result<()> {
     for (badge, id) in badges {
         let Some(progress) = stats.badges.get(id - 1) else {
             bail!("there are fewer badges in stats file than in the rom");
