@@ -155,6 +155,13 @@ mod tests {
         assert_eq!(friends[..], ["gram", "!", "LOL"]);
     }
 
+    fn new_score(n: &'static str, v: i16) -> Score {
+        Score {
+            name: n.to_string(),
+            value: v,
+        }
+    }
+
     #[test]
     fn test_merge_scores() {
         use firefly_types::*;
@@ -186,54 +193,18 @@ mod tests {
         };
         let res = merge_scores(&friends[..], &scores);
         let exp = vec![
-            Score {
-                name: "alex".to_string(),
-                value: 44,
-            },
-            Score {
-                name: "friend #6".to_string(),
-                value: 42,
-            },
-            Score {
-                name: "you".to_string(),
-                value: 40,
-            },
-            Score {
-                name: "gram".to_string(),
-                value: 37,
-            },
-            Score {
-                name: "you".to_string(),
-                value: 30,
-            },
-            Score {
-                name: "you".to_string(),
-                value: 20,
-            },
-            Score {
-                name: "you".to_string(),
-                value: 10,
-            },
-            Score {
-                name: "gram".to_string(),
-                value: 10,
-            },
-            Score {
-                name: "you".to_string(),
-                value: 9,
-            },
-            Score {
-                name: "friend #2".to_string(),
-                value: 8,
-            },
-            Score {
-                name: "you".to_string(),
-                value: 7,
-            },
-            Score {
-                name: "alex".to_string(),
-                value: 2,
-            },
+            new_score("alex", 44),
+            new_score("friend #6", 42),
+            new_score("you", 40),
+            new_score("gram", 37),
+            new_score("you", 30),
+            new_score("you", 20),
+            new_score("you", 10),
+            new_score("gram", 10),
+            new_score("you", 9),
+            new_score("friend #2", 8),
+            new_score("you", 7),
+            new_score("alex", 2),
         ];
         assert_eq!(res.len(), exp.len());
         for (r, e) in res.iter().zip(&exp) {
