@@ -31,7 +31,7 @@ data-encoding = "2.6.0"
 # Find the best place to sotre the VFS
 directories = "5.0.1"
 # Serialize app config into meta file in the ROM
-firefly-types = { path = "../firefly-types", version = "0.2.0" }
+firefly-types = { version = "0.3.0" }
 # Decode wav files
 hound = "3.5.1"
 # Parse PNG images

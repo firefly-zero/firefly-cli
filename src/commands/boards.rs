@@ -29,7 +29,7 @@ pub fn cmd_boards(vfs: &Path, args: &BoardsArgs) -> Result<()> {
     boards.sort_by_key(|(board, _id)| board.position);
 
     // display boards
-    for (board, id) in &boards {
+    for (board, id) in boards {
         let Some(scores) = stats.scores.get(id - 1) else {
             bail!("there are fewer scores in stats file than boards in the rom");
         };
@@ -43,8 +43,7 @@ pub fn cmd_boards(vfs: &Path, args: &BoardsArgs) -> Result<()> {
             if score.value < board.min {
                 continue;
             }
-            #[expect(clippy::cast_sign_loss)]
-            let val = score.value as u16;
+            let val = score.value.unsigned_abs();
             let val: String = if board.time {
                 format_time(val)
             } else if board.decimals > 0 {

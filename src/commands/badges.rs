@@ -29,7 +29,7 @@ pub fn cmd_badges(vfs: &Path, args: &BadgesArgs) -> Result<()> {
     badges.sort_by_key(|(badge, _id)| badge.position);
 
     // display badges
-    for (badge, id) in &badges {
+    for (badge, id) in badges {
         let Some(progress) = stats.badges.get(id - 1) else {
             bail!("there are fewer badges in stats file than in the rom");
         };
