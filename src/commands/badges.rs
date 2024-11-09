@@ -1,4 +1,5 @@
-use crate::{args::BadgesArgs, file_names::BADGES};
+use crate::args::BadgesArgs;
+use crate::file_names::BADGES;
 use anyhow::{bail, Context, Result};
 use crossterm::style::Stylize;
 use firefly_types::Encode;

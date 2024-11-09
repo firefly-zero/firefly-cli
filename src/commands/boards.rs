@@ -1,8 +1,10 @@
-use crate::{args::BoardsArgs, file_names::BOARDS};
+use crate::args::BoardsArgs;
+use crate::file_names::BOARDS;
 use anyhow::{bail, Context, Result};
 use crossterm::style::Stylize;
 use firefly_types::Encode;
-use std::{io::Read, path::Path};
+use std::io::Read;
+use std::path::Path;
 
 pub fn cmd_boards(vfs: &Path, args: &BoardsArgs) -> Result<()> {
     let Some((author_id, app_id)) = args.id.split_once('.') else {

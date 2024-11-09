@@ -1,6 +1,8 @@
-use crate::{args::*, vfs::generate_valid_name};
+use crate::args::*;
+use crate::vfs::generate_valid_name;
 use anyhow::{bail, Result};
-use std::{fs, path::Path};
+use std::fs;
+use std::path::Path;
 
 pub fn cmd_name_get(vfs: &Path, _args: &NameGetArgs) -> Result<()> {
     let name_path = vfs.join("sys").join("name");

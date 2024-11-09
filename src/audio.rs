@@ -1,6 +1,8 @@
 use anyhow::{bail, Context, Result};
 use hound::{SampleFormat, WavReader};
-use std::{fs::File, io::Write, path::Path};
+use std::fs::File;
+use std::io::Write;
+use std::path::Path;
 
 pub fn convert_wav(input_path: &Path, output_path: &Path) -> Result<()> {
     let mut reader = WavReader::open(input_path).context("open wav file")?;
