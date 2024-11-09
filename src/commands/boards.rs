@@ -2,7 +2,7 @@ use crate::{args::BoardsArgs, file_names::BOARDS};
 use anyhow::{bail, Context, Result};
 use crossterm::style::Stylize;
 use firefly_types::Encode;
-use std::path::Path;
+use std::{io::Read, path::Path};
 
 pub fn cmd_boards(vfs: &Path, args: &BoardsArgs) -> Result<()> {
     let Some((author_id, app_id)) = args.id.split_once('.') else {
@@ -27,6 +27,7 @@ pub fn cmd_boards(vfs: &Path, args: &BoardsArgs) -> Result<()> {
     let boards = firefly_types::Boards::decode(&raw).context("decode boards")?;
     let mut boards: Vec<_> = boards.boards.iter().zip(1..).collect();
     boards.sort_by_key(|(board, _id)| board.position);
+    let friends = load_friends(vfs).context("load list of friends")?;
 
     // display boards
     for (board, id) in boards {
@@ -34,7 +35,7 @@ pub fn cmd_boards(vfs: &Path, args: &BoardsArgs) -> Result<()> {
             bail!("there are fewer scores in stats file than boards in the rom");
         };
         println!("#{id} {}", board.name.cyan());
-        let mut scores = merge_scores(scores);
+        let mut scores = merge_scores(&friends, scores);
         scores.sort_by_key(|s| s.value);
         for score in scores {
             if score.value > board.max {
@@ -63,23 +64,51 @@ pub fn cmd_boards(vfs: &Path, args: &BoardsArgs) -> Result<()> {
     Ok(())
 }
 
+fn load_friends(vfs: &Path) -> Result<Vec<String>> {
+    let path = vfs.join("sys").join("friends");
+    if !path.exists() {
+        return Ok(Vec::new());
+    }
+    let mut stream = std::fs::File::open(path).context("open sys/friends")?;
+    let mut friends: Vec<String> = Vec::new();
+    let mut buf = [0u8; 17];
+    loop {
+        let res = stream.read(&mut buf[..1]);
+        if res.is_err() {
+            break;
+        }
+        let size = usize::from(buf[0]);
+        if size > 16 {
+            bail!("friend name is too long: {size} > 16");
+        }
+        stream.read_exact(&mut buf[1..=size])?;
+        let name = &buf[1..=size];
+        let name = std::str::from_utf8(name)?;
+        friends.push(name.to_owned());
+    }
+    Ok(friends)
+}
+
 struct Score {
     name: String,
     value: i16,
 }
 
-fn merge_scores(scores: &firefly_types::BoardScores) -> Vec<Score> {
+fn merge_scores(friends: &[String], scores: &firefly_types::BoardScores) -> Vec<Score> {
     let mut res = Vec::new();
     for score in scores.me.iter() {
         res.push(Score {
-            name: "me".to_string(),
+            name: "you".to_string(),
             value: *score,
         });
     }
     for score in scores.friends.iter() {
+        let name = match friends.get(usize::from(score.index)) {
+            Some(name) => name.to_owned(),
+            None => format!("friend #{}", score.index),
+        };
         res.push(Score {
-            // TODO: get the friend's name from the friends list.
-            name: format!("friend #{}", score.index),
+            name,
             value: score.score,
         });
     }
