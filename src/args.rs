@@ -32,7 +32,8 @@ pub enum Commands {
         alias("scoreboard"),
         alias("leaderboard"),
         alias("scoreboards"),
-        alias("leaderboards")
+        alias("leaderboards"),
+        alias("scores")
     )]
     Boards(BoardsArgs),
 
