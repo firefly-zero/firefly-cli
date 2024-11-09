@@ -35,8 +35,7 @@ pub fn cmd_boards(vfs: &Path, args: &BoardsArgs) -> Result<()> {
             bail!("there are fewer scores in stats file than boards in the rom");
         };
         println!("#{id} {}", board.name.cyan());
-        let mut scores = merge_scores(&friends, scores);
-        scores.sort_by_key(|s| s.value);
+        let scores = merge_scores(&friends, scores);
         for score in scores {
             if score.value > board.max {
                 continue;
@@ -89,6 +88,7 @@ fn load_friends(vfs: &Path) -> Result<Vec<String>> {
     Ok(friends)
 }
 
+#[derive(PartialEq, Debug)]
 struct Score {
     name: String,
     value: i16,
@@ -97,12 +97,18 @@ struct Score {
 fn merge_scores(friends: &[String], scores: &firefly_types::BoardScores) -> Vec<Score> {
     let mut res = Vec::new();
     for score in scores.me.iter() {
+        if *score == 0 {
+            continue;
+        }
         res.push(Score {
             name: "you".to_string(),
             value: *score,
         });
     }
     for score in scores.friends.iter() {
+        if score.score == 0 {
+            continue;
+        }
         let name = match friends.get(usize::from(score.index)) {
             Some(name) => name.to_owned(),
             None => format!("friend #{}", score.index),
@@ -112,6 +118,7 @@ fn merge_scores(friends: &[String], scores: &firefly_types::BoardScores) -> Vec<
             value: score.score,
         });
     }
+    res.sort_by_key(|s| -s.value);
     res
 }
 
@@ -135,6 +142,93 @@ fn format_decimal(v: u16, prec: u8) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_merge_scores() {
+        use firefly_types::*;
+        let friends = ["alex".to_string(), "gram".to_string()];
+        let scores = BoardScores {
+            me: Box::new([40, 30, 20, 10, 9, 7, 0, 0]),
+            friends: Box::new([
+                FriendScore {
+                    index: 0,
+                    score: 44,
+                },
+                FriendScore {
+                    index: 6,
+                    score: 42,
+                },
+                FriendScore {
+                    index: 1,
+                    score: 37,
+                },
+                FriendScore {
+                    index: 1,
+                    score: 10,
+                },
+                FriendScore { index: 2, score: 8 },
+                FriendScore { index: 0, score: 2 },
+                FriendScore { index: 0, score: 0 },
+                FriendScore { index: 0, score: 0 },
+            ]),
+        };
+        let res = merge_scores(&friends[..], &scores);
+        let exp = vec![
+            Score {
+                name: "alex".to_string(),
+                value: 44,
+            },
+            Score {
+                name: "friend #6".to_string(),
+                value: 42,
+            },
+            Score {
+                name: "you".to_string(),
+                value: 40,
+            },
+            Score {
+                name: "gram".to_string(),
+                value: 37,
+            },
+            Score {
+                name: "you".to_string(),
+                value: 30,
+            },
+            Score {
+                name: "you".to_string(),
+                value: 20,
+            },
+            Score {
+                name: "you".to_string(),
+                value: 10,
+            },
+            Score {
+                name: "gram".to_string(),
+                value: 10,
+            },
+            Score {
+                name: "you".to_string(),
+                value: 9,
+            },
+            Score {
+                name: "friend #2".to_string(),
+                value: 8,
+            },
+            Score {
+                name: "you".to_string(),
+                value: 7,
+            },
+            Score {
+                name: "alex".to_string(),
+                value: 2,
+            },
+        ];
+        assert_eq!(res.len(), exp.len());
+        for (r, e) in res.iter().zip(&exp) {
+            assert_eq!(r, e);
+        }
+        assert_eq!(res, exp);
+    }
 
     #[test]
     fn test_format_time() {
