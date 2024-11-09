@@ -72,7 +72,7 @@ fn load_friends(vfs: &Path) -> Result<Vec<String>> {
     let mut friends: Vec<String> = Vec::new();
     let mut buf = [0u8; 17];
     loop {
-        let res = stream.read(&mut buf[..1]);
+        let res = stream.read_exact(&mut buf[..1]);
         if res.is_err() {
             break;
         }
@@ -80,9 +80,9 @@ fn load_friends(vfs: &Path) -> Result<Vec<String>> {
         if size > 16 {
             bail!("friend name is too long: {size} > 16");
         }
-        stream.read_exact(&mut buf[1..=size])?;
+        stream.read_exact(&mut buf[1..=size]).context("read name")?;
         let name = &buf[1..=size];
-        let name = std::str::from_utf8(name)?;
+        let name = std::str::from_utf8(name).context("decode name")?;
         friends.push(name.to_owned());
     }
     Ok(friends)
@@ -142,6 +142,18 @@ fn format_decimal(v: u16, prec: u8) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::test_helpers::make_tmp_vfs;
+
+    #[test]
+    fn test_load_friends() {
+        let vfs = make_tmp_vfs();
+        let path = vfs.join("sys").join("friends");
+        let contents: &[u8] = &[4, b'g', b'r', b'a', b'm', 1, b'!', 3, b'L', b'O', b'L'];
+        std::fs::create_dir_all(vfs.join("sys")).unwrap();
+        std::fs::write(path, contents).unwrap();
+        let friends = load_friends(&vfs).unwrap();
+        assert_eq!(friends[..], ["gram", "!", "LOL"]);
+    }
 
     #[test]
     fn test_merge_scores() {
