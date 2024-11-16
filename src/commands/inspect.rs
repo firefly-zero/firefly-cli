@@ -4,7 +4,7 @@ use crate::file_names::{BIN, META};
 use crate::fs::{collect_sizes, format_size};
 use anyhow::{bail, Context, Result};
 use crossterm::style::Stylize;
-use firefly_types::Meta;
+use firefly_types::{Encode, Meta};
 use std::collections::HashMap;
 use std::ffi::OsString;
 use std::fs;
@@ -242,7 +242,7 @@ fn inspect_audio(path: &Path) -> Option<AudioStats> {
     })
 }
 
-fn print_meta(meta: &Meta) {
+fn print_meta(meta: &Meta<'_>) {
     println!("{}", "metadata".blue());
     println!("  {}:   {}", "author ID".cyan(), meta.author_id);
     println!("  {}:      {}", "app ID".cyan(), meta.app_id);

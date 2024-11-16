@@ -2,7 +2,7 @@ use crate::args::CheatArgs;
 use crate::config::Config;
 use crate::net::connect;
 use anyhow::{bail, Context, Result};
-use firefly_types::serial;
+use firefly_types::{serial, Encode};
 use std::io::{Read, Write};
 use std::path::Path;
 use std::time::Duration;

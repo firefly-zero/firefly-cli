@@ -1,10 +1,12 @@
 use anyhow::Context;
 use directories::ProjectDirs;
+use firefly_types::Encode;
 use rand::seq::SliceRandom;
 use rand::{thread_rng, Rng};
 use std::collections::HashMap;
 use std::fs;
 use std::path::{Path, PathBuf};
+use std::process::Command;
 
 pub fn get_vfs_path() -> PathBuf {
     let current_dir = std::env::current_dir().ok();
@@ -29,13 +31,30 @@ pub fn init_vfs(path: &Path) -> anyhow::Result<()> {
     fs::create_dir_all(path.join("sys").join("pub")).context("create sys/pub directory")?;
     fs::create_dir_all(path.join("sys").join("priv")).context("create sys/priv directory")?;
     fs::create_dir_all(path.join("data")).context("create data directory")?;
+    let name = generate_valid_name();
 
-    // Generate random device name if the name file doesn't exist yet.
+    // TODO: remove it. Name is now stored in settings.
     let name_path = path.join("sys").join("name");
     if !name_path.exists() {
-        let name = generate_valid_name();
         println!("new device name: {name}");
-        fs::write(name_path, name).context("write name file")?;
+        fs::write(name_path, name.clone()).context("write name file")?;
+    }
+
+    let settings_path = path.join("sys").join("config");
+    if !settings_path.exists() {
+        let mut settings = firefly_types::Settings {
+            xp: 0,
+            badges: 0,
+            lang: [b'e', b'n'],
+            name,
+            timezone: detect_tz(),
+        };
+        if !settings.timezone.contains('/') {
+            settings.timezone = "Europe/Amsterdam".to_string();
+        }
+        let mut buf = vec![0; settings.size()];
+        let encoded = settings.encode(&mut buf).context("serialize settings")?;
+        fs::write(settings_path, encoded).context("write settings file")?;
     }
 
     Ok(())
@@ -93,6 +112,28 @@ fn leetify(s: &str) -> String {
     res
 }
 
+fn detect_tz() -> String {
+    if let Some(tz) = detect_tz_environ() {
+        return tz;
+    }
+    if let Some(tz) = detect_tz_systemctl() {
+        return tz;
+    }
+    "Europe/Amsterdam".to_string()
+}
+
+fn detect_tz_environ() -> Option<String> {
+    std::env::var("TZ").ok()
+}
+
+fn detect_tz_systemctl() -> Option<String> {
+    let output = Command::new("timedatectl").arg("show").output().ok()?;
+    let stdout = std::str::from_utf8(&output.stdout[..]).ok()?;
+    let first_line = stdout.split('\n').next()?;
+    let (_, tz) = first_line.split_once('=')?;
+    Some(tz.to_string())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -127,9 +168,11 @@ mod tests {
         assert!(path.join("data").metadata().unwrap().is_dir());
         assert_eq!(path.join("roms").read_dir().unwrap().count(), 0);
         assert_eq!(path.join("data").read_dir().unwrap().count(), 0);
-        assert_eq!(path.join("sys").read_dir().unwrap().count(), 3);
+        assert_eq!(path.join("sys").read_dir().unwrap().count(), 4);
         assert_eq!(path.join("sys").join("priv").read_dir().unwrap().count(), 0);
         assert_eq!(path.join("sys").join("pub").read_dir().unwrap().count(), 0);
+        assert!(path.join("sys").join("name").exists());
+        assert!(path.join("sys").join("config").exists());
         let name_path = path.join("sys").join("name");
         let name = std::fs::read_to_string(name_path).unwrap();
         assert!(name.contains('-'));

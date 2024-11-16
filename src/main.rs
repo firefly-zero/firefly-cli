@@ -1,5 +1,8 @@
 #![forbid(unsafe_code)]
 #![deny(
+    rust_2018_idioms,
+    redundant_lifetimes,
+    redundant_semicolons,
     clippy::all,
     clippy::pedantic,
     clippy::nursery,

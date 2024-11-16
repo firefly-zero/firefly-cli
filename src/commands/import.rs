@@ -4,7 +4,7 @@ use crate::file_names::{HASH, KEY, META, SIG};
 use crate::vfs::init_vfs;
 use anyhow::{bail, Context, Result};
 use data_encoding::HEXLOWER;
-use firefly_types::Meta;
+use firefly_types::{Encode, Meta};
 use rsa::pkcs1::DecodeRsaPublicKey;
 use rsa::pkcs1v15::{Signature, VerifyingKey};
 use rsa::signature::hazmat::PrehashVerifier;
@@ -96,7 +96,7 @@ fn read_meta_raw(archive: &mut ZipArchive<File>) -> Result<Vec<u8>> {
 }
 
 /// Write the latest installed app name into internal DB.
-fn write_installed(meta: &Meta, vfs_path: &Path) -> anyhow::Result<()> {
+fn write_installed(meta: &Meta<'_>, vfs_path: &Path) -> anyhow::Result<()> {
     let short_meta = firefly_types::ShortMeta {
         app_id: meta.app_id,
         author_id: meta.author_id,
