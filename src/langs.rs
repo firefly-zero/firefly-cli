@@ -210,16 +210,16 @@ fn find_rust_target_dir(root: &Path) -> anyhow::Result<PathBuf> {
 
 /// Build C project using wasi-sdk.
 fn build_c(config: &Config) -> anyhow::Result<()> {
-    build_cpp_inner(config, "main.c")
+    build_cpp_inner(config, "clang", "main.c")
 }
 
 /// Build C++ project using wasi-sdk.
 fn build_cpp(config: &Config) -> anyhow::Result<()> {
-    build_cpp_inner(config, "main.cpp")
+    build_cpp_inner(config, "clang++", "main.cpp")
 }
 
 /// Build C/C++ project using wasi-sdk.
-fn build_cpp_inner(config: &Config, fname: &str) -> anyhow::Result<()> {
+fn build_cpp_inner(config: &Config, bin_name: &str, fname: &str) -> anyhow::Result<()> {
     let wasi_sdk = find_wasi_sdk()?;
     let mut in_path = &config.root_path.join(fname);
     let in_path_src = &config.root_path.join("src").join(fname);
@@ -248,7 +248,7 @@ fn build_cpp_inner(config: &Config, fname: &str) -> anyhow::Result<()> {
     } else {
         cmd_args.push("-Wl,-zstack-size=14752,--initial-memory=65536,--max-memory=65536");
     }
-    let clang_path = wasi_sdk.join("bin").join("clang++");
+    let clang_path = wasi_sdk.join("bin").join(bin_name);
     let output = Command::new(path_to_utf8(&clang_path)?)
         .args(cmd_args)
         .current_dir(&config.root_path)
