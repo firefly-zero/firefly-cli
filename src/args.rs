@@ -223,7 +223,11 @@ pub struct ImportArgs {
 pub struct NewArgs {
     /// The directory to create, the new project root.
     #[arg()]
-    pub path: String,
+    pub path: PathBuf,
+
+    /// The programming language to use for the project.
+    #[arg(long)]
+    pub lang: String,
 }
 
 #[derive(Debug, Parser)]
