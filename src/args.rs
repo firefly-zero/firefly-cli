@@ -22,6 +22,10 @@ pub enum Commands {
     #[clap(alias("install"))]
     Import(ImportArgs),
 
+    /// Start a new project
+    #[clap(alias("create"))]
+    New(NewArgs),
+
     /// List all badges (aka achievements) defined in the given app.
     #[clap(alias("badge"), alias("achievements"), alias("achievement"))]
     Badges(BadgesArgs),
@@ -211,6 +215,13 @@ pub struct ImportArgs {
     /// 3. App ID in the catalog (for example, `sys.launcher`).
     ///
     /// 4. The word "launcher" to install the latest version of the default launcher.
+    #[arg()]
+    pub path: String,
+}
+
+#[derive(Debug, Parser)]
+pub struct NewArgs {
+    /// The directory to create, the new project root.
     #[arg()]
     pub path: String,
 }
