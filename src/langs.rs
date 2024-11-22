@@ -30,6 +30,9 @@ pub fn build_bin(config: &Config, args: &BuildArgs) -> anyhow::Result<()> {
         Lang::Python => build_python(config),
     }?;
     let bin_path = config.rom_path.join(BIN);
+    if !bin_path.is_file() {
+        bail!("the build command haven't produced a binary file");
+    }
     if !args.no_strip {
         strip_custom(&bin_path)?;
     }
@@ -205,19 +208,19 @@ fn find_rust_target_dir(root: &Path) -> anyhow::Result<PathBuf> {
     bail!("cannot find Rust's \"target\" output directory")
 }
 
-/// Build C project using Zig compiler.
+/// Build C project using wasi-sdk.
 fn build_c(config: &Config) -> anyhow::Result<()> {
-    check_installed("C", "zig", "version")?;
-    build_cpp_inner(config, "main.c")
+    build_cpp_inner(config, "clang", "main.c")
 }
 
-/// Build C++ project using Zig compiler.
+/// Build C++ project using wasi-sdk.
 fn build_cpp(config: &Config) -> anyhow::Result<()> {
-    check_installed("C++", "zig", "version")?;
-    build_cpp_inner(config, "main.cpp")
+    build_cpp_inner(config, "clang++", "main.cpp")
 }
 
-fn build_cpp_inner(config: &Config, fname: &str) -> anyhow::Result<()> {
+/// Build C/C++ project using wasi-sdk.
+fn build_cpp_inner(config: &Config, bin_name: &str, fname: &str) -> anyhow::Result<()> {
+    let wasi_sdk = find_wasi_sdk()?;
     let mut in_path = &config.root_path.join(fname);
     let in_path_src = &config.root_path.join("src").join(fname);
     if !in_path.exists() {
@@ -226,33 +229,55 @@ fn build_cpp_inner(config: &Config, fname: &str) -> anyhow::Result<()> {
             bail!("file {fname} not found");
         };
     }
-    let in_path = path_to_utf8(in_path)?;
+    let out_path = config.rom_path.join(BIN);
+    let wasi_sysroot = wasi_sdk.join("share").join("wasi-sysroot");
     let mut cmd_args = vec![
-        "build-lib",
-        "-rdynamic",
-        "-dynamic",
-        "-target",
-        "wasm32-freestanding",
-        "-OReleaseSmall",
-        in_path,
+        "--sysroot",
+        path_to_utf8(&wasi_sysroot)?,
+        "-o",
+        path_to_utf8(&out_path)?,
+        "-mexec-model=reactor",
+        "-Wl,--stack-first,--no-entry,--strip-all,--gc-sections,--lto-O3",
+        "-Oz",
+        path_to_utf8(in_path)?,
     ];
     if let Some(additional_args) = &config.compile_args {
         for arg in additional_args {
             cmd_args.push(arg.as_str());
         }
+    } else {
+        cmd_args.push("-Wl,-zstack-size=14752,--initial-memory=65536,--max-memory=65536");
     }
-    let output = Command::new("zig")
+    let clang_path = wasi_sdk.join("bin").join(bin_name);
+    let output = Command::new(path_to_utf8(&clang_path)?)
         .args(cmd_args)
         .current_dir(&config.root_path)
         .output()
-        .context("run zig build")?;
+        .context("run clang++")?;
     check_output(&output)?;
-
-    let from_path = config.root_path.join("main.wasm");
-    let out_path = config.rom_path.join(BIN);
-    std::fs::copy(&from_path, out_path).context("copy wasm binary")?;
-    std::fs::remove_file(from_path).context("remove wasm file")?;
     Ok(())
+}
+
+/// find the wasi-sdk project root.
+fn find_wasi_sdk() -> anyhow::Result<PathBuf> {
+    if let Ok(path) = std::env::var("WASI_SDK_PATH") {
+        let path = PathBuf::from(path);
+        if !path.exists() {
+            bail!("the path specified in $WASI_SDK_PATH does not exist");
+        }
+        if !path.is_dir() {
+            bail!("the path specified in $WASI_SDK_PATH is not a directory");
+        }
+        return Ok(path);
+    }
+    let path = PathBuf::from("/opt/wasi-sdk");
+    if !path.exists() {
+        bail!("/opt/wasi-sdk does not exist");
+    }
+    if !path.is_dir() {
+        bail!("/opt/wasi-sdk is not a directory");
+    }
+    Ok(path)
 }
 
 fn build_zig(_config: &Config) -> anyhow::Result<()> {
