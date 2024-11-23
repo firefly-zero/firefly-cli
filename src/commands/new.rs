@@ -1,11 +1,9 @@
-use std::{
-    io::Write,
-    path::Path,
-    process::{Command, Output},
-};
-
-use crate::{args::NewArgs, config::Lang};
+use crate::args::NewArgs;
+use crate::config::Lang;
+use crate::langs::{check_output, path_to_utf8};
 use anyhow::{bail, Context, Result};
+use std::path::Path;
+use std::process::Command;
 
 const CONFIG: &str = r#"
 author_id = "joearms"
@@ -20,8 +18,8 @@ pub fn cmd_new(args: &NewArgs) -> Result<()> {
     };
     let lang = parse_lang(&args.lang)?;
     match lang {
-        Lang::Go => todo!(),
-        Lang::Rust => new_rust(&args.path).context("new rust project")?,
+        Lang::Go => new_go(&args.path).context("new Go project")?,
+        Lang::Rust => new_rust(&args.path).context("new Rust project")?,
         Lang::Zig => todo!(),
         Lang::TS => todo!(),
         Lang::C => todo!(),
@@ -55,6 +53,15 @@ fn new_rust(path: &Path) -> Result<()> {
     Ok(())
 }
 
+fn new_go(path: &Path) -> Result<()> {
+    let mut c = Commander::default();
+    c.cd(path)?;
+    let name = get_dir_name(path)?;
+    c.run(&["go", "mod", "init", name])?;
+    c.run(&["go", "get", "github.com/firefly-zero/firefly-go"])?;
+    Ok(())
+}
+
 #[derive(Default)]
 struct Commander<'a> {
     root: Option<&'a Path>,
@@ -78,25 +85,15 @@ impl<'a> Commander<'a> {
             cmd = cmd.current_dir(path);
         }
         let output = cmd.output().context(format!("run {bin}"))?;
-        check_output(&output)?;
+        check_output(&output).context(format!("run {bin}"))?;
         Ok(())
     }
 }
 
-fn check_output(output: &Output) -> anyhow::Result<()> {
-    std::io::stdout().write_all(&output.stdout)?;
-    std::io::stderr().write_all(&output.stderr)?;
-    if !output.status.success() {
-        let code = output.status.code().unwrap_or(1);
-        bail!("subprocess exited with status code {code}");
-    }
-    Ok(())
-}
-
-/// Convert a file system path to UTF-8 if possible.
-fn path_to_utf8(path: &Path) -> anyhow::Result<&str> {
-    match path.to_str() {
-        Some(path) => Ok(path),
-        None => bail!("project root path cannot be converted to UTF-8"),
-    }
+fn get_dir_name(path: &Path) -> anyhow::Result<&str> {
+    let name = path.file_name().context("get directory name")?;
+    let Some(name) = name.to_str() else {
+        bail!("project name cannot be converted to UTF-8");
+    };
+    Ok(name)
 }
