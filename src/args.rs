@@ -221,9 +221,9 @@ pub struct ImportArgs {
 
 #[derive(Debug, Parser)]
 pub struct NewArgs {
-    /// The directory to create, the new project root.
+    /// The directory name to create, the new project root and name.
     #[arg()]
-    pub path: PathBuf,
+    pub name: String,
 
     /// The programming language to use for the project.
     #[arg(long)]
