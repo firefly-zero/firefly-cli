@@ -22,12 +22,13 @@ pub fn cmd_new(args: &NewArgs) -> Result<()> {
         Lang::Rust => new_rust(&args.path).context("new Rust project")?,
         Lang::Zig => todo!(),
         Lang::TS => todo!(),
-        Lang::C => todo!(),
-        Lang::Cpp => todo!(),
+        Lang::C => new_c(&args.path).context("new C project")?,
+        Lang::Cpp => new_c(&args.path).context("new C++ project")?,
         Lang::Python => todo!(),
     }
     let config_path = args.path.join("firefly.toml");
     std::fs::write(config_path, CONFIG).context("write config")?;
+    println!("✅ project created");
     Ok(())
 }
 
@@ -62,6 +63,17 @@ fn new_go(path: &Path) -> Result<()> {
     Ok(())
 }
 
+fn new_c(path: &Path) -> Result<()> {
+    const BASE_URL: &str = "https://github.com/firefly-zero/firefly-c/raw/refs/heads/main/src/";
+    let mut c = Commander::default();
+    c.cd(path)?;
+    for fname in ["firefly.c", "firefly.h", "firefly_bindings.h"] {
+        let url = &format!("{BASE_URL}{fname}");
+        c.wget(&["vendor", "firefly", fname], url)?;
+    }
+    Ok(())
+}
+
 #[derive(Default)]
 struct Commander<'a> {
     root: Option<&'a Path>,
@@ -76,6 +88,7 @@ impl<'a> Commander<'a> {
         Ok(())
     }
 
+    /// Run a command.
     fn run(&self, a: &[&str]) -> Result<()> {
         let bin = a[0];
         let mut cmd = Command::new(bin);
@@ -87,6 +100,21 @@ impl<'a> Commander<'a> {
         let output = cmd.output().context(format!("run {bin}"))?;
         check_output(&output).context(format!("run {bin}"))?;
         Ok(())
+    }
+
+    /// Download a file from the give URL and save it into the given path.
+    fn wget(&self, path: &[&str], url: &str) -> Result<()> {
+        let resp = ureq::get(url).call().context("send request")?;
+        let mut reader = resp.into_reader();
+        let mut full_path = self.root.unwrap().to_path_buf();
+        for part in path {
+            full_path = full_path.join(part);
+        }
+        let dir_path = full_path.parent().unwrap();
+        std::fs::create_dir_all(dir_path).context("create dir")?;
+        let mut writer = std::fs::File::create(full_path).context("create file")?;
+        std::io::copy(&mut reader, &mut writer).context("save response")?;
+        todo!()
     }
 }
 
