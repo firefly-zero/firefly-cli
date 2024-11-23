@@ -48,22 +48,39 @@ fn parse_lang(lang: &str) -> Result<Lang> {
 }
 
 fn new_rust(path: &Path) -> Result<()> {
-    let output = Command::new("cargo")
-        .arg("new")
-        .arg(path)
-        .output()
-        .context("run cargo new")?;
-    check_output(&output)?;
-
-    let output = Command::new("cargo")
-        .arg("add")
-        .arg("firefly_rust")
-        .current_dir(path)
-        .output()
-        .context("run cargo add")?;
-    check_output(&output)?;
-
+    let mut c = Commander::default();
+    c.run(&["cargo", "new", path_to_utf8(path)?])?;
+    c.cd(path)?;
+    c.run(&["cargo", "add", "firefly_rust"])?;
     Ok(())
+}
+
+#[derive(Default)]
+struct Commander<'a> {
+    root: Option<&'a Path>,
+}
+
+impl<'a> Commander<'a> {
+    fn cd(&mut self, path: &'a Path) -> Result<()> {
+        if !path.exists() {
+            std::fs::create_dir(path)?;
+        }
+        self.root = Some(path);
+        Ok(())
+    }
+
+    fn run(&self, a: &[&str]) -> Result<()> {
+        let bin = a[0];
+        let mut cmd = Command::new(bin);
+        let mut cmd = &mut cmd;
+        cmd = cmd.args(&a[1..]);
+        if let Some(path) = self.root {
+            cmd = cmd.current_dir(path);
+        }
+        let output = cmd.output().context(format!("run {bin}"))?;
+        check_output(&output)?;
+        Ok(())
+    }
 }
 
 fn check_output(output: &Output) -> anyhow::Result<()> {
@@ -74,4 +91,12 @@ fn check_output(output: &Output) -> anyhow::Result<()> {
         bail!("subprocess exited with status code {code}");
     }
     Ok(())
+}
+
+/// Convert a file system path to UTF-8 if possible.
+fn path_to_utf8(path: &Path) -> anyhow::Result<&str> {
+    match path.to_str() {
+        Some(path) => Ok(path),
+        None => bail!("project root path cannot be converted to UTF-8"),
+    }
 }
