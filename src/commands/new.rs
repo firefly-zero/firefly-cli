@@ -1,8 +1,8 @@
 use crate::args::NewArgs;
 use crate::config::Lang;
 use crate::langs::check_output;
-use anyhow::{bail, Context, Result};
-use std::path::Path;
+use anyhow::{bail, Context, Ok, Result};
+use std::path::{Path, PathBuf};
 use std::process::Command;
 
 pub fn cmd_new(args: &NewArgs) -> Result<()> {
@@ -20,7 +20,7 @@ pub fn cmd_new(args: &NewArgs) -> Result<()> {
         Lang::Zig => todo!("Zig is not supported yet"),
         Lang::TS => todo!("TypeScript is not supported yet"),
         Lang::C => new_c(&args.name).context("new C project")?,
-        Lang::Cpp => new_c(&args.name).context("new C++ project")?,
+        Lang::Cpp => new_cpp(&args.name).context("new C++ project")?,
         Lang::Python => todo!("Python is not supported yet"),
     }
     write_config(&args.name)?;
@@ -62,6 +62,8 @@ fn new_rust(name: &str) -> Result<()> {
     c.run(&["cargo", "new", name])?;
     c.cd(name)?;
     c.run(&["cargo", "add", "firefly_rust"])?;
+    c.copy_asset(&["src", "main.rs"], "main.rs")?;
+    c.copy_asset(&[".cargo", "config.toml"], "cargo-config.toml")?;
     Ok(())
 }
 
@@ -70,10 +72,20 @@ fn new_go(name: &str) -> Result<()> {
     c.cd(name)?;
     c.run(&["go", "mod", "init", name])?;
     c.run(&["go", "get", "github.com/firefly-zero/firefly-go"])?;
+    c.copy_asset(&["main.go"], "main.go")?;
+    c.run(&["go", "mod", "tidy"])?;
     Ok(())
 }
 
 fn new_c(name: &str) -> Result<()> {
+    new_c_or_cpp(name, "main.c")
+}
+
+fn new_cpp(name: &str) -> Result<()> {
+    new_c_or_cpp(name, "main.cpp")
+}
+
+fn new_c_or_cpp(name: &str, main: &str) -> Result<()> {
     const BASE_URL: &str = "https://github.com/firefly-zero/firefly-c/raw/refs/heads/main/src/";
     let mut c = Commander::default();
     c.cd(name)?;
@@ -81,6 +93,7 @@ fn new_c(name: &str) -> Result<()> {
         let url = &format!("{BASE_URL}{fname}");
         c.wget(&["vendor", "firefly", fname], url)?;
     }
+    c.copy_asset(&[main], main)?;
     Ok(())
 }
 
@@ -125,7 +138,21 @@ impl<'a> Commander<'a> {
         std::fs::create_dir_all(dir_path).context("create dir")?;
         let mut writer = std::fs::File::create(full_path).context("create file")?;
         std::io::copy(&mut reader, &mut writer).context("save response")?;
-        todo!()
+        Ok(())
+    }
+
+    fn copy_asset(&self, path: &[&str], name: &str) -> Result<()> {
+        let src = PathBuf::new().join("assets").join(name);
+        let mut reader = std::fs::File::open(src)?;
+        let mut full_path = self.root.unwrap().to_path_buf();
+        for part in path {
+            full_path = full_path.join(part);
+        }
+        let dir_path = full_path.parent().unwrap();
+        std::fs::create_dir_all(dir_path).context("create dir")?;
+        let mut writer = std::fs::File::create(full_path).context("create file")?;
+        std::io::copy(&mut reader, &mut writer).context("save response")?;
+        Ok(())
     }
 }
 
