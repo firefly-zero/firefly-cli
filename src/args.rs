@@ -228,7 +228,7 @@ pub struct NewArgs {
     pub name: String,
 
     /// The programming language to use for the project.
-    #[arg(long)]
+    #[arg(long, alias("language"))]
     pub lang: String,
 }
 
