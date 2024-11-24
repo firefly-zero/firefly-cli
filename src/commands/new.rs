@@ -5,13 +5,6 @@ use anyhow::{bail, Context, Result};
 use std::path::Path;
 use std::process::Command;
 
-const CONFIG: &str = r#"
-author_id = "joearms"
-app_id = "hello-world"
-author_name = "Joe Armstrong"
-app_name = "Hello World"
-"#;
-
 pub fn cmd_new(args: &NewArgs) -> Result<()> {
     if let Err(err) = firefly_types::validate_id(&args.name) {
         bail!("invalid project name: {err}");
@@ -30,9 +23,23 @@ pub fn cmd_new(args: &NewArgs) -> Result<()> {
         Lang::Cpp => new_c(&args.name).context("new C++ project")?,
         Lang::Python => todo!("Python is not supported yet"),
     }
-    let config_path = root.join("firefly.toml");
-    std::fs::write(config_path, CONFIG).context("write config")?;
+    write_config(&args.name)?;
     println!("✅ project created");
+    Ok(())
+}
+
+fn write_config(name: &str) -> Result<()> {
+    let root = Path::new(name);
+    let config_path = root.join("firefly.toml");
+    let username = get_username().unwrap_or_else(|| "joearms".to_string());
+
+    let mut config = String::new();
+    config.push_str(&format!("author_id = \"{username}\"\n"));
+    config.push_str(&format!("app_id = \"{name}\"\n"));
+    config.push_str(&format!("author_name = \"{}\"\n", to_titlecase(&username)));
+    config.push_str(&format!("app_name = \"{name}\"\n"));
+
+    std::fs::write(config_path, config).context("write config")?;
     Ok(())
 }
 
@@ -119,5 +126,53 @@ impl<'a> Commander<'a> {
         let mut writer = std::fs::File::create(full_path).context("create file")?;
         std::io::copy(&mut reader, &mut writer).context("save response")?;
         todo!()
+    }
+}
+
+/// Get username of the currently logged in user.
+fn get_username() -> Option<String> {
+    let username = std::env::var("USER").ok()?;
+    if firefly_types::validate_id(&username).is_err() {
+        return None;
+    }
+    Some(username)
+}
+
+/// Convert the given string to Title Case.
+fn to_titlecase(s: &str) -> String {
+    let mut result = String::new();
+    let mut had_space = true;
+    for char in s.chars() {
+        if char == ' ' || char.is_ascii_punctuation() {
+            result.push(' ');
+            had_space = true;
+            continue;
+        }
+        if had_space {
+            result.push(char.to_ascii_uppercase());
+            had_space = false;
+            continue;
+        }
+        if char.is_ascii_uppercase() {
+            result.push(' ');
+        }
+        result.push(char);
+    }
+    result
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_to_titlecase() {
+        assert_eq!(to_titlecase("hello"), "Hello".to_string());
+        assert_eq!(to_titlecase("Hello"), "Hello".to_string());
+        assert_eq!(to_titlecase("hello-world"), "Hello World".to_string());
+        assert_eq!(to_titlecase("hello world"), "Hello World".to_string());
+        assert_eq!(to_titlecase("hello_world"), "Hello World".to_string());
+        assert_eq!(to_titlecase("HelloWorld"), "Hello World".to_string());
+        assert_eq!(to_titlecase("hello9"), "Hello9".to_string());
     }
 }
