@@ -22,8 +22,10 @@ pub enum Commands {
     #[clap(alias("install"))]
     Import(ImportArgs),
 
-    /// Start a new project
-    #[clap(alias("create"))]
+    /// Bootstrap a new app.
+    ///
+    /// Requires internet connection.
+    #[clap(alias("create"), alias("bootstrap"))]
     New(NewArgs),
 
     /// List all badges (aka achievements) defined in the given app.

@@ -1,10 +1,11 @@
 use crate::args::NewArgs;
 use crate::config::Lang;
-use crate::langs::check_output;
+use crate::langs::{check_installed, check_output};
 use anyhow::{bail, Context, Ok, Result};
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
+/// Bootstrap a new project.
 pub fn cmd_new(args: &NewArgs) -> Result<()> {
     if let Err(err) = firefly_types::validate_id(&args.name) {
         bail!("invalid project name: {err}");
@@ -28,6 +29,7 @@ pub fn cmd_new(args: &NewArgs) -> Result<()> {
     Ok(())
 }
 
+/// Create and dump firefly.toml config.
 fn write_config(name: &str) -> Result<()> {
     let root = Path::new(name);
     let config_path = root.join("firefly.toml");
@@ -37,12 +39,13 @@ fn write_config(name: &str) -> Result<()> {
     config.push_str(&format!("author_id = \"{username}\"\n"));
     config.push_str(&format!("app_id = \"{name}\"\n"));
     config.push_str(&format!("author_name = \"{}\"\n", to_titlecase(&username)));
-    config.push_str(&format!("app_name = \"{name}\"\n"));
+    config.push_str(&format!("app_name = \"{}\"\n", to_titlecase(name)));
 
     std::fs::write(config_path, config).context("write config")?;
     Ok(())
 }
 
+/// Convert `--lang` CLI flag into [`Lang`].
 fn parse_lang(lang: &str) -> Result<Lang> {
     let result = match lang.to_lowercase().as_str() {
         "c" => Lang::C,
@@ -57,7 +60,9 @@ fn parse_lang(lang: &str) -> Result<Lang> {
     Ok(result)
 }
 
+/// Create a new Rust project.
 fn new_rust(name: &str) -> Result<()> {
+    check_installed("Rust", "cargo", "version")?;
     let mut c = Commander::default();
     c.run(&["cargo", "new", name])?;
     c.cd(name)?;
@@ -67,7 +72,9 @@ fn new_rust(name: &str) -> Result<()> {
     Ok(())
 }
 
+/// Create a new Go project.
 fn new_go(name: &str) -> Result<()> {
+    check_installed("Go", "tinygo", "version")?;
     let mut c = Commander::default();
     c.cd(name)?;
     c.run(&["go", "mod", "init", name])?;
@@ -77,10 +84,12 @@ fn new_go(name: &str) -> Result<()> {
     Ok(())
 }
 
+/// Create a new C project.
 fn new_c(name: &str) -> Result<()> {
     new_c_or_cpp(name, "main.c")
 }
 
+/// Create a new C++ project.
 fn new_cpp(name: &str) -> Result<()> {
     new_c_or_cpp(name, "main.cpp")
 }
