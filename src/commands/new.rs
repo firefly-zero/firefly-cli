@@ -30,6 +30,7 @@ pub fn cmd_new(args: &NewArgs) -> Result<()> {
         Lang::Python => todo!("Python is not supported yet"),
     }
     write_config(&args.name)?;
+    init_git(&args.name)?;
     println!("✅ project created");
     Ok(())
 }
@@ -47,6 +48,18 @@ fn write_config(name: &str) -> Result<()> {
     config.push_str(&format!("app_name = \"{}\"\n", to_titlecase(name)));
 
     std::fs::write(config_path, config).context("write config")?;
+    Ok(())
+}
+
+/// Initialize git repository for the project.
+fn init_git(name: &str) -> Result<()> {
+    let root = Path::new(name);
+    if root.join(".git").exists() {
+        return Ok(());
+    }
+    let mut c = Commander::default();
+    c.cd(name)?;
+    c.run(&["git", "init", "-b", "main"])?;
     Ok(())
 }
 
