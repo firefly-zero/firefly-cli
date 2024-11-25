@@ -3,6 +3,7 @@ use crate::config::Lang;
 use crate::langs::{check_installed, check_output};
 use anyhow::{bail, Context, Ok, Result};
 use rust_embed::Embed;
+use std::io::Write;
 use std::path::Path;
 use std::process::Command;
 
@@ -87,6 +88,14 @@ fn new_rust(name: &str) -> Result<()> {
     c.run(&["cargo", "add", "firefly_rust"])?;
     c.copy_asset(&["src", "main.rs"], "main.rs")?;
     c.copy_asset(&[".cargo", "config.toml"], "cargo-config.toml")?;
+
+    {
+        let path = Path::new(name).join("Cargo.toml");
+        let mut file = std::fs::OpenOptions::new().append(true).open(path)?;
+        let asset = Assets::get("cargo.toml").unwrap();
+        file.write_all(&asset.data)
+            .context("append to Cargo.toml")?;
+    }
     Ok(())
 }
 
