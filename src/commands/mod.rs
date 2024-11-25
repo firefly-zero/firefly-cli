@@ -9,6 +9,7 @@ mod inspect;
 mod keys;
 mod monitor;
 mod name;
+mod new;
 mod repl;
 mod vfs;
 
@@ -23,5 +24,6 @@ pub use inspect::cmd_inspect;
 pub use keys::{cmd_key_add, cmd_key_new, cmd_key_priv, cmd_key_pub, cmd_key_rm};
 pub use monitor::cmd_monitor;
 pub use name::{cmd_name_generate, cmd_name_get, cmd_name_set};
+pub use new::cmd_new;
 pub use repl::cmd_repl;
 pub use vfs::cmd_vfs;

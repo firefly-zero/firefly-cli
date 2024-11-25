@@ -22,6 +22,12 @@ pub enum Commands {
     #[clap(alias("install"))]
     Import(ImportArgs),
 
+    /// Bootstrap a new app.
+    ///
+    /// Requires internet connection.
+    #[clap(alias("create"), alias("bootstrap"))]
+    New(NewArgs),
+
     /// List all badges (aka achievements) defined in the given app.
     #[clap(alias("badge"), alias("achievements"), alias("achievement"))]
     Badges(BadgesArgs),
@@ -213,6 +219,17 @@ pub struct ImportArgs {
     /// 4. The word "launcher" to install the latest version of the default launcher.
     #[arg()]
     pub path: String,
+}
+
+#[derive(Debug, Parser)]
+pub struct NewArgs {
+    /// The directory name to create, the new project root and name.
+    #[arg()]
+    pub name: String,
+
+    /// The programming language to use for the project.
+    #[arg(long, alias("language"))]
+    pub lang: String,
 }
 
 #[derive(Debug, Parser)]

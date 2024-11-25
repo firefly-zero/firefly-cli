@@ -294,14 +294,14 @@ fn build_python(_config: &Config) -> anyhow::Result<()> {
 }
 
 /// Convert a file system path to UTF-8 if possible.
-fn path_to_utf8(path: &Path) -> anyhow::Result<&str> {
+pub fn path_to_utf8(path: &Path) -> anyhow::Result<&str> {
     match path.to_str() {
         Some(path) => Ok(path),
         None => bail!("project root path cannot be converted to UTF-8"),
     }
 }
 
-fn check_output(output: &Output) -> anyhow::Result<()> {
+pub fn check_output(output: &Output) -> anyhow::Result<()> {
     std::io::stdout().write_all(&output.stdout)?;
     std::io::stderr().write_all(&output.stderr)?;
     if !output.status.success() {
@@ -312,7 +312,7 @@ fn check_output(output: &Output) -> anyhow::Result<()> {
 }
 
 /// Run the given binary with the given arg and return an error if it is not installed.
-fn check_installed(lang: &str, bin: &str, arg: &str) -> anyhow::Result<()> {
+pub fn check_installed(lang: &str, bin: &str, arg: &str) -> anyhow::Result<()> {
     let output = Command::new(bin).args([arg]).output();
     if let Ok(output) = output {
         if output.status.success() {
