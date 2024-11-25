@@ -2,8 +2,13 @@ use crate::args::NewArgs;
 use crate::config::Lang;
 use crate::langs::{check_installed, check_output};
 use anyhow::{bail, Context, Ok, Result};
-use std::path::{Path, PathBuf};
+use rust_embed::Embed;
+use std::path::Path;
 use std::process::Command;
+
+#[derive(Embed)]
+#[folder = "assets/"]
+struct Assets;
 
 /// Bootstrap a new project.
 pub fn cmd_new(args: &NewArgs) -> Result<()> {
@@ -151,8 +156,10 @@ impl<'a> Commander<'a> {
     }
 
     fn copy_asset(&self, path: &[&str], name: &str) -> Result<()> {
-        let src = PathBuf::new().join("assets").join(name);
-        let mut reader = std::fs::File::open(src)?;
+        let Some(src) = Assets::get(name) else {
+            bail!("asset {name} not found")
+        };
+        let mut reader = &src.data[..];
         let mut full_path = self.root.unwrap().to_path_buf();
         for part in path {
             full_path = full_path.join(part);

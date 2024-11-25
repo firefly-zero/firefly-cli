@@ -43,6 +43,7 @@ rsa = { version = "0.9.6", default-features = false, features = [
     "std",
     "sha2",
 ] }
+rust-embed = { version = "8.5.0", default-features = false, features = ["debug-embed"] }
 # REPL
 rustyline = "14.0.0"
 # Deserialize firefly.toml (required by `toml`)
