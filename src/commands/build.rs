@@ -27,11 +27,8 @@ use std::io::Write;
 use std::path::{Path, PathBuf};
 
 static TIPS: &[&str] = &[
-    "use `firefly_cli export` to share the app with your friends",
-    "when the app is ready, consider adding it to https://catalog.fireflyzero.com",
-    "keep an eye on the binary size. Bigger binary often means slower code",
+    "keep an eye on the binary size: bigger binary often means slower code",
     "if the app hits `unreachable`, use `log_debug` to find out where",
-    "you can use `wasm2wat` and `wasm-objdump` tools to inspect the app binary",
     "you can use build_args option in firefly.toml to customize the build command",
     "if your game has multiple levels/scenes, use a separate sprite file for each",
     "prefer using 32 bit float over 64 bit float",
@@ -41,17 +38,22 @@ static TIPS: &[&str] = &[
     "the desktop emulator has some useful CLI flags, like --fullscreen",
     "pick a short name for the app so that it looks good in the launcher",
     "setting a custom color palette may give your app a distinct memorable style",
-    "you can download fonts from https://fonts.fireflyzero.com/",
     "the desktop emulator supports gamepads",
     "if building is slow, try skipping optimizations: `--no-opt --no-strip`",
-    "backup your private key (but keep it secret!): firefly_cli key priv",
     "if your compiler allows it, pick a small allocator and garbage collector",
-    "follow us on Mastodon for updates: https://fosstodon.org/@fireflyzero",
     "create `.firefly` dir in the project root to store VFS in there",
     "you can customize TinyGo build with a custom target.json in the project root",
     "make sure to test your game with multiplayer",
     "images using 4 or less colors are twice smaller",
+    // covering CLI subcommands
+    "you can use `wasm2wat` and `firefly_cli inspect` to inspect the app binary",
+    "use `firefly_cli export` to share the app with your friends",
+    "backup your private key (but keep it secret!): firefly_cli key priv",
     "use `firefly_cli monitor` to see RAM and CPU consumption of a running app",
+    // our internal resources
+    "when the app is ready, consider adding it to https://catalog.fireflyzero.com",
+    "you can download fonts from https://fonts.fireflyzero.com/",
+    "follow us on Mastodon for updates: https://fosstodon.org/@fireflyzero",
     // We're not paid for any of these links, it's just resources we love.
     "good free sprite editor: https://apps.lospec.com/pixel-editor/",
     "good collection of free game assets: https://opengameart.org/",
