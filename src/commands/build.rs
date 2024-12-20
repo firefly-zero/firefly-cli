@@ -71,9 +71,9 @@ pub fn cmd_build(vfs: PathBuf, args: &BuildArgs) -> anyhow::Result<()> {
         show_tip();
     }
     let old_sizes = collect_sizes(&config.rom_path);
-    _ = fs::remove_dir_all(&config.rom_path);
     write_meta(&config).context("write metadata file")?;
     build_bin(&config, args).context("build binary")?;
+    remove_old_files(&config.rom_path).context("remove old files")?;
     if let Some(files) = &config.files {
         for (name, file_config) in files {
             convert_file(name, &config, file_config).context("convert file")?;
@@ -138,6 +138,32 @@ fn write_installed(config: &Config) -> anyhow::Result<()> {
     if config.launcher {
         let output_path = config.vfs_path.join("sys").join("launcher");
         fs::write(output_path, encoded).context("write launcher file")?;
+    }
+    Ok(())
+}
+
+/// Remove all files except `_meta` and `_bin`.
+///
+/// The function is called after writing meta and binary but before writing
+/// anything else. We can't call it earlier because if building binary fails,
+/// files are already removed, and on the next run the file size diff
+/// will show like these files are created for the first time.
+///
+/// We need to remove files to avoid old files surviving app update.
+fn remove_old_files(root: &Path) -> anyhow::Result<()> {
+    let dir = fs::read_dir(root)?;
+    for entry in dir {
+        let entry = entry?;
+        let meta = entry.metadata()?;
+        if meta.is_dir() {
+            fs::remove_dir_all(entry.path())?;
+        } else if meta.is_file() {
+            let file_name = entry.file_name().into_string().unwrap();
+            if file_name == BIN || file_name == META {
+                continue;
+            }
+            fs::remove_file(entry.path())?;
+        };
     }
     Ok(())
 }
