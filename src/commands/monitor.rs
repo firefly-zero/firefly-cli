@@ -90,10 +90,9 @@ fn connect_verbose() -> Result<TcpStream, anyhow::Error> {
 
     // enable stats collection
     {
-        let mut buf = vec![0; 64];
         let req = serial::Request::Stats(true);
-        let buf = req.encode(&mut buf).context("encode request")?;
-        stream.write_all(buf).context("send request")?;
+        let buf = req.encode_vec().context("encode request")?;
+        stream.write_all(&buf[..]).context("send request")?;
         stream.flush().context("flush request")?;
     }
 

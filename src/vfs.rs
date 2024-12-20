@@ -52,8 +52,7 @@ pub fn init_vfs(path: &Path) -> anyhow::Result<()> {
         if !settings.timezone.contains('/') {
             settings.timezone = "Europe/Amsterdam".to_string();
         }
-        let mut buf = vec![0; settings.size()];
-        let encoded = settings.encode(&mut buf).context("serialize settings")?;
+        let encoded = settings.encode_vec().context("serialize settings")?;
         fs::write(settings_path, encoded).context("write settings file")?;
     }
 

@@ -12,13 +12,12 @@ pub fn cmd_cheat(args: &CheatArgs) -> Result<()> {
     let mut stream = connect()?;
 
     {
-        let mut buf = vec![0; 64];
         let cmd = parse_command(&args.command, &args.root)?;
         let val = parse_value(&args.value)?;
         let req = serial::Request::Cheat(cmd, val);
-        let buf = req.encode(&mut buf).context("encode request")?;
+        let buf = req.encode_vec().context("encode request")?;
         println!("⌛  sending request...");
-        stream.write_all(buf).context("send request")?;
+        stream.write_all(&buf[..]).context("send request")?;
         stream.flush().context("flush request")?;
     }
 

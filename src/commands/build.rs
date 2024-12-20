@@ -117,8 +117,7 @@ fn write_meta(config: &Config) -> anyhow::Result<()> {
         sudo: config.sudo,
         version: config.version.unwrap_or(0),
     };
-    let mut buf = vec![0; meta.size()];
-    let encoded = meta.encode(&mut buf).context("serialize")?;
+    let encoded = meta.encode_vec().context("serialize")?;
     fs::create_dir_all(&config.rom_path)?;
     let output_path = config.rom_path.join(META);
     fs::write(output_path, encoded).context("write file")?;
@@ -131,8 +130,7 @@ fn write_installed(config: &Config) -> anyhow::Result<()> {
         app_id: &config.app_id,
         author_id: &config.author_id,
     };
-    let mut buf = vec![0; short_meta.size()];
-    let encoded = short_meta.encode(&mut buf).context("serialize")?;
+    let encoded = short_meta.encode_vec().context("serialize")?;
     let output_path = config.vfs_path.join("sys").join("new-app");
     fs::write(output_path, &encoded).context("write new-app file")?;
     if config.launcher {
@@ -256,8 +254,7 @@ fn write_badges(config: &Config) -> anyhow::Result<()> {
 
     // write badges to the file
     let badges = firefly_types::Badges::new(Cow::Owned(badges));
-    let mut buf = vec![0; badges.size()];
-    let encoded = badges.encode(&mut buf).context("serialize")?;
+    let encoded = badges.encode_vec().context("serialize")?;
     let output_path = config.rom_path.join(BADGES);
     fs::write(output_path, encoded).context("write file")?;
     Ok(())
@@ -303,8 +300,7 @@ fn write_boards(config: &Config) -> anyhow::Result<()> {
 
     // write boards to the file
     let boards = firefly_types::Boards::new(Cow::Owned(boards));
-    let mut buf = vec![0; boards.size()];
-    let encoded = boards.encode(&mut buf).context("serialize")?;
+    let encoded = boards.encode_vec().context("serialize")?;
     let output_path = config.rom_path.join(BOARDS);
     fs::write(output_path, encoded).context("write file")?;
     Ok(())
@@ -396,8 +392,7 @@ fn update_stats(path: &Path, config: &Config) -> anyhow::Result<()> {
         scores: scores.into_boxed_slice(),
     };
 
-    let mut buf = vec![0; stats.size()];
-    let encoded = stats.encode(&mut buf).context("serialize")?;
+    let encoded = stats.encode_vec().context("serialize")?;
     fs::write(path, encoded).context("write file")?;
     Ok(())
 }
@@ -442,8 +437,7 @@ fn create_stats(path: &Path, config: &Config) -> anyhow::Result<()> {
         badges: badges.into_boxed_slice(),
         scores: scores.into_boxed_slice(),
     };
-    let mut buf = vec![0; stats.size()];
-    let encoded = stats.encode(&mut buf).context("serialize")?;
+    let encoded = stats.encode_vec().context("serialize")?;
     fs::write(path, encoded).context("write file")?;
     Ok(())
 }

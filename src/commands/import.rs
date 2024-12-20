@@ -101,8 +101,7 @@ fn write_installed(meta: &Meta<'_>, vfs_path: &Path) -> anyhow::Result<()> {
         app_id: meta.app_id,
         author_id: meta.author_id,
     };
-    let mut buf = vec![0; short_meta.size()];
-    let encoded = short_meta.encode(&mut buf).context("serialize")?;
+    let encoded = short_meta.encode_vec().context("serialize")?;
     let output_path = vfs_path.join("sys").join("new-app");
     fs::write(output_path, &encoded).context("write new-app file")?;
     if meta.launcher {
