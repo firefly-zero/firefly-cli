@@ -23,10 +23,11 @@ pub enum Commands {
     Import(ImportArgs),
 
     /// Bootstrap a new app.
-    ///
-    /// Requires internet connection.
     #[clap(alias("create"), alias("bootstrap"))]
     New(NewArgs),
+
+    /// Launch firefly-emulator.
+    Emulator(EmulatorArgs),
 
     /// List all badges (aka achievements) defined in the given app.
     #[clap(alias("badge"), alias("achievements"), alias("achievement"))]
@@ -230,6 +231,12 @@ pub struct NewArgs {
     /// The programming language to use for the project.
     #[arg(long, alias("language"))]
     pub lang: String,
+}
+
+#[derive(Debug, Parser)]
+pub struct EmulatorArgs {
+    /// Arguments to pass into the emulator.
+    pub args: Vec<String>,
 }
 
 #[derive(Debug, Parser)]
