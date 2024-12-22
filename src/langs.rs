@@ -90,7 +90,16 @@ fn build_go(config: &Config) -> anyhow::Result<()> {
     let out_path = config.rom_path.join(BIN);
     let out_path = path_to_utf8(&out_path)?;
     let in_path = path_to_utf8(&config.root_path)?;
-    let mut cmd_args = vec!["build", "-target", target_path, "-o", out_path, "."];
+    let mut cmd_args = vec![
+        "build",
+        "-target",
+        target_path,
+        "-o",
+        out_path,
+        "-buildmode",
+        "c-shared",
+        ".",
+    ];
     if let Some(additional_args) = &config.compile_args {
         for arg in additional_args {
             cmd_args.push(arg.as_str());
