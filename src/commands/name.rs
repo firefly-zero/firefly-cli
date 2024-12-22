@@ -1,6 +1,7 @@
 use crate::args::*;
 use crate::vfs::generate_valid_name;
-use anyhow::{bail, Result};
+use anyhow::{bail, Context, Result};
+use firefly_types::Encode;
 use std::fs;
 use std::path::Path;
 
@@ -21,15 +22,26 @@ pub fn cmd_name_set(vfs: &Path, args: &NameSetArgs) -> Result<()> {
     if let Err(err) = firefly_types::validate_id(&args.name) {
         bail!("validate new name: {err}");
     }
-    fs::write(name_path, &args.name)?;
+    write_name(vfs, &args.name)?;
     println!("new name: {}", &args.name);
     Ok(())
 }
 
 pub fn cmd_name_generate(vfs: &Path, _args: &NameGenerateArgs) -> Result<()> {
-    let name_path = vfs.join("sys").join("name");
     let name = generate_valid_name();
-    fs::write(name_path, &name)?;
+    write_name(vfs, &name)?;
     println!("new name: {name}");
+    Ok(())
+}
+
+fn write_name(vfs: &Path, name: &str) -> Result<()> {
+    let name_path = vfs.join("sys").join("name");
+    fs::write(name_path, name)?;
+    let settings_path = vfs.join("sys").join("config");
+    let raw = fs::read(&settings_path).context("read settings")?;
+    let mut settings = firefly_types::Settings::decode(&raw[..]).context("parse settings")?;
+    settings.name = name.to_string();
+    let raw = settings.encode_vec().context("encode settings")?;
+    fs::write(settings_path, raw).context("write settings file")?;
     Ok(())
 }
