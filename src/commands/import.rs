@@ -157,8 +157,6 @@ fn write_stats(meta: &Meta<'_>, vfs_path: &Path) -> anyhow::Result<()> {
 }
 
 fn copy_stats(default_path: &Path, stats_path: &Path) -> anyhow::Result<()> {
-    let raw = fs::read(default_path).context("read default stats file")?;
-    let default = firefly_types::Stats::decode(&raw)?;
     let today = chrono::Local::now().date_naive();
     #[expect(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
     let today = (
@@ -166,6 +164,22 @@ fn copy_stats(default_path: &Path, stats_path: &Path) -> anyhow::Result<()> {
         today.month0() as u8,
         today.day0() as u8,
     );
+    let default = if default_path.exists() {
+        let raw = fs::read(default_path).context("read default stats file")?;
+        firefly_types::Stats::decode(&raw)?
+    } else {
+        firefly_types::Stats {
+            minutes: [0; 4],
+            longest_play: [0; 4],
+            launches: [0; 4],
+            installed_on: today,
+            updated_on: today,
+            launched_on: (0, 0, 0),
+            xp: 0,
+            badges: Box::new([]),
+            scores: Box::new([]),
+        }
+    };
     let stats = firefly_types::Stats {
         minutes: [0; 4],
         longest_play: [0; 4],
@@ -183,9 +197,11 @@ fn copy_stats(default_path: &Path, stats_path: &Path) -> anyhow::Result<()> {
 }
 
 fn update_stats(default_path: &Path, stats_path: &Path) -> anyhow::Result<()> {
+    if !default_path.exists() {
+        return Ok(());
+    }
     let raw = fs::read(stats_path).context("read stats file")?;
     let old_stats = firefly_types::Stats::decode(&raw).context("parse old stats")?;
-
     let raw = fs::read(default_path).context("read default stats file")?;
     let default = firefly_types::Stats::decode(&raw)?;
 
