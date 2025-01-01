@@ -318,10 +318,13 @@ fn write_stats(config: &Config) -> anyhow::Result<()> {
     }
     let path = data_path.join("stats");
     if path.exists() {
-        update_stats(&path, config).context("update stats")
+        update_stats(&path, config).context("update stats")?;
     } else {
-        create_stats(&path, config).context("create stats")
+        create_stats(&path, config).context("create stats")?;
     }
+
+    let path = config.rom_path.join(STATS);
+    create_stats(&path, config).context("create default stats")
 }
 
 /// Update an existing stats file putting new information into it.
