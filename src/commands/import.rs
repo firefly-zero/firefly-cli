@@ -1,8 +1,9 @@
 use crate::args::ImportArgs;
 use crate::crypto::hash_dir;
-use crate::file_names::{HASH, KEY, META, SIG};
+use crate::file_names::{HASH, KEY, META, SIG, STATS};
 use crate::vfs::init_vfs;
 use anyhow::{bail, Context, Result};
+use chrono::Datelike;
 use data_encoding::HEXLOWER;
 use firefly_types::{Encode, Meta};
 use rsa::pkcs1::DecodeRsaPublicKey;
@@ -41,6 +42,7 @@ pub fn cmd_import(vfs: &Path, args: &ImportArgs) -> Result<()> {
     if let Err(err) = verify(&rom_path) {
         println!("⚠️  verification failed: {err}");
     }
+    write_stats(&meta, vfs)?;
     if let Some(rom_path) = rom_path.to_str() {
         println!("✅ installed: {rom_path}");
     }
@@ -134,5 +136,48 @@ fn verify(rom_path: &Path) -> anyhow::Result<()> {
     verifying_key
         .verify_prehash(hash_actual, &sig)
         .context("verify signature")?;
+    Ok(())
+}
+
+/// Create or update app stats based on the default stats file.
+fn write_stats(meta: &Meta<'_>, vfs_path: &Path) -> anyhow::Result<()> {
+    let data_path = vfs_path.join("data").join(meta.author_id).join(meta.app_id);
+    if !data_path.exists() {
+        fs::create_dir_all(&data_path).context("create data dir")?;
+    }
+    let stats_path = data_path.join("stats");
+    let rom_path = vfs_path.join("roms").join(meta.author_id).join(meta.app_id);
+    let default_path = rom_path.join(STATS);
+    if stats_path.exists() {
+        todo!()
+    } else {
+        copy_stats(&default_path, &stats_path)?;
+    }
+    Ok(())
+}
+
+fn copy_stats(default_path: &Path, stats_path: &Path) -> anyhow::Result<()> {
+    let raw = fs::read(default_path).context("read default stats file")?;
+    let default = firefly_types::Stats::decode(&raw)?;
+    let today = chrono::Local::now().date_naive();
+    #[expect(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+    let today = (
+        today.year() as u16,
+        today.month0() as u8,
+        today.day0() as u8,
+    );
+    let stats = firefly_types::Stats {
+        minutes: [0; 4],
+        longest_play: [0; 4],
+        launches: [0; 4],
+        installed_on: today,
+        updated_on: today,
+        launched_on: (0, 0, 0),
+        xp: 0,
+        badges: default.badges,
+        scores: default.scores,
+    };
+    let raw = stats.encode_vec().context("encode stats")?;
+    fs::write(stats_path, raw).context("write stats file")?;
     Ok(())
 }
