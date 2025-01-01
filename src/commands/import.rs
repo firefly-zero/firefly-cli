@@ -42,7 +42,7 @@ pub fn cmd_import(vfs: &Path, args: &ImportArgs) -> Result<()> {
     if let Err(err) = verify(&rom_path) {
         println!("⚠️  verification failed: {err}");
     }
-    write_stats(&meta, vfs)?;
+    write_stats(&meta, vfs).context("create app stats file")?;
     if let Some(rom_path) = rom_path.to_str() {
         println!("✅ installed: {rom_path}");
     }
@@ -149,7 +149,7 @@ fn write_stats(meta: &Meta<'_>, vfs_path: &Path) -> anyhow::Result<()> {
     let rom_path = vfs_path.join("roms").join(meta.author_id).join(meta.app_id);
     let default_path = rom_path.join(STATS);
     if stats_path.exists() {
-        todo!()
+        update_stats(&default_path, &stats_path)?;
     } else {
         copy_stats(&default_path, &stats_path)?;
     }
@@ -179,5 +179,72 @@ fn copy_stats(default_path: &Path, stats_path: &Path) -> anyhow::Result<()> {
     };
     let raw = stats.encode_vec().context("encode stats")?;
     fs::write(stats_path, raw).context("write stats file")?;
+    Ok(())
+}
+
+fn update_stats(default_path: &Path, stats_path: &Path) -> anyhow::Result<()> {
+    let raw = fs::read(stats_path).context("read stats file")?;
+    let old_stats = firefly_types::Stats::decode(&raw).context("parse old stats")?;
+
+    let raw = fs::read(default_path).context("read default stats file")?;
+    let default = firefly_types::Stats::decode(&raw)?;
+
+    let today = chrono::Local::now().date_naive();
+    #[expect(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+    let today = (
+        today.year() as u16,
+        today.month0() as u8,
+        today.day0() as u8,
+    );
+    // The current date might be behind the current date on the device,
+    // and it might be reflected in the dates recorded in the stats.
+    // If that happens, try to stay closer to the device time.
+    let today = today
+        .max(old_stats.installed_on)
+        .max(old_stats.launched_on)
+        .max(old_stats.updated_on);
+
+    let mut badges = Vec::new();
+    for (i, default_badge) in default.badges.iter().enumerate() {
+        let new_badge = if let Some(old_badge) = old_stats.badges.get(i) {
+            firefly_types::BadgeProgress {
+                new: old_badge.new,
+                done: old_badge.done.min(default_badge.goal),
+                goal: default_badge.goal,
+            }
+        } else {
+            firefly_types::BadgeProgress {
+                new: false,
+                done: 0,
+                goal: default_badge.goal,
+            }
+        };
+        badges.push(new_badge);
+    }
+
+    let mut scores = Vec::from(old_stats.scores);
+    scores.truncate(default.scores.len());
+    for _ in scores.len()..default.scores.len() {
+        let fs = firefly_types::FriendScore { index: 0, score: 0 };
+        let new_score = firefly_types::BoardScores {
+            me: Box::new([0i16; 8]),
+            friends: Box::new([fs; 8]),
+        };
+        scores.push(new_score);
+    }
+
+    let new_stats = firefly_types::Stats {
+        minutes: old_stats.minutes,
+        longest_play: old_stats.longest_play,
+        launches: old_stats.launches,
+        installed_on: old_stats.installed_on,
+        updated_on: today,
+        launched_on: old_stats.launched_on,
+        xp: old_stats.xp.min(1000),
+        badges: badges.into_boxed_slice(),
+        scores: scores.into_boxed_slice(),
+    };
+    let raw = new_stats.encode_vec().context("encode updated stats")?;
+    fs::write(stats_path, raw).context("write updated stats file")?;
     Ok(())
 }

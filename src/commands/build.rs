@@ -330,7 +330,7 @@ fn write_stats(config: &Config) -> anyhow::Result<()> {
 /// Update an existing stats file putting new information into it.
 fn update_stats(path: &Path, config: &Config) -> anyhow::Result<()> {
     let raw = fs::read(path).context("read stats file")?;
-    let stats = firefly_types::Stats::decode(&raw).context("parse stats")?;
+    let old_stats = firefly_types::Stats::decode(&raw).context("parse stats")?;
 
     let today = chrono::Local::now().date_naive();
     #[expect(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
@@ -343,15 +343,15 @@ fn update_stats(path: &Path, config: &Config) -> anyhow::Result<()> {
     // and it might be reflected in the dates recorded in the stats.
     // If that happens, try to stay closer to the device time.
     let today = today
-        .max(stats.installed_on)
-        .max(stats.launched_on)
-        .max(stats.updated_on);
+        .max(old_stats.installed_on)
+        .max(old_stats.launched_on)
+        .max(old_stats.updated_on);
 
     let mut badges = Vec::new();
     let badges_config = config.badges_vec()?;
     for (i, badge_config) in badges_config.iter().enumerate() {
         let steps = badge_config.steps.unwrap_or(1);
-        let new_badge = if let Some(old_badge) = stats.badges.get(i) {
+        let new_badge = if let Some(old_badge) = old_stats.badges.get(i) {
             firefly_types::BadgeProgress {
                 new: old_badge.new,
                 done: old_badge.done.min(steps),
@@ -370,7 +370,7 @@ fn update_stats(path: &Path, config: &Config) -> anyhow::Result<()> {
     let mut scores = Vec::new();
     if let Some(boards_config) = &config.boards {
         for i in 0..boards_config.len() {
-            let score = if let Some(old_score) = stats.scores.get(i) {
+            let score = if let Some(old_score) = old_stats.scores.get(i) {
                 old_score.clone()
             } else {
                 let fs = firefly_types::FriendScore { index: 0, score: 0 };
@@ -383,19 +383,19 @@ fn update_stats(path: &Path, config: &Config) -> anyhow::Result<()> {
         }
     }
 
-    let stats = firefly_types::Stats {
-        minutes: stats.minutes,
-        longest_play: stats.longest_play,
-        launches: stats.launches,
-        installed_on: stats.installed_on,
+    let new_stats = firefly_types::Stats {
+        minutes: old_stats.minutes,
+        longest_play: old_stats.longest_play,
+        launches: old_stats.launches,
+        installed_on: old_stats.installed_on,
         updated_on: today,
-        launched_on: stats.launched_on,
-        xp: stats.xp.min(1000),
+        launched_on: old_stats.launched_on,
+        xp: old_stats.xp.min(1000),
         badges: badges.into_boxed_slice(),
         scores: scores.into_boxed_slice(),
     };
 
-    let encoded = stats.encode_vec().context("serialize")?;
+    let encoded = new_stats.encode_vec().context("serialize")?;
     fs::write(path, encoded).context("write file")?;
     Ok(())
 }
