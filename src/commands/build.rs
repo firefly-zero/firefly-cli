@@ -1,5 +1,6 @@
 use crate::args::BuildArgs;
 use crate::audio::convert_wav;
+use crate::commands::import::write_stats;
 use crate::config::{Config, FileConfig};
 use crate::crypto::hash_dir;
 use crate::file_names::*;
@@ -71,7 +72,7 @@ pub fn cmd_build(vfs: PathBuf, args: &BuildArgs) -> anyhow::Result<()> {
         show_tip();
     }
     let old_sizes = collect_sizes(&config.rom_path);
-    write_meta(&config).context("write metadata file")?;
+    let meta = write_meta(&config).context("write metadata file")?;
     build_bin(&config, args).context("build binary")?;
     remove_old_files(&config.rom_path).context("remove old files")?;
     if let Some(files) = &config.files {
@@ -82,7 +83,8 @@ pub fn cmd_build(vfs: PathBuf, args: &BuildArgs) -> anyhow::Result<()> {
     write_badges(&config).context("write badges")?;
     write_boards(&config).context("write boards")?;
     write_installed(&config).context("write app-name")?;
-    write_stats(&config).context("write stats")?;
+    create_rom_stats(&config).context("create default stats file")?;
+    write_stats(&meta, &config.vfs_path).context("write stats")?;
     write_key(&config).context("write key")?;
     write_hash(&config.rom_path).context("write hash")?;
     write_sig(&config).context("sign ROM")?;
@@ -94,7 +96,7 @@ pub fn cmd_build(vfs: PathBuf, args: &BuildArgs) -> anyhow::Result<()> {
 }
 
 /// Serialize and write the ROM meta information.
-fn write_meta(config: &Config) -> anyhow::Result<()> {
+fn write_meta(config: &Config) -> anyhow::Result<firefly_types::Meta<'_>> {
     use firefly_types::{validate_id, validate_name, Meta};
     if let Err(err) = validate_id(&config.app_id) {
         bail!("validate app_id: {err}");
@@ -121,7 +123,7 @@ fn write_meta(config: &Config) -> anyhow::Result<()> {
     fs::create_dir_all(&config.rom_path)?;
     let output_path = config.rom_path.join(META);
     fs::write(output_path, encoded).context("write file")?;
-    Ok(())
+    Ok(meta)
 }
 
 /// Write the latest installed app name into internal DB.
@@ -306,99 +308,9 @@ fn write_boards(config: &Config) -> anyhow::Result<()> {
     Ok(())
 }
 
-/// Create or update app stats.
-fn write_stats(config: &Config) -> anyhow::Result<()> {
-    let data_path = config
-        .vfs_path
-        .join("data")
-        .join(&config.author_id)
-        .join(&config.app_id);
-    if !data_path.exists() {
-        fs::create_dir_all(&data_path).context("create data dir")?;
-    }
-    let path = data_path.join("stats");
-    if path.exists() {
-        update_stats(&path, config).context("update stats")
-    } else {
-        create_stats(&path, config).context("create stats")
-    }
-}
-
-/// Update an existing stats file putting new information into it.
-fn update_stats(path: &Path, config: &Config) -> anyhow::Result<()> {
-    let raw = fs::read(path).context("read stats file")?;
-    let stats = firefly_types::Stats::decode(&raw).context("parse stats")?;
-
-    let today = chrono::Local::now().date_naive();
-    #[expect(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
-    let today = (
-        today.year() as u16,
-        today.month0() as u8,
-        today.day0() as u8,
-    );
-    // The current date might be behind the current date on the device,
-    // and it might be reflected in the dates recorded in the stats.
-    // If that happens, try to stay closer to the device time.
-    let today = today
-        .max(stats.installed_on)
-        .max(stats.launched_on)
-        .max(stats.updated_on);
-
-    let mut badges = Vec::new();
-    let badges_config = config.badges_vec()?;
-    for (i, badge_config) in badges_config.iter().enumerate() {
-        let steps = badge_config.steps.unwrap_or(1);
-        let new_badge = if let Some(old_badge) = stats.badges.get(i) {
-            firefly_types::BadgeProgress {
-                new: old_badge.new,
-                done: old_badge.done.min(steps),
-                goal: steps,
-            }
-        } else {
-            firefly_types::BadgeProgress {
-                new: false,
-                done: 0,
-                goal: steps,
-            }
-        };
-        badges.push(new_badge);
-    }
-
-    let mut scores = Vec::new();
-    if let Some(boards_config) = &config.boards {
-        for i in 0..boards_config.len() {
-            let score = if let Some(old_score) = stats.scores.get(i) {
-                old_score.clone()
-            } else {
-                let fs = firefly_types::FriendScore { index: 0, score: 0 };
-                firefly_types::BoardScores {
-                    me: Box::new([0i16; 8]),
-                    friends: Box::new([fs; 8]),
-                }
-            };
-            scores.push(score);
-        }
-    }
-
-    let stats = firefly_types::Stats {
-        minutes: stats.minutes,
-        longest_play: stats.longest_play,
-        launches: stats.launches,
-        installed_on: stats.installed_on,
-        updated_on: today,
-        launched_on: stats.launched_on,
-        xp: stats.xp.min(1000),
-        badges: badges.into_boxed_slice(),
-        scores: scores.into_boxed_slice(),
-    };
-
-    let encoded = stats.encode_vec().context("serialize")?;
-    fs::write(path, encoded).context("write file")?;
-    Ok(())
-}
-
-/// Create a new stats file with good defaults.
-fn create_stats(path: &Path, config: &Config) -> anyhow::Result<()> {
+/// Create default app stats.
+fn create_rom_stats(config: &Config) -> anyhow::Result<()> {
+    let path = config.rom_path.join(STATS);
     let today = chrono::Local::now().date_naive();
     #[expect(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
     let today = (
@@ -546,4 +458,21 @@ fn show_tip() {
     let mut rng = rand::thread_rng();
     let i = rng.gen_range(0..TIPS.len());
     println!("💡 tip: {}.", TIPS[i]);
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::test_helpers::*;
+
+    #[test]
+    fn test_build() {
+        let vfs = make_tmp_vfs();
+        let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        let args = BuildArgs {
+            root: root.join("test_app"),
+            ..Default::default()
+        };
+        cmd_build(vfs, &args).unwrap();
+    }
 }

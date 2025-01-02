@@ -147,7 +147,7 @@ pub struct NameSetArgs {
 #[derive(Debug, Parser)]
 pub struct NameGenerateArgs {}
 
-#[derive(Debug, Parser)]
+#[derive(Debug, Parser, Default)]
 pub struct BuildArgs {
     /// Path to the project root.
     #[arg(default_value = ".")]

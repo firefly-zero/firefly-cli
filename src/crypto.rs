@@ -5,8 +5,8 @@ use sha2::digest::generic_array::GenericArray;
 use sha2::{Digest, Sha256};
 use std::path::Path;
 
+/// Generate one big hash for all files in the given directory.
 pub fn hash_dir(rom_path: &Path) -> anyhow::Result<GenericArray<u8, U32>> {
-    // generate one big hash for all files
     let mut hasher = Sha256::new();
     let files = rom_path.read_dir().context("open the ROM dir")?;
     let mut file_paths = Vec::new();
@@ -29,8 +29,6 @@ pub fn hash_dir(rom_path: &Path) -> anyhow::Result<GenericArray<u8, U32>> {
         let mut file = std::fs::File::open(path).context("open file")?;
         std::io::copy(&mut file, &mut hasher).context("read file")?;
     }
-
-    // write the hash into a file
     let hash = hasher.finalize();
     Ok(hash)
 }

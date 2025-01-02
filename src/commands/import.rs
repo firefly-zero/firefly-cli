@@ -1,8 +1,9 @@
 use crate::args::ImportArgs;
 use crate::crypto::hash_dir;
-use crate::file_names::{HASH, KEY, META, SIG};
+use crate::file_names::{HASH, KEY, META, SIG, STATS};
 use crate::vfs::init_vfs;
 use anyhow::{bail, Context, Result};
+use chrono::Datelike;
 use data_encoding::HEXLOWER;
 use firefly_types::{Encode, Meta};
 use rsa::pkcs1::DecodeRsaPublicKey;
@@ -41,6 +42,7 @@ pub fn cmd_import(vfs: &Path, args: &ImportArgs) -> Result<()> {
     if let Err(err) = verify(&rom_path) {
         println!("⚠️  verification failed: {err}");
     }
+    write_stats(&meta, vfs).context("create app stats file")?;
     if let Some(rom_path) = rom_path.to_str() {
         println!("✅ installed: {rom_path}");
     }
@@ -135,4 +137,168 @@ fn verify(rom_path: &Path) -> anyhow::Result<()> {
         .verify_prehash(hash_actual, &sig)
         .context("verify signature")?;
     Ok(())
+}
+
+/// Create or update app stats in the data dir based on the default stats file from ROM.
+pub(super) fn write_stats(meta: &Meta<'_>, vfs_path: &Path) -> anyhow::Result<()> {
+    let data_path = vfs_path.join("data").join(meta.author_id).join(meta.app_id);
+    if !data_path.exists() {
+        fs::create_dir_all(&data_path).context("create data dir")?;
+    }
+    let stats_path = data_path.join("stats");
+    let rom_path = vfs_path.join("roms").join(meta.author_id).join(meta.app_id);
+    let default_path = rom_path.join(STATS);
+    if stats_path.exists() {
+        update_stats(&default_path, &stats_path)?;
+    } else {
+        copy_stats(&default_path, &stats_path)?;
+    }
+    Ok(())
+}
+
+fn copy_stats(default_path: &Path, stats_path: &Path) -> anyhow::Result<()> {
+    let today = chrono::Local::now().date_naive();
+    #[expect(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+    let today = (
+        today.year() as u16,
+        today.month0() as u8,
+        today.day0() as u8,
+    );
+    let default = if default_path.exists() {
+        let raw = fs::read(default_path).context("read default stats file")?;
+        firefly_types::Stats::decode(&raw)?
+    } else {
+        firefly_types::Stats {
+            minutes: [0; 4],
+            longest_play: [0; 4],
+            launches: [0; 4],
+            installed_on: today,
+            updated_on: today,
+            launched_on: (0, 0, 0),
+            xp: 0,
+            badges: Box::new([]),
+            scores: Box::new([]),
+        }
+    };
+    let stats = firefly_types::Stats {
+        minutes: [0; 4],
+        longest_play: [0; 4],
+        launches: [0; 4],
+        installed_on: today,
+        updated_on: today,
+        launched_on: (0, 0, 0),
+        xp: 0,
+        badges: default.badges,
+        scores: default.scores,
+    };
+    let raw = stats.encode_vec().context("encode stats")?;
+    fs::write(stats_path, raw).context("write stats file")?;
+    Ok(())
+}
+
+fn update_stats(default_path: &Path, stats_path: &Path) -> anyhow::Result<()> {
+    if !default_path.exists() {
+        return Ok(());
+    }
+    let raw = fs::read(stats_path).context("read stats file")?;
+    let old_stats = firefly_types::Stats::decode(&raw).context("parse old stats")?;
+    let raw = fs::read(default_path).context("read default stats file")?;
+    let default = firefly_types::Stats::decode(&raw)?;
+
+    let today = chrono::Local::now().date_naive();
+    #[expect(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+    let today = (
+        today.year() as u16,
+        today.month0() as u8,
+        today.day0() as u8,
+    );
+    // The current date might be behind the current date on the device,
+    // and it might be reflected in the dates recorded in the stats.
+    // If that happens, try to stay closer to the device time.
+    let today = today
+        .max(old_stats.installed_on)
+        .max(old_stats.launched_on)
+        .max(old_stats.updated_on);
+
+    let mut badges = Vec::new();
+    for (i, default_badge) in default.badges.iter().enumerate() {
+        let new_badge = if let Some(old_badge) = old_stats.badges.get(i) {
+            firefly_types::BadgeProgress {
+                new: old_badge.new,
+                done: old_badge.done.min(default_badge.goal),
+                goal: default_badge.goal,
+            }
+        } else {
+            firefly_types::BadgeProgress {
+                new: false,
+                done: 0,
+                goal: default_badge.goal,
+            }
+        };
+        badges.push(new_badge);
+    }
+
+    let mut scores = Vec::from(old_stats.scores);
+    scores.truncate(default.scores.len());
+    for _ in scores.len()..default.scores.len() {
+        let fs = firefly_types::FriendScore { index: 0, score: 0 };
+        let new_score = firefly_types::BoardScores {
+            me: Box::new([0i16; 8]),
+            friends: Box::new([fs; 8]),
+        };
+        scores.push(new_score);
+    }
+
+    let new_stats = firefly_types::Stats {
+        minutes: old_stats.minutes,
+        longest_play: old_stats.longest_play,
+        launches: old_stats.launches,
+        installed_on: old_stats.installed_on,
+        updated_on: today,
+        launched_on: old_stats.launched_on,
+        xp: old_stats.xp.min(1000),
+        badges: badges.into_boxed_slice(),
+        scores: scores.into_boxed_slice(),
+    };
+    let raw = new_stats.encode_vec().context("encode updated stats")?;
+    fs::write(stats_path, raw).context("write updated stats file")?;
+    Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::args::*;
+    use crate::commands::*;
+    use crate::test_helpers::*;
+
+    #[test]
+    fn test_build_export_import() {
+        let vfs = make_tmp_vfs();
+        let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        let args = BuildArgs {
+            root: root.join("test_app"),
+            ..Default::default()
+        };
+        cmd_build(vfs.clone(), &args).unwrap();
+
+        let tmp_dir = make_tmp_dir();
+        let archive_path = tmp_dir.join("test-app-export.zip");
+        let args = ExportArgs {
+            root: root.join("test_app"),
+            id: Some("demo.cli-test".to_string()),
+            output: Some(archive_path.clone()),
+        };
+        cmd_export(&vfs, &args).unwrap();
+
+        let vfs2 = make_tmp_vfs();
+        let path_str = archive_path.to_str().unwrap();
+        let args = ImportArgs {
+            path: path_str.to_string(),
+        };
+        cmd_import(&vfs2, &args).unwrap();
+
+        dirs_eq(&vfs.join("roms"), &vfs2.join("roms"));
+        dirs_eq(&vfs.join("data"), &vfs2.join("data"));
+    }
 }
