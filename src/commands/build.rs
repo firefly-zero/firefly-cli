@@ -76,7 +76,8 @@ pub fn cmd_build(vfs: PathBuf, args: &BuildArgs) -> anyhow::Result<()> {
     remove_old_files(&config.rom_path).context("remove old files")?;
     if let Some(files) = &config.files {
         for (name, file_config) in files {
-            convert_file(name, &config, file_config).context("convert file")?;
+            convert_file(name, &config, file_config)
+                .with_context(|| format!("convert \"{name}\""))?;
         }
     }
     write_badges(&config).context("write badges")?;

@@ -48,7 +48,11 @@ pub fn convert_image(input_path: &Path, output_path: &Path) -> Result<()> {
         let palette = extend_palette(palette, 16);
         write_image::<4, 2>(out, &img, &palette).context("write 1BPP image")
     } else {
-        bail!("the image has too many colors")
+        let has_transparency = palette.iter().any(Option::is_none);
+        if has_transparency && colors == 17 {
+            bail!("cannot use all 16 colors with transparency, remove one color");
+        }
+        bail!("the image has too many colors");
     }
 }
 
