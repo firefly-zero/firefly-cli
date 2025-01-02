@@ -32,10 +32,11 @@ pub fn make_tmp_dir() -> PathBuf {
 pub fn dirs_eq(dir1: &Path, dir2: &Path) {
     let hashes1 = dir_hashes(dir1);
     let hashes2 = dir_hashes(dir2);
+    assert!(!hashes1.is_empty());
     assert_eq!(hashes1.len(), hashes2.len());
     for (path, hash1) in hashes1 {
         let hash2 = hashes2[&path];
-        assert_eq!(hash1, hash2);
+        assert_eq!(hash1, hash2, "files at path {path} differ");
     }
 }
 

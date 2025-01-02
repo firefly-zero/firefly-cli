@@ -264,3 +264,41 @@ fn update_stats(default_path: &Path, stats_path: &Path) -> anyhow::Result<()> {
     fs::write(stats_path, raw).context("write updated stats file")?;
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::args::*;
+    use crate::commands::*;
+    use crate::test_helpers::*;
+
+    #[test]
+    fn test_build_export_import() {
+        let vfs = make_tmp_vfs();
+        let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        let args = BuildArgs {
+            root: root.join("test_app"),
+            ..Default::default()
+        };
+        cmd_build(vfs.clone(), &args).unwrap();
+
+        let tmp_dir = make_tmp_dir();
+        let archive_path = tmp_dir.join("test-app-export.zip");
+        let args = ExportArgs {
+            root: root.join("test_app"),
+            id: Some("demo.cli-test".to_string()),
+            output: Some(archive_path.clone()),
+        };
+        cmd_export(&vfs, &args).unwrap();
+
+        let vfs2 = make_tmp_vfs();
+        let path_str = archive_path.to_str().unwrap();
+        let args = ImportArgs {
+            path: path_str.to_string(),
+        };
+        cmd_import(&vfs2, &args).unwrap();
+
+        dirs_eq(&vfs.join("roms"), &vfs2.join("roms"));
+        dirs_eq(&vfs.join("data"), &vfs2.join("data"));
+    }
+}
