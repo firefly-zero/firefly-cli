@@ -178,22 +178,32 @@ fn build_rust_inner(config: &Config, example: bool) -> anyhow::Result<()> {
 fn find_rust_result(root: &Path) -> anyhow::Result<PathBuf> {
     let target_dir = find_rust_target_dir(root)?;
     let release_dir = target_dir.join("wasm32-unknown-unknown").join("release");
-    let Some(project_name) = root.file_name() else {
-        bail!("cannot get project root directory name");
+    if let Some(path) = find_wasm_binary(&release_dir)? {
+        return Ok(path);
     };
-
-    let path = release_dir.join(project_name).with_extension("wasm");
-    if path.is_file() {
+    let examples_dir = release_dir.join("examples");
+    if let Some(path) = find_wasm_binary(&examples_dir)? {
         return Ok(path);
-    }
-    let path = release_dir
-        .join("examples")
-        .join(project_name)
-        .with_extension("wasm");
-    if path.is_file() {
-        return Ok(path);
-    }
+    };
     bail!("cannot find wasm binary")
+}
+
+fn find_wasm_binary(root: &Path) -> anyhow::Result<Option<PathBuf>> {
+    let entries = std::fs::read_dir(root)?;
+    for entry in entries {
+        let entry = entry?;
+        let path = entry.path();
+        let Some(ext) = path.extension() else {
+            continue;
+        };
+        let Some(ext) = ext.to_str() else {
+            continue;
+        };
+        if ext == "wasm" {
+            return Ok(Some(path));
+        }
+    }
+    Ok(None)
 }
 
 /// Locate the "target" directory.
