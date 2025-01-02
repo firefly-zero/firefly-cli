@@ -459,3 +459,20 @@ fn show_tip() {
     let i = rng.gen_range(0..TIPS.len());
     println!("💡 tip: {}.", TIPS[i]);
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::test_helpers::*;
+
+    #[test]
+    fn test_build() {
+        let vfs = make_tmp_vfs();
+        let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        let args = BuildArgs {
+            root: root.join("test_app"),
+            ..Default::default()
+        };
+        cmd_build(vfs, &args).unwrap();
+    }
+}
