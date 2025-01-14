@@ -59,16 +59,16 @@ pub enum Commands {
     /// Run interactive session.
     Repl(ReplArgs),
 
-    /// Commands to manage signing keys.
+    /// Manage signing keys.
     #[command(subcommand)]
     #[clap(alias("keys"))]
     Key(KeyCommands),
 
-    /// Commands to set, get, and generate device name.
+    /// Set, get, and generate device name.
     #[command(subcommand)]
     Name(NameCommands),
 
-    /// Commands to interact with catalog.fireflyzero.com.
+    /// Interact with catalog.fireflyzero.com.
     #[command(subcommand)]
     Catalog(CatalogCommands),
 }
