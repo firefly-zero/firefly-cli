@@ -8,7 +8,7 @@
   "linker": "wasm-ld",
   "rtlib": "compiler-rt",
   "scheduler": "none",
-  "gc": "leaking",
+  "gc": "conservative",
   "cflags": ["-mno-bulk-memory", "-mnontrapping-fptoint", "-msign-ext"],
   "ldflags": [
     "--allow-undefined",
