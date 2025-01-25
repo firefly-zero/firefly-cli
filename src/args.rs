@@ -6,6 +6,10 @@ use std::path::PathBuf;
 #[derive(Parser)]
 #[command(author, version, about, long_about = None)]
 pub struct Cli {
+    /// Path to the vfs to use.
+    #[arg(long, default_value = None)]
+    pub vfs: Option<PathBuf>,
+
     #[command(subcommand)]
     pub command: Commands,
 }

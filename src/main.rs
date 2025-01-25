@@ -37,7 +37,10 @@ use crossterm::style::Stylize;
 
 fn main() {
     let cli = Cli::parse();
-    let vfs = get_vfs_path();
+    let vfs = match cli.vfs {
+        Some(vfs) => vfs,
+        None => get_vfs_path(),
+    };
     let res = run_command(vfs, &cli.command);
     if let Err(err) = res {
         eprintln!("{} {}", "💥 Error:".red(), Error(err));
