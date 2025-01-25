@@ -1,6 +1,7 @@
 use crate::args::Commands;
 use clap::Subcommand;
 use crossterm::style::Stylize;
+use rustyline::highlight::CmdKind;
 use rustyline::hint::Hint;
 use rustyline::Context;
 use std::borrow::Cow;
@@ -53,7 +54,7 @@ impl rustyline::highlight::Highlighter for Helper {
 
     // We make this method to always return true,
     // so that syntax highlighting kicks in every time the user presses a button.
-    fn highlight_char(&self, _line: &str, _pos: usize, _forced: bool) -> bool {
+    fn highlight_char(&self, _line: &str, _pos: usize, _kind: CmdKind) -> bool {
         true
     }
 }

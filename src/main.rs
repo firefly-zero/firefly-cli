@@ -9,7 +9,7 @@
     clippy::allow_attributes
 )]
 #![allow(clippy::enum_glob_use, clippy::wildcard_imports)]
-#![expect(clippy::module_name_repetitions, clippy::option_if_let_else)]
+#![expect(clippy::option_if_let_else)]
 
 mod args;
 mod audio;
