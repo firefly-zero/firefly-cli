@@ -99,13 +99,13 @@ fn write_image<const BPP: u8, const PPB: usize>(
 /// Detect all colors used in the image
 fn make_palette(img: &RgbaImage) -> Result<Vec<Color>> {
     let mut palette = Vec::new();
-    for pixel in img.pixels() {
+    for (x, y, pixel) in img.enumerate_pixels() {
         let color = convert_color(*pixel);
         if !palette.contains(&color) {
             if color.is_some() && !DEFAULT_PALETTE.contains(&color) {
                 bail!(
-                    "found a color not present in the default color palette: {}",
-                    format_color(color)
+                    "found a color not present in the default color palette: {} (at x={x}, y={y})",
+                    format_color(color),
                 );
             }
             palette.push(color);
