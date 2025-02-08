@@ -299,9 +299,49 @@ fn find_wasi_sdk() -> anyhow::Result<PathBuf> {
     Ok(path)
 }
 
-fn build_zig(_config: &Config) -> anyhow::Result<()> {
+fn build_zig(config: &Config) -> anyhow::Result<()> {
     check_installed("Zig", "zig", "version")?;
-    todo!("Zig is not supported yet")
+    let mut cmd_args = vec!["build"];
+    if let Some(additional_args) = &config.compile_args {
+        for arg in additional_args {
+            cmd_args.push(arg.as_str());
+        }
+    }
+    let output = Command::new("zig")
+        .args(cmd_args)
+        .current_dir(&config.root_path)
+        .output()
+        .context("run zig build")?;
+    check_output(&output)?;
+
+    let from_dir = config.root_path.join("zig-out").join("bin");
+    let from_path = find_wasm(&from_dir)?;
+    let out_path = config.rom_path.join(BIN);
+    std::fs::copy(&from_path, out_path).context("copy wasm binary")?;
+    std::fs::remove_file(from_path).context("remove wasm file")?;
+    Ok(())
+}
+
+/// Find a wasm binary in the given directory.
+fn find_wasm(from_dir: &Path) -> anyhow::Result<PathBuf> {
+    let from_dir = std::fs::read_dir(from_dir)?;
+    let mut result = None;
+    for file_path in from_dir {
+        let file_path = file_path?;
+        let file_path = file_path.path();
+        if let Some(ext) = file_path.extension() {
+            if ext == "wasm" {
+                if result.is_some() {
+                    bail!("found more than one wasm binary");
+                }
+                result = Some(file_path);
+            }
+        }
+    }
+    match result {
+        Some(result) => Ok(result),
+        None => bail!("cannot find wasm binary"),
+    }
 }
 
 fn build_ts(_config: &Config) -> anyhow::Result<()> {
