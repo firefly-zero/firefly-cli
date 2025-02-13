@@ -24,7 +24,7 @@ pub fn cmd_new(args: &NewArgs) -> Result<()> {
     match lang {
         Lang::Go => new_go(&args.name).context("new Go project")?,
         Lang::Rust => new_rust(&args.name).context("new Rust project")?,
-        Lang::Zig => todo!("Zig is not supported yet"),
+        Lang::Zig => new_zig(&args.name).context("new Zig project")?,
         Lang::TS => todo!("TypeScript is not supported yet"),
         Lang::C => new_c(&args.name).context("new C project")?,
         Lang::Cpp => new_cpp(&args.name).context("new C++ project")?,
@@ -96,6 +96,16 @@ fn new_rust(name: &str) -> Result<()> {
         file.write_all(&asset.data)
             .context("append to Cargo.toml")?;
     }
+    Ok(())
+}
+
+/// Create a new Zig project.
+fn new_zig(name: &str) -> Result<()> {
+    let mut c = Commander::default();
+    c.cd(name)?;
+    c.copy_asset(&["build.zig"], "build.zig")?;
+    c.copy_asset(&["build.zig.zon"], "build.zig.zon")?;
+    c.copy_asset(&["src", "main.zig"], "main.zig")?;
     Ok(())
 }
 

@@ -1,3 +1,4 @@
 /target/
 /.task/
 /test_app/target/
+.zig-cache/
