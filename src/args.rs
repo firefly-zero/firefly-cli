@@ -57,6 +57,9 @@ pub enum Commands {
     /// Show runtime stats for a running device (or emulator).
     Monitor(MonitorArgs),
 
+    /// Show live runtime logs from a running device.
+    Logs(LogsArgs),
+
     /// Inspect contents of the ROM: files, metadata, wasm binary.
     Inspect(InspectArgs),
 
@@ -245,6 +248,15 @@ pub struct EmulatorArgs {
 
 #[derive(Debug, Parser)]
 pub struct MonitorArgs {}
+
+#[derive(Debug, Parser)]
+pub struct LogsArgs {
+    #[arg(long)]
+    pub port: String,
+
+    #[arg(long, default_value_t = 115_200)]
+    pub baud_rate: u32,
+}
 
 #[derive(Debug, Parser)]
 pub struct InspectArgs {

@@ -52,6 +52,7 @@ rustyline = "15.0.0"
 serde = { version = "1.0.217", features = ["serde_derive", "derive"] }
 # Deserialize JSON API responses from the firefly catalog.
 serde_json = "1.0.138"
+serialport = "4.7.0"
 # Calculate file checksum
 sha2 = "0.10.8"
 # Deserialize firefly.toml

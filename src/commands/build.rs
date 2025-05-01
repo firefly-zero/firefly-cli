@@ -30,7 +30,7 @@ use std::path::{Path, PathBuf};
 static TIPS: &[&str] = &[
     "keep an eye on the binary size: bigger binary often means slower code",
     "if the app hits `unreachable`, use `log_debug` to find out where",
-    "you can use build_args option in firefly.toml to customize the build command",
+    "you can use `build_args` option in `firefly.toml` to customize the build command",
     "if your game has multiple levels/scenes, use a separate sprite file for each",
     "prefer using 32 bit float over 64 bit float",
     "using shapes instead of sprites might save memory and improve performance",
@@ -46,6 +46,7 @@ static TIPS: &[&str] = &[
     "you can customize TinyGo build with a custom target.json in the project root",
     "make sure to test your game with multiplayer",
     "images using 4 or less colors are twice smaller",
+    "when debugging an app, call `set_seed` in `boot` to make the randomness predictable",
     // covering CLI subcommands
     "you can use `wasm2wat` and `firefly_cli inspect` to inspect the app binary",
     "use `firefly_cli export` to share the app with your friends",
