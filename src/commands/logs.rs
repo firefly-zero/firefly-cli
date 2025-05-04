@@ -3,7 +3,7 @@ use anyhow::{Context, Result};
 use std::time::Duration;
 
 pub fn cmd_logs(args: &LogsArgs) -> Result<()> {
-    let mut port = serialport::new(&args.port, 115_200)
+    let mut port = serialport::new(&args.port, 9600)
         .timeout(Duration::from_millis(10))
         .open()
         .context("open the serial port")?;
@@ -11,7 +11,13 @@ pub fn cmd_logs(args: &LogsArgs) -> Result<()> {
     println!("listening...");
     loop {
         match port.read(buf.as_mut_slice()) {
-            Ok(n) => println!("{:?}", &buf[..n]),
+            Ok(n) => {
+                let bytes = &buf[..n];
+                match std::str::from_utf8(bytes) {
+                    Ok(s) => print!("{s}"),
+                    Err(_) => print!("{bytes:?}"),
+                };
+            }
             Err(err) => {
                 if err.kind() == std::io::ErrorKind::TimedOut {
                     continue;
