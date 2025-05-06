@@ -1,3 +1,4 @@
+use super::logs::advance;
 use crate::args::MonitorArgs;
 use crate::net::connect;
 use anyhow::{Context, Result};
@@ -14,6 +15,8 @@ const RBORD: u16 = 21;
 const KB: u32 = 1024;
 const MB: u32 = 1024 * KB;
 
+type Port = Box<dyn serialport::SerialPort>;
+
 #[derive(Default)]
 struct Stats {
     update: Option<serial::Fuel>,
@@ -22,17 +25,65 @@ struct Stats {
     mem: Option<serial::Memory>,
 }
 
+impl Stats {
+    const fn is_default(&self) -> bool {
+        self.update.is_none() && self.render.is_none() && self.cpu.is_none() && self.mem.is_none()
+    }
+}
+
 pub fn cmd_monitor(_vfs: &Path, args: &MonitorArgs) -> Result<()> {
     execute!(io::stdout(), terminal::EnterAlternateScreen).context("enter alt screen")?;
     execute!(io::stdout(), cursor::Hide).context("hide cursor")?;
     terminal::enable_raw_mode().context("enable raw mode")?;
-    let res = monitor_emulator(args);
+    let res = if let Some(port) = &args.port {
+        monitor_device(port, args)
+    } else {
+        monitor_emulator()
+    };
     terminal::disable_raw_mode().context("disable raw mode")?;
     execute!(io::stdout(), terminal::LeaveAlternateScreen).context("leave alt screen")?;
     res
 }
 
-fn monitor_emulator(_args: &MonitorArgs) -> Result<()> {
+fn monitor_device(port: &str, args: &MonitorArgs) -> Result<()> {
+    let mut port = connect_device(port, args)?;
+    let mut stats = Stats::default();
+    let mut buf = Vec::new();
+    loop {
+        if should_exit() {
+            return Ok(());
+        }
+        buf = read_device(&mut port, buf, &mut stats)?;
+        render_stats(&stats).context("render stats")?;
+    }
+}
+
+/// Connect to running emulator using serial USB port (JTag-over-USB).
+fn connect_device(port: &str, args: &MonitorArgs) -> Result<Port> {
+    let mut port = serialport::new(port, args.baud_rate)
+        .timeout(Duration::from_millis(10))
+        .open()
+        .context("open the serial port")?;
+
+    execute!(
+        io::stdout(),
+        terminal::Clear(terminal::ClearType::All),
+        cursor::MoveTo(0, 0),
+        style::Print("waiting for stats..."),
+    )?;
+
+    // enable stats collection
+    {
+        let req = serial::Request::Stats(true);
+        let buf = req.encode_vec().context("encode request")?;
+        port.write_all(&buf[..]).context("send request")?;
+        port.flush().context("flush request")?;
+    }
+
+    Ok(port)
+}
+
+fn monitor_emulator() -> Result<()> {
     let mut stream = connect_emulator()?;
     let mut stats = Stats::default();
     loop {
@@ -44,7 +95,7 @@ fn monitor_emulator(_args: &MonitorArgs) -> Result<()> {
     }
 }
 
-/// Receive and parse stats from emulator.
+/// Receive and parse one stats message from emulator.
 fn read_emulator(mut stream: TcpStream, stats: &mut Stats) -> Result<TcpStream> {
     let mut buf = vec![0; 64];
     let size = stream.read(&mut buf).context("read response")?;
@@ -54,6 +105,31 @@ fn read_emulator(mut stream: TcpStream, stats: &mut Stats) -> Result<TcpStream> 
     }
     parse_stats(stats, &buf[..size])?;
     Ok(stream)
+}
+
+/// Receive and parse one stats message from device.
+fn read_device(port: &mut Port, mut buf: Vec<u8>, stats: &mut Stats) -> Result<Vec<u8>> {
+    let mut chunk = vec![0; 64];
+    let n = match port.read(chunk.as_mut_slice()) {
+        Ok(n) => n,
+        Err(err) => {
+            if err.kind() == std::io::ErrorKind::TimedOut {
+                return Ok(buf);
+            }
+            return Err(err).context("read from serial port");
+        }
+    };
+
+    buf.extend_from_slice(&chunk[..n]);
+    loop {
+        let (frame, rest) = advance(&buf);
+        buf = Vec::from(rest);
+        if frame.is_empty() {
+            break;
+        }
+        parse_stats(stats, &frame)?;
+    }
+    Ok(buf)
 }
 
 /// Parse raw stats message using postcard. Does NOT handle COBS frames.
@@ -136,6 +212,9 @@ fn should_exit() -> bool {
 
 /// Display stats in the terminal.
 fn render_stats(stats: &Stats) -> Result<()> {
+    if stats.is_default() {
+        return Ok(());
+    }
     execute!(io::stdout(), terminal::Clear(terminal::ClearType::All))?;
     if let Some(cpu) = &stats.cpu {
         render_cpu(cpu).context("render cpu table")?;

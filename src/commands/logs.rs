@@ -4,7 +4,7 @@ use firefly_types::{serial::Response, Encode};
 use std::time::Duration;
 
 pub fn cmd_logs(args: &LogsArgs) -> Result<()> {
-    let mut port = serialport::new(&args.port, 9600)
+    let mut port = serialport::new(&args.port, args.baud_rate)
         .timeout(Duration::from_millis(10))
         .open()
         .context("open the serial port")?;
@@ -39,7 +39,7 @@ pub fn cmd_logs(args: &LogsArgs) -> Result<()> {
 }
 
 // Given the binary stream so far, read the first COBS frame and return the rest of bytes.
-fn advance(chunk: &[u8]) -> (Vec<u8>, &[u8]) {
+pub(super) fn advance(chunk: &[u8]) -> (Vec<u8>, &[u8]) {
     // Skip the partial frame: all bytes before the separator.
     let maybe = chunk.iter().enumerate().find(|(_, b)| **b == 0x00);
     let Some((start, _)) = maybe else {

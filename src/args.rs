@@ -247,7 +247,13 @@ pub struct EmulatorArgs {
 }
 
 #[derive(Debug, Parser)]
-pub struct MonitorArgs {}
+pub struct MonitorArgs {
+    #[arg(long, default_value = None)]
+    pub port: Option<String>,
+
+    #[arg(long, default_value_t = 115_200)]
+    pub baud_rate: u32,
+}
 
 #[derive(Debug, Parser)]
 pub struct LogsArgs {
