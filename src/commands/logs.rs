@@ -40,11 +40,19 @@ pub fn cmd_logs(args: &LogsArgs) -> Result<()> {
     }
 }
 
+// Given the binary stream so far, read the first COBS frame and return the rest of bytes.
 fn advance(chunk: &[u8]) -> (Vec<u8>, &[u8]) {
+    // Skip the partial frame: all bytes before the separator.
+    let maybe = chunk.iter().enumerate().find(|(_, b)| **b == 0x00);
+    let Some((start, _)) = maybe else {
+        return (Vec::new(), chunk);
+    };
+    let chunk = &chunk[start..];
+
     let max_len = chunk.len();
     let mut out_buf = vec![0; max_len];
     let mut dec = cobs::CobsDecoder::new(&mut out_buf);
-    match dec.push(chunk) {
+    match dec.push(&chunk[1..]) {
         Ok(Some((n_out, n_in))) => {
             let msg = Vec::from(&out_buf[..n_out]);
             (msg, &chunk[n_in..])
