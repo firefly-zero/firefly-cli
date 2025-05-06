@@ -8,7 +8,7 @@ pub fn cmd_logs(args: &LogsArgs) -> Result<()> {
         .timeout(Duration::from_millis(10))
         .open()
         .context("open the serial port")?;
-    let mut prev_chunk = Vec::new();
+    let mut buf = Vec::new();
     println!("listening...");
     loop {
         let mut chunk = vec![0; 64];
@@ -22,16 +22,14 @@ pub fn cmd_logs(args: &LogsArgs) -> Result<()> {
             }
         };
 
-        let mut buf = prev_chunk;
         buf.extend_from_slice(&chunk[..n]);
         loop {
-            let (msg, rest) = advance(&buf);
-            if msg.is_empty() {
-                prev_chunk = Vec::from(rest);
+            let (frame, rest) = advance(&buf);
+            buf = Vec::from(rest);
+            if frame.is_empty() {
                 break;
             }
-            buf = Vec::from(rest);
-            let response = Response::decode(&msg).context("decode message")?;
+            let response = Response::decode(&frame).context("decode message")?;
             let Response::Log(log) = response else {
                 continue;
             };

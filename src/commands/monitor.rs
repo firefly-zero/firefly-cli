@@ -14,6 +14,7 @@ const RBORD: u16 = 21;
 const KB: u32 = 1024;
 const MB: u32 = 1024 * KB;
 
+#[derive(Default)]
 struct Stats {
     update: Option<serial::Fuel>,
     render: Option<serial::Fuel>,
@@ -22,58 +23,65 @@ struct Stats {
 }
 
 pub fn cmd_monitor(_vfs: &Path, args: &MonitorArgs) -> Result<()> {
-    execute!(io::stdout(), terminal::EnterAlternateScreen)?;
-    execute!(io::stdout(), cursor::Hide)?;
-    terminal::enable_raw_mode()?;
-    let res = run_monitor(args);
-    terminal::disable_raw_mode()?;
-    execute!(io::stdout(), terminal::LeaveAlternateScreen)?;
+    execute!(io::stdout(), terminal::EnterAlternateScreen).context("enter alt screen")?;
+    execute!(io::stdout(), cursor::Hide).context("hide cursor")?;
+    terminal::enable_raw_mode().context("enable raw mode")?;
+    let res = monitor_emulator(args);
+    terminal::disable_raw_mode().context("disable raw mode")?;
+    execute!(io::stdout(), terminal::LeaveAlternateScreen).context("leave alt screen")?;
     res
 }
 
-fn run_monitor(_args: &MonitorArgs) -> Result<()> {
-    let mut stream = connect_verbose()?;
-    let mut stats = Stats {
-        update: None,
-        render: None,
-        cpu: None,
-        mem: None,
-    };
+fn monitor_emulator(_args: &MonitorArgs) -> Result<()> {
+    let mut stream = connect_emulator()?;
+    let mut stats = Stats::default();
     loop {
         if should_exit() {
             return Ok(());
         }
-        let mut buf = vec![0; 64];
-        let size = stream.read(&mut buf).context("read response")?;
-        if size == 0 {
-            stream = connect().context("reconnecting")?;
-            continue;
-        }
-        let resp = serial::Response::decode(&buf[..size]).context("decode response")?;
-        match resp {
-            // TODO(@orsinium): display logs.
-            serial::Response::Log(_) | serial::Response::Cheat(_) => {}
-            serial::Response::Fuel(cb, fuel) => {
-                use serial::Callback::*;
-                match cb {
-                    Update => stats.update = Some(fuel),
-                    Render => stats.render = Some(fuel),
-                    RenderLine | Cheat | Boot => {}
-                }
-            }
-            serial::Response::CPU(cpu) => {
-                if cpu.total_ns > 0 {
-                    stats.cpu = Some(cpu);
-                }
-            }
-            serial::Response::Memory(mem) => stats.mem = Some(mem),
-        };
+        stream = read_emulator(stream, &mut stats)?;
         render_stats(&stats).context("render stats")?;
     }
 }
 
+/// Receive and parse stats from emulator.
+fn read_emulator(mut stream: TcpStream, stats: &mut Stats) -> Result<TcpStream> {
+    let mut buf = vec![0; 64];
+    let size = stream.read(&mut buf).context("read response")?;
+    if size == 0 {
+        let stream = connect().context("reconnecting")?;
+        return Ok(stream);
+    }
+    parse_stats(stats, &buf[..size])?;
+    Ok(stream)
+}
+
+/// Parse raw stats message using postcard. Does NOT handle COBS frames.
+fn parse_stats(stats: &mut Stats, buf: &[u8]) -> Result<()> {
+    let resp = serial::Response::decode(buf).context("decode response")?;
+    match resp {
+        // TODO(@orsinium): display logs.
+        serial::Response::Log(_) | serial::Response::Cheat(_) => {}
+        serial::Response::Fuel(cb, fuel) => {
+            use serial::Callback::*;
+            match cb {
+                Update => stats.update = Some(fuel),
+                Render => stats.render = Some(fuel),
+                RenderLine | Cheat | Boot => {}
+            }
+        }
+        serial::Response::CPU(cpu) => {
+            if cpu.total_ns > 0 {
+                stats.cpu = Some(cpu);
+            }
+        }
+        serial::Response::Memory(mem) => stats.mem = Some(mem),
+    };
+    Ok(())
+}
+
 /// Connect to a running emulator and enable stats.
-fn connect_verbose() -> Result<TcpStream, anyhow::Error> {
+fn connect_emulator() -> Result<TcpStream, anyhow::Error> {
     execute!(
         io::stdout(),
         terminal::Clear(terminal::ClearType::All),
@@ -126,6 +134,7 @@ fn should_exit() -> bool {
     false
 }
 
+/// Display stats in the terminal.
 fn render_stats(stats: &Stats) -> Result<()> {
     execute!(io::stdout(), terminal::Clear(terminal::ClearType::All))?;
     if let Some(cpu) = &stats.cpu {
