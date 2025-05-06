@@ -242,6 +242,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "67ba02a97a2bd10f4b59b25c7973101c79642302776489e030cd13cdab09ed15"
 
 [[package]]
+name = "cobs"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0fa961b519f0b462e3a3b4a34b64d119eeaca1d59af726fe450bbba07a9fc0a1"
+dependencies = [
+ "thiserror 2.0.11",
+]
+
+[[package]]
 name = "colorchoice"
 version = "1.0.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -460,9 +469,9 @@ dependencies = [
 
 [[package]]
 name = "firefly-types"
-version = "0.5.0"
+version = "0.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fc84abd0f8de79086fecf404c30fc8cd266e72bb16eb92803f3e7e2be728a223"
+checksum = "e87d85fdb19db129d33583d4d149f5e4dea8ca5e6799b0ef619e71a470ecadd0"
 dependencies = [
  "postcard",
  "serde",
@@ -475,6 +484,7 @@ dependencies = [
  "anyhow",
  "chrono",
  "clap",
+ "cobs 0.3.0",
  "crossterm",
  "data-encoding",
  "directories",
@@ -1087,7 +1097,7 @@ version = "1.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "170a2601f67cc9dba8edd8c4870b15f71a6a2dc196daec8c83f72b59dff628a8"
 dependencies = [
- "cobs",
+ "cobs 0.2.3",
  "embedded-io 0.4.0",
  "embedded-io 0.6.1",
  "serde",

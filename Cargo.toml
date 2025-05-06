@@ -24,6 +24,8 @@ anyhow = "1.0.95"
 chrono = { version = "0.4.39", default-features = false, features = ["clock"] }
 # Framework for parsing CLI args
 clap = { version = "4.5.29", features = ["derive"] }
+# Detect message boundaries in serial port output from device
+cobs = "0.3.0"
 # TUI for the "monitor" command, colored terminal output
 crossterm = "0.28.1"
 # Convert binary hash into hex
@@ -31,7 +33,7 @@ data-encoding = "2.8.0"
 # Find the best place to sotre the VFS
 directories = "6.0.0"
 # Serialize app config into meta file in the ROM
-firefly-types = { version = "0.5.0" }
+firefly-types = { version = "0.5.1" }
 # Decode wav files
 hound = "3.5.1"
 # Parse PNG images

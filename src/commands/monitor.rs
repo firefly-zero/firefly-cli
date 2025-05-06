@@ -51,7 +51,8 @@ fn run_monitor(_args: &MonitorArgs) -> Result<()> {
         }
         let resp = serial::Response::decode(&buf[..size]).context("decode response")?;
         match resp {
-            serial::Response::Cheat(_) => {}
+            // TODO(@orsinium): display logs.
+            serial::Response::Log(_) | serial::Response::Cheat(_) => {}
             serial::Response::Fuel(cb, fuel) => {
                 use serial::Callback::*;
                 match cb {
