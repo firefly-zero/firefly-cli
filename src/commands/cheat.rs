@@ -1,6 +1,7 @@
 use crate::args::CheatArgs;
 use crate::config::Config;
 use crate::net::connect;
+use crate::serial::read_cobs_frame;
 use anyhow::{bail, Context, Result};
 use firefly_types::{serial, Encode};
 use std::io::{Read, Write};
@@ -44,7 +45,7 @@ pub fn cheat_emulator(args: &CheatArgs) -> Result<()> {
 pub fn cheat_device(args: &CheatArgs, port: &str) -> Result<()> {
     println!("⏳️  connecting...");
     let mut stream = serialport::new(port, args.baud_rate)
-        .timeout(Duration::from_secs(1))
+        .timeout(Duration::from_secs(5))
         .open()
         .context("open the serial port")?;
 
@@ -55,13 +56,23 @@ pub fn cheat_device(args: &CheatArgs, port: &str) -> Result<()> {
         stream.flush().context("flush request")?;
     }
 
+    println!("⌛  waiting for response...");
+    let mut buf = Vec::new();
     for _ in 0..5 {
-        let mut buf = vec![0; 64];
-        stream.read(&mut buf).context("read response")?;
-        let resp = serial::Response::decode(&buf).context("decode response")?;
-        if let serial::Response::Cheat(result) = resp {
-            println!("✅  response: {result}");
-            return Ok(());
+        let mut chunk = vec![0; 64];
+        let n = stream.read(&mut chunk).context("read response")?;
+        buf.extend_from_slice(&chunk[..n]);
+        loop {
+            let (frame, rest) = read_cobs_frame(&buf);
+            buf = Vec::from(rest);
+            if frame.is_empty() {
+                break;
+            }
+            let response = serial::Response::decode(&chunk).context("decode response")?;
+            if let serial::Response::Cheat(result) = response {
+                println!("✅  response: {result}");
+                return Ok(());
+            }
         }
     }
     bail!("timed out waiting for response")
