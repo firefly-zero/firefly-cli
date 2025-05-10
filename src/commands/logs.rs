@@ -1,4 +1,4 @@
-use crate::args::LogsArgs;
+use crate::{args::LogsArgs, serial::read_cobs_frame};
 use anyhow::{Context, Result};
 use firefly_types::{serial::Response, Encode};
 use std::time::Duration;
@@ -24,7 +24,7 @@ pub fn cmd_logs(args: &LogsArgs) -> Result<()> {
 
         buf.extend_from_slice(&chunk[..n]);
         loop {
-            let (frame, rest) = advance(&buf);
+            let (frame, rest) = read_cobs_frame(&buf);
             buf = Vec::from(rest);
             if frame.is_empty() {
                 break;
@@ -35,26 +35,5 @@ pub fn cmd_logs(args: &LogsArgs) -> Result<()> {
                 Err(err) => println!("invalid message: {err}"),
             }
         }
-    }
-}
-
-// Given the binary stream so far, read the first COBS frame and return the rest of bytes.
-pub(super) fn advance(chunk: &[u8]) -> (Vec<u8>, &[u8]) {
-    let max_len = chunk.len();
-    let mut out_buf = vec![0; max_len];
-    let mut dec = cobs::CobsDecoder::new(&mut out_buf);
-    match dec.push(chunk) {
-        Ok(Some((n_out, n_in))) => {
-            let msg = Vec::from(&out_buf[..n_out]);
-            (msg, &chunk[n_in..])
-        }
-        Ok(None) => (Vec::new(), chunk),
-        Err(err) => match err {
-            cobs::DecodeError::EmptyFrame => (Vec::new(), &[]),
-            cobs::DecodeError::InvalidFrame { decoded_bytes } => {
-                (Vec::new(), &chunk[decoded_bytes..])
-            }
-            cobs::DecodeError::TargetBufTooSmall => unreachable!(),
-        },
     }
 }

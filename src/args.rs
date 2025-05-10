@@ -248,6 +248,7 @@ pub struct EmulatorArgs {
 
 #[derive(Debug, Parser)]
 pub struct MonitorArgs {
+    /// Path to serial port to connect to a running device.
     #[arg(long, default_value = None)]
     pub port: Option<String>,
 
@@ -257,9 +258,11 @@ pub struct MonitorArgs {
 
 #[derive(Debug, Parser)]
 pub struct LogsArgs {
+    /// Path to serial port to connect to a running device.
     #[arg(long)]
     pub port: String,
 
+    /// The serial port Baud rate.
     #[arg(long, default_value_t = 115_200)]
     pub baud_rate: u32,
 }
@@ -290,6 +293,13 @@ pub struct CheatArgs {
     /// Either an integer, boolean, or a character.
     #[arg()]
     pub value: String,
+
+    /// Path to serial port to connect to a running device.
+    #[arg(long, default_value = None)]
+    pub port: Option<String>,
+
+    #[arg(long, default_value_t = 115_200)]
+    pub baud_rate: u32,
 
     /// Path to the project root.
     #[arg(default_value = ".")]

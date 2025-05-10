@@ -1,6 +1,6 @@
-use super::logs::advance;
 use crate::args::MonitorArgs;
 use crate::net::connect;
+use crate::serial::read_cobs_frame;
 use anyhow::{Context, Result};
 use crossterm::{cursor, event, execute, style, terminal};
 use firefly_types::{serial, Encode};
@@ -124,7 +124,7 @@ fn read_device(port: &mut Port, mut buf: Vec<u8>, stats: &mut Stats) -> Result<V
     stats.last_msg = Some(Instant::now());
     buf.extend_from_slice(&chunk[..n]);
     loop {
-        let (frame, rest) = advance(&buf);
+        let (frame, rest) = read_cobs_frame(&buf);
         buf = Vec::from(rest);
         if frame.is_empty() {
             break;

@@ -23,6 +23,7 @@ mod images;
 mod langs;
 mod net;
 mod repl_helper;
+mod serial;
 mod vfs;
 mod wasm;
 
