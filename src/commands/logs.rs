@@ -29,28 +29,21 @@ pub fn cmd_logs(args: &LogsArgs) -> Result<()> {
             if frame.is_empty() {
                 break;
             }
-            let response = Response::decode(&frame).context("decode message")?;
-            let Response::Log(log) = response else {
-                continue;
+            match Response::decode(&frame) {
+                Ok(Response::Log(log)) => println!("{log}"),
+                Ok(_) => (),
+                Err(err) => println!("invalid message: {err}"),
             };
-            println!("{log}");
         }
     }
 }
 
 // Given the binary stream so far, read the first COBS frame and return the rest of bytes.
 pub(super) fn advance(chunk: &[u8]) -> (Vec<u8>, &[u8]) {
-    // Skip the partial frame: all bytes before the separator.
-    let maybe = chunk.iter().enumerate().find(|(_, b)| **b == 0x00);
-    let Some((start, _)) = maybe else {
-        return (Vec::new(), chunk);
-    };
-    let chunk = &chunk[start..];
-
     let max_len = chunk.len();
     let mut out_buf = vec![0; max_len];
     let mut dec = cobs::CobsDecoder::new(&mut out_buf);
-    match dec.push(&chunk[1..]) {
+    match dec.push(chunk) {
         Ok(Some((n_out, n_in))) => {
             let msg = Vec::from(&out_buf[..n_out]);
             (msg, &chunk[n_in..])
