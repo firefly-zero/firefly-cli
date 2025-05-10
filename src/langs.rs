@@ -180,11 +180,11 @@ fn find_rust_result(root: &Path) -> anyhow::Result<PathBuf> {
     let release_dir = target_dir.join("wasm32-unknown-unknown").join("release");
     if let Some(path) = find_wasm_binary(&release_dir)? {
         return Ok(path);
-    };
+    }
     let examples_dir = release_dir.join("examples");
     if let Some(path) = find_wasm_binary(&examples_dir)? {
         return Ok(path);
-    };
+    }
     bail!("cannot find wasm binary")
 }
 
@@ -246,7 +246,7 @@ fn build_cpp_inner(config: &Config, bin_name: &str, fname: &str) -> anyhow::Resu
         in_path = in_path_src;
         if !in_path.exists() {
             bail!("file {fname} not found");
-        };
+        }
     }
     let out_path = config.rom_path.join(BIN);
     let wasi_sysroot = wasi_sdk.join("share").join("wasi-sysroot");
@@ -372,6 +372,8 @@ pub fn check_output(output: &Output) -> anyhow::Result<()> {
 
 /// Run the given binary with the given arg and return an error if it is not installed.
 pub fn check_installed(lang: &str, bin: &str, arg: &str) -> anyhow::Result<()> {
+    use std::fmt::Write;
+
     let output = Command::new(bin).args([arg]).output();
     if let Ok(output) = output {
         if output.status.success() {
@@ -380,9 +382,7 @@ pub fn check_installed(lang: &str, bin: &str, arg: &str) -> anyhow::Result<()> {
     }
     let mut msg =
         format!("You're trying to build a {lang} app but you don't have {bin} installed.\n");
-    msg.push_str(&format!(
-        "Please, follow the getting started guide for {lang}:\n"
-    ));
-    msg.push_str("  https://docs.fireflyzero.com/dev/getting-started/");
+    _ = writeln!(msg, "Please, follow the getting started guide for {lang}:");
+    _ = write!(msg, "  https://docs.fireflyzero.com/dev/getting-started/");
     bail!(msg);
 }

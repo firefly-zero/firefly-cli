@@ -19,7 +19,7 @@ pub fn cmd_new(args: &NewArgs) -> Result<()> {
     let root = Path::new(&args.name);
     if root.exists() {
         bail!("the directory already exists");
-    };
+    }
     let lang = parse_lang(&args.lang)?;
     match lang {
         Lang::Go => new_go(&args.name).context("new Go project")?,
@@ -38,15 +38,17 @@ pub fn cmd_new(args: &NewArgs) -> Result<()> {
 
 /// Create and dump firefly.toml config.
 fn write_config(name: &str) -> Result<()> {
+    use std::fmt::Write;
+
     let root = Path::new(name);
     let config_path = root.join("firefly.toml");
     let username = get_username().unwrap_or_else(|| "joearms".to_string());
 
     let mut config = String::new();
-    config.push_str(&format!("author_id = \"{username}\"\n"));
-    config.push_str(&format!("app_id = \"{name}\"\n"));
-    config.push_str(&format!("author_name = \"{}\"\n", to_titlecase(&username)));
-    config.push_str(&format!("app_name = \"{}\"\n", to_titlecase(name)));
+    _ = writeln!(config, "author_id = \"{username}\"");
+    _ = writeln!(config, "app_id = \"{name}\"");
+    _ = writeln!(config, "author_name = \"{}\"", to_titlecase(&username));
+    _ = writeln!(config, "app_name = \"{}\"", to_titlecase(name));
 
     std::fs::write(config_path, config).context("write config")?;
     Ok(())

@@ -33,7 +33,7 @@ pub fn cmd_logs(args: &LogsArgs) -> Result<()> {
                 Ok(Response::Log(log)) => println!("{log}"),
                 Ok(_) => (),
                 Err(err) => println!("invalid message: {err}"),
-            };
+            }
         }
     }
 }

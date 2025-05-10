@@ -158,7 +158,7 @@ pub fn cmd_key_add(vfs: &Path, args: &KeyArgs) -> anyhow::Result<()> {
 
 /// Download the key from the given URL.
 fn download_key(url: &str) -> anyhow::Result<(String, Vec<u8>)> {
-    let file_name = url.split('/').last().unwrap();
+    let file_name = url.split('/').next_back().unwrap();
     let Some(author) = file_name.strip_suffix(".der") else {
         bail!("the key file must have .der extension")
     };
@@ -195,7 +195,7 @@ fn save_raw_key(vfs: &Path, author: &str, raw_key: &[u8]) -> anyhow::Result<()> 
     } else {
         RsaPublicKey::from_pkcs1_der(raw_key).context("parse public key")?;
         fs::write(pub_path, raw_key).context("write public key")?;
-    };
+    }
     Ok(())
 }
 
