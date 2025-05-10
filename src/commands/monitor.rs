@@ -1,3 +1,4 @@
+use super::logs::advance;
 use crate::args::MonitorArgs;
 use crate::net::connect;
 use anyhow::{Context, Result};
@@ -6,7 +7,7 @@ use firefly_types::{serial, Encode};
 use std::io::{self, Read, Write};
 use std::net::TcpStream;
 use std::path::Path;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 const COL1: u16 = 8;
 const COL2: u16 = 16;
@@ -14,65 +15,176 @@ const RBORD: u16 = 21;
 const KB: u32 = 1024;
 const MB: u32 = 1024 * KB;
 
+type Port = Box<dyn serialport::SerialPort>;
+
+#[derive(Default)]
 struct Stats {
     update: Option<serial::Fuel>,
     render: Option<serial::Fuel>,
     cpu: Option<serial::CPU>,
     mem: Option<serial::Memory>,
+    /// The last reported log record.
+    log: Option<String>,
+    /// When the last message was received.
+    last_msg: Option<Instant>,
+}
+
+impl Stats {
+    const fn is_default(&self) -> bool {
+        self.update.is_none()
+            && self.render.is_none()
+            && self.cpu.is_none()
+            && self.mem.is_none()
+            && self.log.is_none()
+    }
 }
 
 pub fn cmd_monitor(_vfs: &Path, args: &MonitorArgs) -> Result<()> {
-    execute!(io::stdout(), terminal::EnterAlternateScreen)?;
-    execute!(io::stdout(), cursor::Hide)?;
-    terminal::enable_raw_mode()?;
-    let res = run_monitor(args);
-    terminal::disable_raw_mode()?;
-    execute!(io::stdout(), terminal::LeaveAlternateScreen)?;
+    execute!(io::stdout(), terminal::EnterAlternateScreen).context("enter alt screen")?;
+    execute!(io::stdout(), cursor::Hide).context("hide cursor")?;
+    terminal::enable_raw_mode().context("enable raw mode")?;
+    let res = if let Some(port) = &args.port {
+        monitor_device(port, args)
+    } else {
+        monitor_emulator()
+    };
+    terminal::disable_raw_mode().context("disable raw mode")?;
+    execute!(io::stdout(), terminal::LeaveAlternateScreen).context("leave alt screen")?;
     res
 }
 
-fn run_monitor(_args: &MonitorArgs) -> Result<()> {
-    let mut stream = connect_verbose()?;
-    let mut stats = Stats {
-        update: None,
-        render: None,
-        cpu: None,
-        mem: None,
-    };
+fn monitor_device(port: &str, args: &MonitorArgs) -> Result<()> {
+    let mut port = connect_device(port, args)?;
+    let mut stats = Stats::default();
+    request_device_stats(&mut port, &mut stats)?;
+    let mut buf = Vec::new();
     loop {
         if should_exit() {
             return Ok(());
         }
-        let mut buf = vec![0; 64];
-        let size = stream.read(&mut buf).context("read response")?;
-        if size == 0 {
-            stream = connect().context("reconnecting")?;
-            continue;
-        }
-        let resp = serial::Response::decode(&buf[..size]).context("decode response")?;
-        match resp {
-            serial::Response::Cheat(_) => {}
-            serial::Response::Fuel(cb, fuel) => {
-                use serial::Callback::*;
-                match cb {
-                    Update => stats.update = Some(fuel),
-                    Render => stats.render = Some(fuel),
-                    RenderLine | Cheat | Boot => {}
-                }
-            }
-            serial::Response::CPU(cpu) => {
-                if cpu.total_ns > 0 {
-                    stats.cpu = Some(cpu);
-                }
-            }
-            serial::Response::Memory(mem) => stats.mem = Some(mem),
-        };
+        buf = read_device(&mut port, buf, &mut stats)?;
         render_stats(&stats).context("render stats")?;
     }
 }
 
+/// Connect to running emulator using serial USB port (JTag-over-USB).
+fn connect_device(port: &str, args: &MonitorArgs) -> Result<Port> {
+    let port = serialport::new(port, args.baud_rate)
+        .timeout(Duration::from_millis(10))
+        .open()
+        .context("open the serial port")?;
+
+    execute!(
+        io::stdout(),
+        terminal::Clear(terminal::ClearType::All),
+        cursor::MoveTo(0, 0),
+        style::Print("waiting for stats..."),
+    )?;
+    Ok(port)
+}
+
+fn monitor_emulator() -> Result<()> {
+    let mut stream = connect_emulator()?;
+    let mut stats = Stats::default();
+    loop {
+        if should_exit() {
+            return Ok(());
+        }
+        stream = read_emulator(stream, &mut stats)?;
+        render_stats(&stats).context("render stats")?;
+    }
+}
+
+/// Receive and parse one stats message from emulator.
+fn read_emulator(mut stream: TcpStream, stats: &mut Stats) -> Result<TcpStream> {
+    let mut buf = vec![0; 64];
+    let size = stream.read(&mut buf).context("read response")?;
+    if size == 0 {
+        let stream = connect().context("reconnecting")?;
+        return Ok(stream);
+    }
+    parse_stats(stats, &buf[..size])?;
+    Ok(stream)
+}
+
+/// Receive and parse one stats message from device.
+fn read_device(port: &mut Port, mut buf: Vec<u8>, stats: &mut Stats) -> Result<Vec<u8>> {
+    let mut chunk = vec![0; 64];
+    let n = match port.read(chunk.as_mut_slice()) {
+        Ok(n) => n,
+        Err(err) => {
+            if err.kind() == std::io::ErrorKind::TimedOut {
+                request_device_stats(port, stats)?;
+                return Ok(buf);
+            }
+            return Err(err).context("read from serial port");
+        }
+    };
+
+    stats.last_msg = Some(Instant::now());
+    buf.extend_from_slice(&chunk[..n]);
+    loop {
+        let (frame, rest) = advance(&buf);
+        buf = Vec::from(rest);
+        if frame.is_empty() {
+            break;
+        }
+        parse_stats(stats, &frame)?;
+    }
+    Ok(buf)
+}
+
+/// Send a message into the running device requesting to enable stats collection.
+fn request_device_stats(port: &mut Port, stats: &mut Stats) -> Result<()> {
+    let now = Instant::now();
+    let should_update = match stats.last_msg {
+        Some(last_msg) => {
+            let elapsed = now - last_msg;
+            let deadline = Duration::from_secs(2);
+            elapsed > deadline
+        }
+        None => true,
+    };
+    if should_update {
+        stats.last_msg = Some(now);
+        let req = serial::Request::Stats(true);
+        let buf = req.encode_vec().context("encode request")?;
+        port.write_all(&buf[..]).context("send request")?;
+        port.flush().context("flush request")?;
+    };
+    Ok(())
+}
+
+/// Parse raw stats message using postcard. Does NOT handle COBS frames.
+fn parse_stats(stats: &mut Stats, buf: &[u8]) -> Result<()> {
+    let resp = serial::Response::decode(buf).context("decode response")?;
+    match resp {
+        serial::Response::Cheat(_) => {}
+        serial::Response::Log(log) => {
+            let now = chrono::Local::now().format("%H:%M:%S");
+            let log = format!("[{now}] {log}");
+            stats.log = Some(log);
+        }
+        serial::Response::Fuel(cb, fuel) => {
+            use serial::Callback::*;
+            match cb {
+                Update => stats.update = Some(fuel),
+                Render => stats.render = Some(fuel),
+                RenderLine | Cheat | Boot => {}
+            }
+        }
+        serial::Response::CPU(cpu) => {
+            if cpu.total_ns > 0 {
+                stats.cpu = Some(cpu);
+            }
+        }
+        serial::Response::Memory(mem) => stats.mem = Some(mem),
+    };
+    Ok(())
+}
+
 /// Connect to a running emulator and enable stats.
-fn connect_verbose() -> Result<TcpStream, anyhow::Error> {
+fn connect_emulator() -> Result<TcpStream, anyhow::Error> {
     execute!(
         io::stdout(),
         terminal::Clear(terminal::ClearType::All),
@@ -125,7 +237,11 @@ fn should_exit() -> bool {
     false
 }
 
+/// Display stats in the terminal.
 fn render_stats(stats: &Stats) -> Result<()> {
+    if stats.is_default() {
+        return Ok(());
+    }
     execute!(io::stdout(), terminal::Clear(terminal::ClearType::All))?;
     if let Some(cpu) = &stats.cpu {
         render_cpu(cpu).context("render cpu table")?;
@@ -138,6 +254,9 @@ fn render_stats(stats: &Stats) -> Result<()> {
     };
     if let Some(memory) = &stats.mem {
         render_memory(memory).context("render memory table")?;
+    };
+    if let Some(log) = &stats.log {
+        render_log(log).context("render logs")?;
     };
     Ok(())
 }
@@ -253,6 +372,11 @@ fn render_memory(memory: &serial::Memory) -> anyhow::Result<()> {
         cursor::MoveTo(X, Y + 3),
         style::Print("└────────────────────┘"),
     )?;
+    Ok(())
+}
+
+fn render_log(log: &str) -> anyhow::Result<()> {
+    execute!(io::stdout(), cursor::MoveTo(3, 13), style::Print(log),)?;
     Ok(())
 }
 

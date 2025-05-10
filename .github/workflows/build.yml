@@ -85,8 +85,8 @@ jobs:
           cargo -V
           rustc -V
 
-      - name: Build
-        shell: bash
+      - run: sudo apt install -qq -y libudev-dev
+      - shell: bash
         run: $BUILD_CMD build --release --target=${{ matrix.job.target }}
 
       - name: Set binary name & path
