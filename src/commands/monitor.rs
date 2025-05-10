@@ -23,11 +23,16 @@ struct Stats {
     render: Option<serial::Fuel>,
     cpu: Option<serial::CPU>,
     mem: Option<serial::Memory>,
+    log: Option<String>,
 }
 
 impl Stats {
     const fn is_default(&self) -> bool {
-        self.update.is_none() && self.render.is_none() && self.cpu.is_none() && self.mem.is_none()
+        self.update.is_none()
+            && self.render.is_none()
+            && self.cpu.is_none()
+            && self.mem.is_none()
+            && self.log.is_none()
     }
 }
 
@@ -136,8 +141,12 @@ fn read_device(port: &mut Port, mut buf: Vec<u8>, stats: &mut Stats) -> Result<V
 fn parse_stats(stats: &mut Stats, buf: &[u8]) -> Result<()> {
     let resp = serial::Response::decode(buf).context("decode response")?;
     match resp {
-        // TODO(@orsinium): display logs.
-        serial::Response::Log(_) | serial::Response::Cheat(_) => {}
+        serial::Response::Cheat(_) => {}
+        serial::Response::Log(log) => {
+            let now = chrono::Local::now().format("%H:%M:%S");
+            let log = format!("[{now}] {log}");
+            stats.log = Some(log);
+        }
         serial::Response::Fuel(cb, fuel) => {
             use serial::Callback::*;
             match cb {
@@ -227,6 +236,9 @@ fn render_stats(stats: &Stats) -> Result<()> {
     };
     if let Some(memory) = &stats.mem {
         render_memory(memory).context("render memory table")?;
+    };
+    if let Some(log) = &stats.log {
+        render_log(log).context("render logs")?;
     };
     Ok(())
 }
@@ -342,6 +354,11 @@ fn render_memory(memory: &serial::Memory) -> anyhow::Result<()> {
         cursor::MoveTo(X, Y + 3),
         style::Print("└────────────────────┘"),
     )?;
+    Ok(())
+}
+
+fn render_log(log: &str) -> anyhow::Result<()> {
+    execute!(io::stdout(), cursor::MoveTo(3, 13), style::Print(log),)?;
     Ok(())
 }
 
