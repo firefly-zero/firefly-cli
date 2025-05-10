@@ -38,7 +38,7 @@ pub fn cmd_cheat(args: &CheatArgs) -> Result<()> {
 fn parse_command(raw: &str, root: &Path) -> Result<i32> {
     if let Ok(n) = raw.parse::<i32>() {
         return Ok(n);
-    };
+    }
     let config = Config::load(root.into(), root).context("load project config")?;
     let Some(cheats) = config.cheats else {
         bail!("firefly.toml doesn't have [cheats]")

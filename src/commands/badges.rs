@@ -46,7 +46,7 @@ fn display_badges(
                 continue;
             }
             print!("{}", "[hidden] ".grey());
-        };
+        }
         println!("#{id} {} ({} XP)", badge.name.cyan(), badge.xp);
         println!("{}", badge.descr);
         let emoji = if progress.earned() {

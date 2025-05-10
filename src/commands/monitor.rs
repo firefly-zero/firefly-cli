@@ -151,7 +151,7 @@ fn request_device_stats(port: &mut Port, stats: &mut Stats) -> Result<()> {
         let buf = req.encode_vec().context("encode request")?;
         port.write_all(&buf[..]).context("send request")?;
         port.flush().context("flush request")?;
-    };
+    }
     Ok(())
 }
 
@@ -179,7 +179,7 @@ fn parse_stats(stats: &mut Stats, buf: &[u8]) -> Result<()> {
             }
         }
         serial::Response::Memory(mem) => stats.mem = Some(mem),
-    };
+    }
     Ok(())
 }
 
@@ -245,19 +245,19 @@ fn render_stats(stats: &Stats) -> Result<()> {
     execute!(io::stdout(), terminal::Clear(terminal::ClearType::All))?;
     if let Some(cpu) = &stats.cpu {
         render_cpu(cpu).context("render cpu table")?;
-    };
+    }
     if let Some(fuel) = &stats.update {
         render_fuel(1, 7, "update", fuel).context("render fuel table")?;
-    };
+    }
     if let Some(fuel) = &stats.render {
         render_fuel(24, 7, "render", fuel).context("render fuel table")?;
-    };
+    }
     if let Some(memory) = &stats.mem {
         render_memory(memory).context("render memory table")?;
-    };
+    }
     if let Some(log) = &stats.log {
         render_log(log).context("render logs")?;
-    };
+    }
     Ok(())
 }
 

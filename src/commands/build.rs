@@ -165,7 +165,7 @@ fn remove_old_files(root: &Path) -> anyhow::Result<()> {
                 continue;
             }
             fs::remove_file(entry.path())?;
-        };
+        }
     }
     Ok(())
 }

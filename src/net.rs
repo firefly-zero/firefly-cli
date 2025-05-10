@@ -16,7 +16,7 @@ pub fn connect() -> Result<TcpStream> {
     if maybe_stream.is_err() {
         sleep(Duration::from_secs(1));
         maybe_stream = TcpStream::connect(&addrs[..]);
-    };
+    }
     let stream = maybe_stream.context("connect to emulator")?;
     Ok(stream)
 }

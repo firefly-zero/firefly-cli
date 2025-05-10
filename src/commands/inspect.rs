@@ -133,7 +133,7 @@ fn inspect_images(rom_path: &Path) -> anyhow::Result<Vec<ImageStats>> {
         let entry = entry?;
         if let Some(stat) = inspect_image(&entry.path()) {
             stats.push(stat);
-        };
+        }
     }
     Ok(stats)
 }
@@ -203,7 +203,7 @@ fn inspect_audios(rom_path: &Path) -> anyhow::Result<Vec<AudioStats>> {
         let entry = entry?;
         if let Some(stat) = inspect_audio(&entry.path()) {
             stats.push(stat);
-        };
+        }
     }
     Ok(stats)
 }
