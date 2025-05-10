@@ -7,7 +7,7 @@ use firefly_types::{serial, Encode};
 use std::io::{self, Read, Write};
 use std::net::TcpStream;
 use std::path::Path;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 const COL1: u16 = 8;
 const COL2: u16 = 16;
@@ -23,7 +23,10 @@ struct Stats {
     render: Option<serial::Fuel>,
     cpu: Option<serial::CPU>,
     mem: Option<serial::Memory>,
+    /// The last reported log record.
     log: Option<String>,
+    /// When the last message was received.
+    last_msg: Option<Instant>,
 }
 
 impl Stats {
@@ -53,6 +56,7 @@ pub fn cmd_monitor(_vfs: &Path, args: &MonitorArgs) -> Result<()> {
 fn monitor_device(port: &str, args: &MonitorArgs) -> Result<()> {
     let mut port = connect_device(port, args)?;
     let mut stats = Stats::default();
+    request_device_stats(&mut port, &mut stats)?;
     let mut buf = Vec::new();
     loop {
         if should_exit() {
@@ -65,7 +69,7 @@ fn monitor_device(port: &str, args: &MonitorArgs) -> Result<()> {
 
 /// Connect to running emulator using serial USB port (JTag-over-USB).
 fn connect_device(port: &str, args: &MonitorArgs) -> Result<Port> {
-    let mut port = serialport::new(port, args.baud_rate)
+    let port = serialport::new(port, args.baud_rate)
         .timeout(Duration::from_millis(10))
         .open()
         .context("open the serial port")?;
@@ -76,15 +80,6 @@ fn connect_device(port: &str, args: &MonitorArgs) -> Result<Port> {
         cursor::MoveTo(0, 0),
         style::Print("waiting for stats..."),
     )?;
-
-    // enable stats collection
-    {
-        let req = serial::Request::Stats(true);
-        let buf = req.encode_vec().context("encode request")?;
-        port.write_all(&buf[..]).context("send request")?;
-        port.flush().context("flush request")?;
-    }
-
     Ok(port)
 }
 
@@ -119,12 +114,14 @@ fn read_device(port: &mut Port, mut buf: Vec<u8>, stats: &mut Stats) -> Result<V
         Ok(n) => n,
         Err(err) => {
             if err.kind() == std::io::ErrorKind::TimedOut {
+                request_device_stats(port, stats)?;
                 return Ok(buf);
             }
             return Err(err).context("read from serial port");
         }
     };
 
+    stats.last_msg = Some(Instant::now());
     buf.extend_from_slice(&chunk[..n]);
     loop {
         let (frame, rest) = advance(&buf);
@@ -135,6 +132,27 @@ fn read_device(port: &mut Port, mut buf: Vec<u8>, stats: &mut Stats) -> Result<V
         parse_stats(stats, &frame)?;
     }
     Ok(buf)
+}
+
+/// Send a message into the running device requesting to enable stats collection.
+fn request_device_stats(port: &mut Port, stats: &mut Stats) -> Result<()> {
+    let now = Instant::now();
+    let should_update = match stats.last_msg {
+        Some(last_msg) => {
+            let elapsed = now - last_msg;
+            let deadline = Duration::from_secs(2);
+            elapsed > deadline
+        }
+        None => true,
+    };
+    if should_update {
+        stats.last_msg = Some(now);
+        let req = serial::Request::Stats(true);
+        let buf = req.encode_vec().context("encode request")?;
+        port.write_all(&buf[..]).context("send request")?;
+        port.flush().context("flush request")?;
+    };
+    Ok(())
 }
 
 /// Parse raw stats message using postcard. Does NOT handle COBS frames.
