@@ -1,5 +1,8 @@
-use anyhow::Result;
-use firefly_types::{serial::Response, Encode};
+use anyhow::{Context, Result};
+use firefly_types::{
+    serial::{Request, Response},
+    Encode,
+};
 use serialport::SerialPort;
 
 // Given the binary stream so far, read the first COBS frame and return the rest of bytes.
@@ -23,13 +26,13 @@ pub fn read_cobs_frame(chunk: &[u8]) -> (Vec<u8>, &[u8]) {
     }
 }
 
-pub struct SerialStream<'a> {
-    port: Box<dyn SerialPort + 'a>,
+pub struct SerialStream {
+    port: Box<dyn SerialPort + 'static>,
     buf: Vec<u8>,
 }
 
-impl<'a> SerialStream<'a> {
-    pub fn new(port: Box<dyn SerialPort + 'a>) -> Self {
+impl SerialStream {
+    pub fn new(port: Box<dyn SerialPort + 'static>) -> Self {
         Self {
             port,
             buf: Vec::new(),
@@ -40,6 +43,13 @@ impl<'a> SerialStream<'a> {
         let mut chunk = vec![0; 64];
         let n = self.port.read(&mut chunk)?;
         self.buf.extend_from_slice(&chunk[..n]);
+        Ok(())
+    }
+
+    pub fn send(&mut self, req: &Request) -> Result<()> {
+        let buf = req.encode_vec().context("encode request")?;
+        self.port.write_all(&buf[..]).context("send request")?;
+        self.port.flush().context("flush request")?;
         Ok(())
     }
 
@@ -55,4 +65,11 @@ impl<'a> SerialStream<'a> {
             return Ok(response);
         }
     }
+}
+
+pub fn is_timeout(err: &anyhow::Error) -> bool {
+    if let Some(err) = err.downcast_ref::<std::io::Error>() {
+        return err.kind() == std::io::ErrorKind::TimedOut;
+    }
+    false
 }
