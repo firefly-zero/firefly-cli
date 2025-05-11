@@ -1,6 +1,6 @@
-use super::logs::advance;
 use crate::args::MonitorArgs;
 use crate::net::connect;
+use crate::serial::{is_timeout, SerialStream};
 use anyhow::{Context, Result};
 use crossterm::{cursor, event, execute, style, terminal};
 use firefly_types::{serial, Encode};
@@ -14,8 +14,6 @@ const COL2: u16 = 16;
 const RBORD: u16 = 21;
 const KB: u32 = 1024;
 const MB: u32 = 1024 * KB;
-
-type Port = Box<dyn serialport::SerialPort>;
 
 #[derive(Default)]
 struct Stats {
@@ -54,33 +52,16 @@ pub fn cmd_monitor(_vfs: &Path, args: &MonitorArgs) -> Result<()> {
 }
 
 fn monitor_device(port: &str, args: &MonitorArgs) -> Result<()> {
-    let mut port = connect_device(port, args)?;
+    let mut stream = connect_device(port, args)?;
     let mut stats = Stats::default();
-    request_device_stats(&mut port, &mut stats)?;
-    let mut buf = Vec::new();
+    request_device_stats(&mut stream, &mut stats)?;
     loop {
         if should_exit() {
             return Ok(());
         }
-        buf = read_device(&mut port, buf, &mut stats)?;
+        read_device(&mut stream, &mut stats)?;
         render_stats(&stats).context("render stats")?;
     }
-}
-
-/// Connect to running emulator using serial USB port (JTag-over-USB).
-fn connect_device(port: &str, args: &MonitorArgs) -> Result<Port> {
-    let port = serialport::new(port, args.baud_rate)
-        .timeout(Duration::from_millis(10))
-        .open()
-        .context("open the serial port")?;
-
-    execute!(
-        io::stdout(),
-        terminal::Clear(terminal::ClearType::All),
-        cursor::MoveTo(0, 0),
-        style::Print("waiting for stats..."),
-    )?;
-    Ok(port)
 }
 
 fn monitor_emulator() -> Result<()> {
@@ -103,39 +84,29 @@ fn read_emulator(mut stream: TcpStream, stats: &mut Stats) -> Result<TcpStream> 
         let stream = connect().context("reconnecting")?;
         return Ok(stream);
     }
-    parse_stats(stats, &buf[..size])?;
+    let resp = serial::Response::decode(&buf[..size]).context("decode response")?;
+    parse_stats(stats, resp);
     Ok(stream)
 }
 
 /// Receive and parse one stats message from device.
-fn read_device(port: &mut Port, mut buf: Vec<u8>, stats: &mut Stats) -> Result<Vec<u8>> {
-    let mut chunk = vec![0; 64];
-    let n = match port.read(chunk.as_mut_slice()) {
-        Ok(n) => n,
+fn read_device(stream: &mut SerialStream, stats: &mut Stats) -> Result<()> {
+    match stream.next() {
+        Ok(resp) => {
+            parse_stats(stats, resp);
+            stats.last_msg = Some(Instant::now());
+        }
         Err(err) => {
-            if err.kind() == std::io::ErrorKind::TimedOut {
-                request_device_stats(port, stats)?;
-                return Ok(buf);
+            if !is_timeout(&err) {
+                return Err(err);
             }
-            return Err(err).context("read from serial port");
         }
-    };
-
-    stats.last_msg = Some(Instant::now());
-    buf.extend_from_slice(&chunk[..n]);
-    loop {
-        let (frame, rest) = advance(&buf);
-        buf = Vec::from(rest);
-        if frame.is_empty() {
-            break;
-        }
-        parse_stats(stats, &frame)?;
     }
-    Ok(buf)
+    Ok(())
 }
 
 /// Send a message into the running device requesting to enable stats collection.
-fn request_device_stats(port: &mut Port, stats: &mut Stats) -> Result<()> {
+fn request_device_stats(stream: &mut SerialStream, stats: &mut Stats) -> Result<()> {
     let now = Instant::now();
     let should_update = match stats.last_msg {
         Some(last_msg) => {
@@ -148,16 +119,12 @@ fn request_device_stats(port: &mut Port, stats: &mut Stats) -> Result<()> {
     if should_update {
         stats.last_msg = Some(now);
         let req = serial::Request::Stats(true);
-        let buf = req.encode_vec().context("encode request")?;
-        port.write_all(&buf[..]).context("send request")?;
-        port.flush().context("flush request")?;
+        stream.send(&req)?;
     }
     Ok(())
 }
 
-/// Parse raw stats message using postcard. Does NOT handle COBS frames.
-fn parse_stats(stats: &mut Stats, buf: &[u8]) -> Result<()> {
-    let resp = serial::Response::decode(buf).context("decode response")?;
+fn parse_stats(stats: &mut Stats, resp: serial::Response) {
     match resp {
         serial::Response::Cheat(_) => {}
         serial::Response::Log(log) => {
@@ -180,7 +147,22 @@ fn parse_stats(stats: &mut Stats, buf: &[u8]) -> Result<()> {
         }
         serial::Response::Memory(mem) => stats.mem = Some(mem),
     }
-    Ok(())
+}
+
+/// Connect to running emulator using serial USB port (JTag-over-USB).
+fn connect_device(port: &str, args: &MonitorArgs) -> Result<SerialStream> {
+    let port = serialport::new(port, args.baud_rate)
+        .timeout(Duration::from_millis(10))
+        .open()
+        .context("open the serial port")?;
+
+    execute!(
+        io::stdout(),
+        terminal::Clear(terminal::ClearType::All),
+        cursor::MoveTo(0, 0),
+        style::Print("waiting for stats..."),
+    )?;
+    Ok(SerialStream::new(port))
 }
 
 /// Connect to a running emulator and enable stats.

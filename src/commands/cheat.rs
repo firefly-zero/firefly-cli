@@ -1,6 +1,7 @@
 use crate::args::CheatArgs;
 use crate::config::Config;
 use crate::net::connect;
+use crate::serial::SerialStream;
 use anyhow::{bail, Context, Result};
 use firefly_types::{serial, Encode};
 use std::io::{Read, Write};
@@ -8,30 +9,76 @@ use std::path::Path;
 use std::time::Duration;
 
 pub fn cmd_cheat(args: &CheatArgs) -> Result<()> {
+    if let Some(port) = &args.port {
+        cheat_device(args, port)
+    } else {
+        cheat_emulator(args)
+    }
+}
+
+/// Run cheat on desktop emulator.
+pub fn cheat_emulator(args: &CheatArgs) -> Result<()> {
     println!("⏳️  connecting...");
     let mut stream = connect()?;
+    stream.set_read_timeout(Some(Duration::from_secs(1)))?;
 
     {
-        let cmd = parse_command(&args.command, &args.root)?;
-        let val = parse_value(&args.value)?;
-        let req = serial::Request::Cheat(cmd, val);
-        let buf = req.encode_vec().context("encode request")?;
-        println!("⌛  sending request...");
-        stream.write_all(&buf[..]).context("send request")?;
+        let buf = serialize_request(args)?;
+        println!("⌛ sending request...");
+        stream.write_all(&buf).context("send request")?;
         stream.flush().context("flush request")?;
     }
 
-    stream.set_read_timeout(Some(Duration::from_secs(1)))?;
     for _ in 0..5 {
         let mut buf = vec![0; 64];
         stream.read(&mut buf).context("read response")?;
         let resp = serial::Response::decode(&buf).context("decode response")?;
         if let serial::Response::Cheat(result) = resp {
-            println!("✅  response: {result}");
+            println!("✅ response: {result}");
             return Ok(());
         }
     }
     bail!("timed out waiting for response")
+}
+
+/// Run cheat on the connected device.
+pub fn cheat_device(args: &CheatArgs, port: &str) -> Result<()> {
+    println!("⏳️ connecting...");
+    let port = serialport::new(port, args.baud_rate)
+        .timeout(Duration::from_secs(5))
+        .open()
+        .context("open the serial port")?;
+    let mut stream = SerialStream::new(port);
+
+    {
+        let cmd = parse_command(&args.command, &args.root)?;
+        let val = parse_value(&args.value)?;
+        let req = serial::Request::Cheat(cmd, val);
+        println!("⌛ sending request...");
+        stream.send(&req)?;
+    }
+
+    println!("⌛ waiting for response...");
+    for _ in 0..5 {
+        match stream.next() {
+            Ok(serial::Response::Cheat(result)) => {
+                println!("✅  response: {result}");
+                return Ok(());
+            }
+            Ok(serial::Response::Log(log)) => println!("🪵 {log}"),
+            Ok(_) => (),
+            Err(err) => println!("❌ ERROR(cli): {err}"),
+        }
+    }
+    bail!("timed out waiting for response")
+}
+
+fn serialize_request(args: &CheatArgs) -> Result<Vec<u8>> {
+    let cmd = parse_command(&args.command, &args.root)?;
+    let val = parse_value(&args.value)?;
+    let req = serial::Request::Cheat(cmd, val);
+    let buf = req.encode_vec().context("encode request")?;
+    Ok(buf)
 }
 
 /// Parse a cheat command as either an integer or a cheat from firefly.toml.
