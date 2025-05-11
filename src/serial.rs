@@ -1,3 +1,7 @@
+use anyhow::Result;
+use firefly_types::{serial::Response, Encode};
+use serialport::SerialPort;
+
 // Given the binary stream so far, read the first COBS frame and return the rest of bytes.
 pub fn read_cobs_frame(chunk: &[u8]) -> (Vec<u8>, &[u8]) {
     let max_len = chunk.len();
@@ -16,5 +20,39 @@ pub fn read_cobs_frame(chunk: &[u8]) -> (Vec<u8>, &[u8]) {
             }
             cobs::DecodeError::TargetBufTooSmall => unreachable!(),
         },
+    }
+}
+
+pub struct SerialStream<'a> {
+    port: Box<dyn SerialPort + 'a>,
+    buf: Vec<u8>,
+}
+
+impl<'a> SerialStream<'a> {
+    pub fn new(port: Box<dyn SerialPort + 'a>) -> Self {
+        Self {
+            port,
+            buf: Vec::new(),
+        }
+    }
+
+    fn load_more(&mut self) -> Result<()> {
+        let mut chunk = vec![0; 64];
+        let n = self.port.read(&mut chunk)?;
+        self.buf.extend_from_slice(&chunk[..n]);
+        Ok(())
+    }
+
+    pub fn next(&mut self) -> Result<Response> {
+        loop {
+            let (frame, rest) = read_cobs_frame(&self.buf);
+            self.buf = Vec::from(rest);
+            if frame.is_empty() {
+                self.load_more()?;
+                continue;
+            }
+            let response = Response::decode(&frame)?;
+            return Ok(response);
+        }
     }
 }
