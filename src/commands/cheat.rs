@@ -24,7 +24,7 @@ pub fn cheat_emulator(args: &CheatArgs) -> Result<()> {
 
     {
         let buf = serialize_request(args)?;
-        println!("⌛  sending request...");
+        println!("⌛ sending request...");
         stream.write_all(&buf).context("send request")?;
         stream.flush().context("flush request")?;
     }
@@ -43,7 +43,7 @@ pub fn cheat_emulator(args: &CheatArgs) -> Result<()> {
 
 /// Run cheat on the connected device.
 pub fn cheat_device(args: &CheatArgs, port: &str) -> Result<()> {
-    println!("⏳️  connecting...");
+    println!("⏳️ connecting...");
     let mut stream = serialport::new(port, args.baud_rate)
         .timeout(Duration::from_secs(5))
         .open()
@@ -51,12 +51,12 @@ pub fn cheat_device(args: &CheatArgs, port: &str) -> Result<()> {
 
     {
         let buf = serialize_request(args)?;
-        println!("⌛  sending request...");
+        println!("⌛ sending request...");
         stream.write_all(&buf).context("send request")?;
         stream.flush().context("flush request")?;
     }
 
-    println!("⌛  waiting for response...");
+    println!("⌛ waiting for response...");
     let mut buf = Vec::new();
     for _ in 0..5 {
         let mut chunk = vec![0; 64];
@@ -68,7 +68,7 @@ pub fn cheat_device(args: &CheatArgs, port: &str) -> Result<()> {
             if frame.is_empty() {
                 break;
             }
-            match serial::Response::decode(&chunk).context("decode response") {
+            match serial::Response::decode(&frame).context("decode response") {
                 Ok(serial::Response::Cheat(result)) => {
                     println!("✅  response: {result}");
                     return Ok(());
