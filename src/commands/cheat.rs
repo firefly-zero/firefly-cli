@@ -1,7 +1,7 @@
 use crate::args::CheatArgs;
 use crate::config::Config;
 use crate::net::connect;
-use crate::serial::read_cobs_frame;
+use crate::serial::SerialStream;
 use anyhow::{bail, Context, Result};
 use firefly_types::{serial, Encode};
 use std::io::{Read, Write};
@@ -34,7 +34,7 @@ pub fn cheat_emulator(args: &CheatArgs) -> Result<()> {
         stream.read(&mut buf).context("read response")?;
         let resp = serial::Response::decode(&buf).context("decode response")?;
         if let serial::Response::Cheat(result) = resp {
-            println!("✅  response: {result}");
+            println!("✅ response: {result}");
             return Ok(());
         }
     }
@@ -44,39 +44,30 @@ pub fn cheat_emulator(args: &CheatArgs) -> Result<()> {
 /// Run cheat on the connected device.
 pub fn cheat_device(args: &CheatArgs, port: &str) -> Result<()> {
     println!("⏳️ connecting...");
-    let mut stream = serialport::new(port, args.baud_rate)
+    let port = serialport::new(port, args.baud_rate)
         .timeout(Duration::from_secs(5))
         .open()
         .context("open the serial port")?;
+    let mut stream = SerialStream::new(port);
 
     {
-        let buf = serialize_request(args)?;
+        let cmd = parse_command(&args.command, &args.root)?;
+        let val = parse_value(&args.value)?;
+        let req = serial::Request::Cheat(cmd, val);
         println!("⌛ sending request...");
-        stream.write_all(&buf).context("send request")?;
-        stream.flush().context("flush request")?;
+        stream.send(&req)?;
     }
 
     println!("⌛ waiting for response...");
-    let mut buf = Vec::new();
     for _ in 0..5 {
-        let mut chunk = vec![0; 64];
-        let n = stream.read(&mut chunk).context("read response")?;
-        buf.extend_from_slice(&chunk[..n]);
-        loop {
-            let (frame, rest) = read_cobs_frame(&buf);
-            buf = Vec::from(rest);
-            if frame.is_empty() {
-                break;
+        match stream.next() {
+            Ok(serial::Response::Cheat(result)) => {
+                println!("✅  response: {result}");
+                return Ok(());
             }
-            match serial::Response::decode(&frame).context("decode response") {
-                Ok(serial::Response::Cheat(result)) => {
-                    println!("✅  response: {result}");
-                    return Ok(());
-                }
-                Ok(serial::Response::Log(log)) => println!("🪵 {log}"),
-                Ok(_) => (),
-                Err(err) => println!("❌ ERROR(cli): {err}"),
-            }
+            Ok(serial::Response::Log(log)) => println!("🪵 {log}"),
+            Ok(_) => (),
+            Err(err) => println!("❌ ERROR(cli): {err}"),
         }
     }
     bail!("timed out waiting for response")

@@ -6,7 +6,7 @@ use firefly_types::{
 use serialport::SerialPort;
 
 // Given the binary stream so far, read the first COBS frame and return the rest of bytes.
-pub fn read_cobs_frame(chunk: &[u8]) -> (Vec<u8>, &[u8]) {
+fn read_cobs_frame(chunk: &[u8]) -> (Vec<u8>, &[u8]) {
     let max_len = chunk.len();
     let mut out_buf = vec![0; max_len];
     let mut dec = cobs::CobsDecoder::new(&mut out_buf);
