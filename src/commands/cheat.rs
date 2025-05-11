@@ -25,7 +25,7 @@ pub fn cheat_emulator(args: &CheatArgs) -> Result<()> {
     {
         let buf = serialize_request(args)?;
         println!("⌛  sending request...");
-        stream.write_all(&buf[..]).context("send request")?;
+        stream.write_all(&buf).context("send request")?;
         stream.flush().context("flush request")?;
     }
 
@@ -52,7 +52,7 @@ pub fn cheat_device(args: &CheatArgs, port: &str) -> Result<()> {
     {
         let buf = serialize_request(args)?;
         println!("⌛  sending request...");
-        stream.write_all(&buf[..]).context("send request")?;
+        stream.write_all(&buf).context("send request")?;
         stream.flush().context("flush request")?;
     }
 
@@ -68,10 +68,14 @@ pub fn cheat_device(args: &CheatArgs, port: &str) -> Result<()> {
             if frame.is_empty() {
                 break;
             }
-            let response = serial::Response::decode(&chunk).context("decode response")?;
-            if let serial::Response::Cheat(result) = response {
-                println!("✅  response: {result}");
-                return Ok(());
+            match serial::Response::decode(&chunk).context("decode response") {
+                Ok(serial::Response::Cheat(result)) => {
+                    println!("✅  response: {result}");
+                    return Ok(());
+                }
+                Ok(serial::Response::Log(log)) => println!("🪵 {log}"),
+                Ok(_) => (),
+                Err(err) => println!("❌ ERROR(cli): {err}"),
             }
         }
     }
