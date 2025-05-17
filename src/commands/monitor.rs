@@ -47,6 +47,7 @@ pub fn cmd_monitor(_vfs: &Path, args: &MonitorArgs) -> Result<()> {
         monitor_emulator()
     };
     terminal::disable_raw_mode().context("disable raw mode")?;
+    execute!(io::stdout(), cursor::Show).context("show cursor")?;
     execute!(io::stdout(), terminal::LeaveAlternateScreen).context("leave alt screen")?;
     res
 }
