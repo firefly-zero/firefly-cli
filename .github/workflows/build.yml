@@ -85,7 +85,9 @@ jobs:
           cargo -V
           rustc -V
 
-      - run: sudo apt install -qq -y libudev-dev
+      - if: runner.os == 'Linux'
+        shell: bash
+        run: sudo apt-get install -y libudev-dev
       - shell: bash
         run: $BUILD_CMD build --release --target=${{ matrix.job.target }}
 
