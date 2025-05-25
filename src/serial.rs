@@ -18,12 +18,38 @@ fn read_cobs_frame(chunk: &[u8]) -> (Vec<u8>, &[u8]) {
         Ok(None) => (Vec::new(), chunk),
         Err(err) => match err {
             cobs::DecodeError::EmptyFrame => (Vec::new(), &[]),
-            cobs::DecodeError::InvalidFrame { decoded_bytes } => {
-                (Vec::new(), &chunk[decoded_bytes..])
+            cobs::DecodeError::InvalidFrame { decoded_bytes: _ } => {
+                let new_chunk = find_frame(chunk);
+                if new_chunk.len() == chunk.len() {
+                    // Invalid frame and no frame separator in the current buffer.
+                    // Don't modify the buffer, keep it growing until a frame separator arrives.
+                    // This allows us to handle messages that are bigger than the buffer.
+                    (Vec::new(), chunk)
+                } else {
+                    // There is an invalid frame followed by a frame separator.
+                    // Skip the invalid frame and try parsing the next frame.
+                    read_cobs_frame(new_chunk)
+                }
             }
             cobs::DecodeError::TargetBufTooSmall => unreachable!(),
         },
     }
+}
+
+/// Cut out everything before the first `\x0` separator (skipping consecutive `\x0`'s).
+fn find_frame(chunk: &[u8]) -> &[u8] {
+    let mut iter = chunk.iter().enumerate();
+    for (_, b) in iter.by_ref() {
+        if *b == 0 {
+            break;
+        }
+    }
+    for (i, b) in iter {
+        if *b != 0 {
+            return &chunk[i..];
+        }
+    }
+    chunk
 }
 
 pub struct SerialStream {
