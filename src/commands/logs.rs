@@ -1,8 +1,16 @@
 use crate::{args::LogsArgs, serial::SerialStream};
 use anyhow::{Context, Result};
-use crossterm::style::Stylize;
+use crossterm::{
+    cursor::MoveToColumn,
+    execute,
+    style::Stylize,
+    terminal::{Clear, ClearType},
+};
 use firefly_types::serial::Response;
-use std::time::Duration;
+use std::{
+    io::{stdout, Write},
+    time::Duration,
+};
 
 pub fn cmd_logs(args: &LogsArgs) -> Result<()> {
     let port = serialport::new(&args.port, args.baud_rate)
@@ -11,8 +19,10 @@ pub fn cmd_logs(args: &LogsArgs) -> Result<()> {
         .context("open the serial port")?;
     let mut stream = SerialStream::new(port);
     println!("listening...");
-    let mut prev_log = chrono::Local::now();
-    let mut use_blue = true;
+    let mut prev_time = chrono::Local::now(); // when the previous record was received
+    let mut prev_text = String::new(); // the text of the previous log record
+    let mut repeats = 1; // how many times in a row we received the same log record
+    let mut use_blue = true; // should the log record time be blue or magenta
     loop {
         let msg = stream.next()?;
         let now = chrono::Local::now();
@@ -21,10 +31,10 @@ pub fn cmd_logs(args: &LogsArgs) -> Result<()> {
         // switch the color of the current time.
         // The color switch makes for an easy visual grouping of log records
         // coming close to each other in time.
-        if now - prev_log >= chrono::Duration::seconds(4) {
+        if now - prev_time >= chrono::Duration::seconds(4) {
             use_blue = !use_blue;
         }
-        prev_log = now;
+        prev_time = now;
         let now = if use_blue {
             now_str.blue()
         } else {
@@ -32,10 +42,22 @@ pub fn cmd_logs(args: &LogsArgs) -> Result<()> {
         };
         match msg {
             Response::Log(mut log) => {
+                if prev_text == log {
+                    _ = execute!(stdout(), Clear(ClearType::CurrentLine), MoveToColumn(0));
+                    repeats += 1;
+                } else {
+                    println!();
+                    repeats = 1;
+                }
+                prev_text.clone_from(&log);
                 if log.starts_with("ERROR(") {
                     log = log.red().to_string();
                 }
-                println!("{now} {log}");
+                print!("{now} {log}");
+                if repeats > 1 {
+                    print!("{}", format!(" x{repeats}").cyan());
+                }
+                _ = stdout().flush();
             }
             Response::Cheat(val) => {
                 println!("{now} cheat response: {val}");
