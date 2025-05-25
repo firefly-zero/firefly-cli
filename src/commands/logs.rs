@@ -16,8 +16,15 @@ pub fn cmd_logs(args: &LogsArgs) -> Result<()> {
         let now = chrono::Local::now();
         let now = now.format("%H:%M:%S").to_string().blue();
         match msg {
-            Response::Log(log) => println!("{now} {log}"),
-            Response::Cheat(val) => println!("{now} cheat response: {val}"),
+            Response::Log(mut log) => {
+                if log.starts_with("ERROR(") {
+                    log = log.red().to_string();
+                }
+                println!("{now} {log}");
+            }
+            Response::Cheat(val) => {
+                println!("{now} cheat response: {val}");
+            }
             _ => (),
         }
     }
