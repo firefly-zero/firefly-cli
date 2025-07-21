@@ -11,7 +11,9 @@ fn read_cobs_frame(chunk: &[u8]) -> (Vec<u8>, &[u8]) {
     let mut out_buf = vec![0; max_len];
     let mut dec = cobs::CobsDecoder::new(&mut out_buf);
     match dec.push(chunk) {
-        Ok(Some((n_out, n_in))) => {
+        Ok(Some(report)) => {
+            let n_in = report.parsed_size();
+            let n_out = report.frame_size();
             let msg = Vec::from(&out_buf[..n_out]);
             (msg, &chunk[n_in..])
         }

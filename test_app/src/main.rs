@@ -3,11 +3,11 @@
 use firefly_rust as _;
 
 #[no_mangle]
-extern fn boot() {
+extern "C" fn boot() {
     // ...
 }
 
 #[no_mangle]
-extern fn update() {
+extern "C" fn update() {
     // ...
 }
