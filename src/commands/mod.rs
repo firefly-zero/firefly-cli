@@ -13,6 +13,7 @@ mod monitor;
 mod name;
 mod new;
 mod repl;
+mod shots;
 mod vfs;
 
 pub use badges::cmd_badges;

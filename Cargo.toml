@@ -26,6 +26,8 @@ chrono = { version = "0.4.41", default-features = false, features = ["clock"] }
 clap = { version = "4.5.41", features = ["derive"] }
 # Detect message boundaries in serial port output from device
 cobs = "0.4.0"
+# Generate PNG images (sign chunks)
+crc32fast = "1.5.0"
 # TUI for the "monitor" command, colored terminal output
 crossterm = "0.29.0"
 # Convert binary hash into hex
@@ -38,6 +40,8 @@ firefly-types = { version = "0.5.1" }
 hound = "3.5.1"
 # Parse PNG images
 image = { version = "0.25.6", default-features = false, features = ["png"] }
+# Generate PNG images (compress frame)
+libflate = "2.1.0"
 # Random device name generation
 rand = "0.8.5"
 # Signatures
