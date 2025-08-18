@@ -33,12 +33,6 @@ pub enum Commands {
     /// Launch firefly-emulator.
     Emulator(EmulatorArgs),
 
-    /// Download screenshot.
-    #[clap(alias("shots"))]
-    #[clap(alias("screenshot"))]
-    #[clap(alias("screenshots"))]
-    Shot(ShotArgs),
-
     /// List all badges (aka achievements) defined in the given app.
     #[clap(alias("badge"), alias("achievements"), alias("achievement"))]
     Badges(BadgesArgs),
@@ -71,6 +65,11 @@ pub enum Commands {
 
     /// Run interactive session.
     Repl(ReplArgs),
+
+    /// Manage screenshots.
+    #[command(subcommand)]
+    #[clap(alias("shot"), alias("screenshot"), alias("screenshots"))]
+    Shots(ShotsCommands),
 
     /// Manage signing keys.
     #[command(subcommand)]
@@ -133,6 +132,19 @@ pub enum CatalogCommands {
     /// Show info about an app or author.
     #[clap(alias("info"), alias("app"), alias("author"))]
     Show(CatalogShowArgs),
+}
+
+#[derive(Subcommand, Debug)]
+pub enum ShotsCommands {
+    /// Download screenshot from vfs.
+    #[clap(
+        alias("get"),
+        alias("fetch"),
+        alias("cp"),
+        alias("copy"),
+        alias("import")
+    )]
+    Download(ShotsDownloadArgs),
 }
 
 #[derive(Debug, Parser)]
@@ -253,7 +265,7 @@ pub struct EmulatorArgs {
 }
 
 #[derive(Debug, Parser)]
-pub struct ShotArgs {
+pub struct ShotsDownloadArgs {
     /// Screenshot(s) to download: author ID, app ID, or screenshot path.
     pub source: String,
 

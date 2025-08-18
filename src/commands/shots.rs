@@ -4,14 +4,14 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use crate::args::ShotArgs;
+use crate::args::ShotsDownloadArgs;
 
 const WIDTH: u32 = 240;
 const HEIGHT: u32 = 160;
 const SIZE: usize = 1 + 48 + (160 * 240 / 2);
 
 /// Download screenshot from VFS.
-pub fn cmd_shot(vfs: &Path, args: &ShotArgs) -> Result<()> {
+pub fn cmd_shots_download(vfs: &Path, args: &ShotsDownloadArgs) -> Result<()> {
     let dst_dir: PathBuf = match &args.output {
         Some(dst_dir) => dst_dir.clone(),
         None => std::env::current_dir().context("get current dir")?,
@@ -74,6 +74,9 @@ fn download_dir(src_dir: &Path, dst_dir: &Path) -> Result<()> {
     );
     if !dst_dir.exists() {
         std::fs::create_dir_all(dst_dir).context("create output dir")?;
+    }
+    if !src_dir.exists() {
+        bail!("the source dir doesn't exist")
     }
     let dir = src_dir.read_dir().context("read source dir")?;
     for entry in dir {
