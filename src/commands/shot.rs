@@ -17,22 +17,48 @@ pub fn cmd_shot(vfs: &Path, args: &ShotArgs) -> Result<()> {
         None => std::env::current_dir().context("get current dir")?,
     };
 
-    // Handle absolute path or path relative to the vfs root.
-    let src_path = vfs.join(&args.source);
-    if src_path.is_file() {
-        return download_file(&src_path, &dst_dir);
-    }
-    if src_path.is_dir() {
-        return download_dir(&src_path, &dst_dir);
-    }
-
-    // Handle path relative to the current dir.
+    // Handle absolute path or path relative to the current dir.
     let src_path = PathBuf::from(&args.source);
     if src_path.is_file() {
         return download_file(&src_path, &dst_dir);
     }
     if src_path.is_dir() {
+        println!("downloading a dir from {}", path_to_utf8(&src_path));
         return download_dir(&src_path, &dst_dir);
+    }
+
+    // Handle path relative to the vfs root.
+    if args.source.starts_with("data") {
+        let src_path = vfs.join(&args.source);
+        if src_path.is_file() {
+            return download_file(&src_path, &dst_dir);
+        }
+        if src_path.is_dir() {
+            return download_dir(&src_path, &dst_dir);
+        }
+    }
+
+    // Handle full app ID (`lux.snek`).
+    if let Some((author, app)) = args.source.split_once('.') {
+        let src_dir = vfs.join("data").join(author).join(app).join("shots");
+        if !src_dir.exists() {
+            bail!("the app not found")
+        }
+        return download_dir(&src_dir, &dst_dir);
+    }
+
+    // Handle author ID (`lux`).
+    let author_dir = vfs.join("data").join(&args.source);
+    if author_dir.exists() {
+        let dir = author_dir.read_dir().context("read author's data dir")?;
+        for entry in dir {
+            let entry = entry?;
+            let src_dir = entry.path().join("shots");
+            if src_dir.exists() {
+                download_dir(&src_dir, &dst_dir)?;
+            }
+        }
+        return Ok(());
     }
 
     bail!("source path not found")
@@ -42,6 +68,10 @@ fn download_dir(src_dir: &Path, dst_dir: &Path) -> Result<()> {
     if dst_dir.is_file() || has_ext(dst_dir, "png") {
         bail!("source path is a dir but the destination path is a file");
     }
+    println!(
+        "⏳️ downloading all files from from {}...",
+        path_to_utf8(src_dir)
+    );
     if !dst_dir.exists() {
         std::fs::create_dir_all(dst_dir).context("create output dir")?;
     }
@@ -67,6 +97,10 @@ fn download_dir(src_dir: &Path, dst_dir: &Path) -> Result<()> {
 
 /// Handle the command being invoked with a single file as input.
 fn download_file(src_path: &Path, dst_path: &Path) -> Result<()> {
+    println!(
+        "⏳️ downloading a single file from {}...",
+        path_to_utf8(src_path)
+    );
     let is_file = has_ext(dst_path, "png");
     if dst_path.is_file() || is_file {
         // The output path is a file.
