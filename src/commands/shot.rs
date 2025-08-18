@@ -1,5 +1,8 @@
 use anyhow::{bail, Result};
-use std::{io::Write, path::Path};
+use std::{
+    io::Write,
+    path::{Path, PathBuf},
+};
 
 use crate::args::ShotArgs;
 
@@ -9,7 +12,65 @@ const SIZE: usize = 1 + 48 + (180 * 240 / 2);
 
 /// Download screenshot.
 pub fn cmd_shot(vfs: &Path, args: &ShotArgs) -> Result<()> {
-    todo!()
+    let dst_dir: PathBuf = match &args.output {
+        Some(dst_dir) => dst_dir.clone(),
+        None => std::env::current_dir()?,
+    };
+    let sources = list_sources(vfs, &args.sources);
+    for src_path in sources {
+        let dst_file_name = get_output_file_name(&src_path)?;
+        let dst_path = dst_dir.join(dst_file_name);
+        download_file(&src_path, &dst_path)?;
+    }
+    Ok(())
+}
+
+fn list_sources(vfs: &Path, sources: &[String]) -> Vec<PathBuf> {
+    let mut result = Vec::new();
+    for src in sources {
+        let path = vfs.join(src);
+        if path.exists() {
+            result.push(path);
+        } else {
+            let path = PathBuf::from(src);
+            if path.exists() {
+                result.push(path);
+            } else {
+                todo!();
+            }
+        }
+    }
+    result
+}
+
+fn get_output_file_name(src_path: &Path) -> Result<String> {
+    let mut parts = Vec::new();
+    for raw_part in src_path.components() {
+        let raw_part = raw_part.as_os_str();
+        if let Some(part) = raw_part.to_str() {
+            parts.push(part);
+        }
+    }
+    let Some((data_idx, _)) = parts.iter().enumerate().find(|(_, part)| **part == "data") else {
+        bail!("cannot find data dir")
+    };
+    let author_id = parts[data_idx - 2];
+    let app_id = parts[data_idx - 1];
+    let file_name = parts[data_idx + 2];
+    let Some((file_id, ext)) = file_name.split_once('.') else {
+        bail!("file has no extension");
+    };
+    if ext != "ffs" {
+        bail!("invalid file extension, expected .ffs");
+    }
+    Ok(format!("{author_id}.{app_id}.{file_id}.png"))
+}
+
+fn download_file(src_path: &Path, dst_path: &Path) -> Result<()> {
+    let src_raw = std::fs::read(src_path)?;
+    let png_raw = to_png(&src_raw)?;
+    std::fs::write(dst_path, png_raw)?;
+    Ok(())
 }
 
 /// Convert raw screenshot file into a PNG file.
