@@ -255,7 +255,7 @@ pub struct EmulatorArgs {
 #[derive(Debug, Parser)]
 pub struct ShotArgs {
     /// Screenshot(s) to download: author ID, app ID, or screenshot path.
-    pub sources: Vec<String>,
+    pub source: String,
 
     /// Directory where to save the screenshots.
     #[arg(short, long, default_value = None)]

@@ -10,37 +10,63 @@ const WIDTH: u32 = 240;
 const HEIGHT: u32 = 160;
 const SIZE: usize = 1 + 48 + (160 * 240 / 2);
 
-/// Download screenshot.
+/// Download screenshot from VFS.
 pub fn cmd_shot(vfs: &Path, args: &ShotArgs) -> Result<()> {
     let dst_dir: PathBuf = match &args.output {
         Some(dst_dir) => dst_dir.clone(),
         None => std::env::current_dir().context("get current dir")?,
     };
-    let sources = list_sources(vfs, &args.sources);
-    for src_path in sources {
-        let dst_file_name = get_output_file_name(&src_path)?;
-        let dst_path = dst_dir.join(dst_file_name);
-        copy_file(&src_path, &dst_path)?;
+
+    // Handle absolute path or path relative to the vfs root.
+    let src_path = vfs.join(&args.source);
+    if src_path.is_file() {
+        return download_file(&src_path, &dst_dir);
     }
-    Ok(())
+    if src_path.is_dir() {
+        return download_dir(&src_path, &dst_dir);
+    }
+
+    // Handle path relative to the current dir.
+    let src_path = PathBuf::from(&args.source);
+    if src_path.is_file() {
+        return download_file(&src_path, &dst_dir);
+    }
+    if src_path.is_dir() {
+        return download_dir(&src_path, &dst_dir);
+    }
+
+    bail!("source path not found")
 }
 
-fn list_sources(vfs: &Path, sources: &[String]) -> Vec<PathBuf> {
-    let mut result = Vec::new();
-    for src in sources {
-        let path = vfs.join(src);
-        if path.exists() {
-            result.push(path);
-        } else {
-            let path = PathBuf::from(src);
-            if path.exists() {
-                result.push(path);
-            } else {
-                todo!();
-            }
+fn download_dir(src_path: &Path, dst_path: &Path) -> Result<()> {
+    todo!()
+}
+
+/// Handle the command being invoked with a single file as input.
+fn download_file(src_path: &Path, dst_path: &Path) -> Result<()> {
+    let is_file = has_ext(dst_path, "png");
+    if dst_path.is_file() || is_file {
+        // The output path is a file.
+        copy_file(src_path, dst_path)
+    } else {
+        // The output path is a dir.
+        if !dst_path.exists() {
+            std::fs::create_dir_all(dst_path)?;
         }
+        let dst_file_name = get_output_file_name(src_path)?;
+        let dst_path = dst_path.join(dst_file_name);
+        copy_file(src_path, &dst_path)
     }
-    result
+}
+
+fn has_ext(path: &Path, ext: &str) -> bool {
+    let Some(act) = path.extension() else {
+        return false;
+    };
+    let Some(act) = act.to_str() else {
+        return false;
+    };
+    act == ext
 }
 
 fn get_output_file_name(src_path: &Path) -> Result<String> {
