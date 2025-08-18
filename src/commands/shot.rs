@@ -38,8 +38,31 @@ pub fn cmd_shot(vfs: &Path, args: &ShotArgs) -> Result<()> {
     bail!("source path not found")
 }
 
-fn download_dir(src_path: &Path, dst_path: &Path) -> Result<()> {
-    todo!()
+fn download_dir(src_dir: &Path, dst_dir: &Path) -> Result<()> {
+    if dst_dir.is_file() || has_ext(dst_dir, "png") {
+        bail!("source path is a dir but the destination path is a file");
+    }
+    if !dst_dir.exists() {
+        std::fs::create_dir_all(dst_dir).context("create output dir")?;
+    }
+    let dir = src_dir.read_dir().context("read source dir")?;
+    for entry in dir {
+        let entry = entry?;
+        let src_path = entry.path();
+        if !src_path.is_file() {
+            continue;
+        }
+        let dst_file_name = get_output_file_name(&src_path)?;
+        let dst_path = dst_dir.join(dst_file_name);
+        copy_file(&src_path, &dst_path).with_context(|| {
+            format!(
+                "copy screenshot from {} into {}",
+                path_to_utf8(&src_path),
+                path_to_utf8(&dst_path),
+            )
+        })?;
+    }
+    Ok(())
 }
 
 /// Handle the command being invoked with a single file as input.
@@ -51,7 +74,7 @@ fn download_file(src_path: &Path, dst_path: &Path) -> Result<()> {
     } else {
         // The output path is a dir.
         if !dst_path.exists() {
-            std::fs::create_dir_all(dst_path)?;
+            std::fs::create_dir_all(dst_path).context("create output dir")?;
         }
         let dst_file_name = get_output_file_name(src_path)?;
         let dst_path = dst_path.join(dst_file_name);
@@ -69,6 +92,7 @@ fn has_ext(path: &Path, ext: &str) -> bool {
     act == ext
 }
 
+/// Given the path to the input screenshot file, generate output PNG file name.
 fn get_output_file_name(src_path: &Path) -> Result<String> {
     let mut parts = Vec::new();
     for raw_part in src_path.components() {
@@ -86,14 +110,19 @@ fn get_output_file_name(src_path: &Path) -> Result<String> {
     let Some((file_id, ext)) = file_name.split_once('.') else {
         bail!("file has no extension");
     };
-    if ext != "ffs" {
-        bail!("invalid file extension, expected .ffs");
+    if ext != "ffs" && ext != "png" {
+        bail!("invalid file extension *.{ext}, expected *.ffs");
     }
-    Ok(format!("{author_id}.{app_id}.{file_id}.png"))
+    Ok(format!("{author_id}.{app_id}.{file_id:0>3}.png"))
 }
 
 /// Read the input screenshot file and save it in output file as PNG.
 fn copy_file(src_path: &Path, dst_path: &Path) -> Result<()> {
+    // The old Firefly runtime versions used to save files as PNG.
+    if has_ext(src_path, "png") {
+        std::fs::copy(src_path, dst_path)?;
+        return Ok(());
+    }
     let src_raw = std::fs::read(src_path)?;
     let png_raw = to_png(&src_raw)?;
     std::fs::write(dst_path, png_raw)?;
@@ -161,9 +190,6 @@ fn write_chunk<W: Write>(mut w: W, name: &[u8; 4], data: &[u8]) -> Result<()> {
 }
 
 /// Convert a file system path to UTF-8 if possible.
-pub fn path_to_utf8(path: &Path) -> anyhow::Result<&str> {
-    match path.to_str() {
-        Some(path) => Ok(path),
-        None => bail!("project root path cannot be converted to UTF-8"),
-    }
+pub fn path_to_utf8(path: &Path) -> &str {
+    path.to_str().unwrap_or("???")
 }
