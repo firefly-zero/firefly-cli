@@ -1,11 +1,29 @@
-use anyhow::Result;
-use std::io::Write;
+use anyhow::{bail, Result};
+use std::{io::Write, path::Path};
+
+use crate::args::ShotArgs;
 
 const WIDTH: u32 = 240;
 const HEIGHT: u32 = 180;
+const SIZE: usize = 1 + 48 + (180 * 240 / 2);
 
-/// Write the frame buffer as a PNG file.
-fn save_png<W: Write>(mut w: W, palette: &[u8; 48], frame: &[u8]) -> Result<()> {
+/// Download screenshot.
+pub fn cmd_shot(vfs: &Path, args: &ShotArgs) -> Result<()> {
+    todo!()
+}
+
+/// Convert raw screenshot file into a PNG file.
+fn to_png(raw: &[u8]) -> Result<Vec<u8>> {
+    if raw.len() != SIZE {
+        bail!("invalid file size: got {}, expected {SIZE}", raw.len());
+    }
+    if raw[0] != 0x41 {
+        bail!("invalid magic number");
+    }
+    let palette: [u8; 48] = raw[1..0x32].try_into().unwrap();
+    let frame = &raw[0x32..];
+
+    let mut w = Vec::new();
     w.write_all(&[137, 80, 78, 71, 13, 10, 26, 10])?;
     let mut ihdr: [u8; 13] = [0; 13];
     ihdr[..4].copy_from_slice(&WIDTH.to_be_bytes());
@@ -13,10 +31,10 @@ fn save_png<W: Write>(mut w: W, palette: &[u8; 48], frame: &[u8]) -> Result<()> 
     ihdr[8] = 4; // bit depth: 4 BPP
     ihdr[9] = 3; // color type: indexed (uses palette)
     write_chunk(&mut w, b"IHDR", &ihdr)?;
-    write_chunk(&mut w, b"PLTE", palette)?;
+    write_chunk(&mut w, b"PLTE", &palette)?;
     write_frame(&mut w, frame)?;
     write_chunk(&mut w, b"IEND", &[])?;
-    Ok(())
+    Ok(w)
 }
 
 /// Write the compressed PNG image data.

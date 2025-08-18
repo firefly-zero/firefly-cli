@@ -10,6 +10,7 @@ pub fn run_command(vfs: PathBuf, command: &Commands) -> anyhow::Result<()> {
         Commands::Import(args) => cmd_import(&vfs, args),
         Commands::New(args) => cmd_new(args),
         Commands::Emulator(args) => cmd_emulator(args),
+        Commands::Shot(args) => cmd_shot(&vfs, args),
         Commands::Badges(args) => cmd_badges(&vfs, args),
         Commands::Boards(args) => cmd_boards(&vfs, args),
         Commands::Cheat(args) => cmd_cheat(args),

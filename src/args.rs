@@ -33,6 +33,12 @@ pub enum Commands {
     /// Launch firefly-emulator.
     Emulator(EmulatorArgs),
 
+    /// Download screenshot.
+    #[clap(alias("shots"))]
+    #[clap(alias("screenshot"))]
+    #[clap(alias("screenshots"))]
+    Shot(ShotArgs),
+
     /// List all badges (aka achievements) defined in the given app.
     #[clap(alias("badge"), alias("achievements"), alias("achievement"))]
     Badges(BadgesArgs),
@@ -244,6 +250,16 @@ pub struct NewArgs {
 pub struct EmulatorArgs {
     /// Arguments to pass into the emulator.
     pub args: Vec<String>,
+}
+
+#[derive(Debug, Parser)]
+pub struct ShotArgs {
+    /// Screenshot(s) to download: author ID, app ID, or screenshot path.
+    pub sources: Vec<String>,
+
+    /// Directory where to save the screenshots.
+    #[arg(short, long, default_value = None)]
+    pub output: Option<PathBuf>,
 }
 
 #[derive(Debug, Parser)]
