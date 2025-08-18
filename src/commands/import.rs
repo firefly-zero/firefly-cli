@@ -42,6 +42,7 @@ pub fn cmd_import(vfs: &Path, args: &ImportArgs) -> Result<()> {
     if let Err(err) = verify(&rom_path) {
         println!("⚠️  verification failed: {err}");
     }
+    create_data_dir(&meta, vfs).context("create app data directory")?;
     write_stats(&meta, vfs).context("create app stats file")?;
     if let Some(rom_path) = rom_path.to_str() {
         println!("✅ installed: {rom_path}");
@@ -139,12 +140,23 @@ fn verify(rom_path: &Path) -> anyhow::Result<()> {
     Ok(())
 }
 
+/// Create data dir and empty subdirs for the app.
+pub(super) fn create_data_dir(meta: &Meta<'_>, vfs_path: &Path) -> anyhow::Result<()> {
+    let data_path = vfs_path.join("data").join(meta.author_id).join(meta.app_id);
+    let shots_path = data_path.join("shots");
+    if !shots_path.exists() {
+        fs::create_dir_all(&shots_path).context("create shots dir")?;
+    }
+    let etc_path = data_path.join("etc");
+    if !etc_path.exists() {
+        fs::create_dir_all(&etc_path).context("create etc dir")?;
+    }
+    Ok(())
+}
+
 /// Create or update app stats in the data dir based on the default stats file from ROM.
 pub(super) fn write_stats(meta: &Meta<'_>, vfs_path: &Path) -> anyhow::Result<()> {
     let data_path = vfs_path.join("data").join(meta.author_id).join(meta.app_id);
-    if !data_path.exists() {
-        fs::create_dir_all(&data_path).context("create data dir")?;
-    }
     let stats_path = data_path.join("stats");
     let rom_path = vfs_path.join("roms").join(meta.author_id).join(meta.app_id);
     let default_path = rom_path.join(STATS);
