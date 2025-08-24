@@ -31,22 +31,13 @@ pub fn init_vfs(path: &Path) -> anyhow::Result<()> {
     fs::create_dir_all(path.join("sys").join("pub")).context("create sys/pub directory")?;
     fs::create_dir_all(path.join("sys").join("priv")).context("create sys/priv directory")?;
     fs::create_dir_all(path.join("data")).context("create data directory")?;
-    let name = generate_valid_name();
-
-    // TODO: remove it. Name is now stored in settings.
-    let name_path = path.join("sys").join("name");
-    if !name_path.exists() {
-        println!("new device name: {name}");
-        fs::write(name_path, name.clone()).context("write name file")?;
-    }
-
     let settings_path = path.join("sys").join("config");
     if !settings_path.exists() {
         let mut settings = firefly_types::Settings {
             xp: 0,
             badges: 0,
             lang: [b'e', b'n'],
-            name,
+            name: generate_valid_name(),
             timezone: detect_tz(),
         };
         if !settings.timezone.contains('/') {
