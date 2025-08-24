@@ -9,7 +9,7 @@ use std::collections::HashMap;
 use std::ffi::OsString;
 use std::fs;
 use std::path::{Path, PathBuf};
-use wasmparser::{Parser, WasmFeatures};
+use wasmparser::{Parser, Payload, WasmFeatures};
 use wasmparser::{Payload::*, Validator};
 
 pub fn cmd_inspect(vfs: &Path, args: &InspectArgs) -> Result<()> {
@@ -62,7 +62,7 @@ fn get_id(vfs: PathBuf, args: &InspectArgs) -> Result<(String, String)> {
 struct WasmStats {
     imports: Vec<(String, String)>,
     exports: Vec<String>,
-    validation_error: Option<String>,
+    validation_errors: Vec<String>,
     required_features: Vec<&'static str>,
     memory: u64,
     globals: u32,
@@ -78,14 +78,22 @@ fn inspect_wasm(bin_path: &Path) -> anyhow::Result<WasmStats> {
 
     let mut validator = Validator::new_with_features(WasmFeatures::all());
     if let Err(err) = validator.validate_all(&input_bytes) {
-        stats.validation_error = Some(format!("{err}"));
+        stats.validation_errors.push(format!("{err}"));
     } else {
         stats.required_features = get_required_features(&input_bytes);
     }
 
     let input = parser.parse_all(&input_bytes);
+    let mut validator = Validator::new_with_features(WasmFeatures::all());
     for payload in input {
         let payload = payload?;
+        if !matches!(payload, CodeSectionEntry(_)) {
+            if let Err(err) = validator.payload(&payload) {
+                let sname = get_section_name(&payload);
+                let err = format!("{sname} section: {err}");
+                stats.validation_errors.push(err);
+            }
+        }
         match payload {
             ImportSection(imports) => {
                 for import in imports {
@@ -145,6 +153,41 @@ fn requires_feature(input_bytes: &[u8], feature: WasmFeatures) -> bool {
     features.remove(feature);
     let mut validator = Validator::new_with_features(features);
     validator.validate_all(input_bytes).is_err()
+}
+
+const fn get_section_name(payload: &Payload<'_>) -> &'static str {
+    match payload {
+        Version { .. } => "version",
+        TypeSection(_) => "type",
+        ImportSection(_) => "import",
+        FunctionSection(_) => "function",
+        TableSection(_) => "table",
+        MemorySection(_) => "memory",
+        TagSection(_) => "tag",
+        GlobalSection(_) => "global",
+        ExportSection(_) => "export",
+        StartSection { .. } => "start",
+        ElementSection(_) => "element",
+        DataCountSection { .. } => "data_count",
+        DataSection(_) => "data",
+        CodeSectionStart { .. } => "code",
+        CodeSectionEntry(..) => "code entry",
+        ModuleSection { .. } => "module",
+        InstanceSection(_) => "instance",
+        CoreTypeSection(_) => "core_type",
+        ComponentSection { .. } => "component",
+        ComponentInstanceSection(_) => "component_instance",
+        ComponentAliasSection(_) => "component_alias",
+        ComponentTypeSection(_) => "component_type",
+        ComponentCanonicalSection(_) => "component_canonical",
+        ComponentStartSection { .. } => "component_start",
+        ComponentImportSection(_) => "component_import",
+        ComponentExportSection(_) => "component_export",
+        CustomSection(_) => "custom",
+        UnknownSection { .. } => "unknown",
+        End(_) => "end",
+        _ => "unsupported",
+    }
 }
 
 struct ImageStats {
@@ -318,8 +361,13 @@ fn print_wasm_stats(stats: &WasmStats) {
         println!("    {export}");
     }
 
-    if let Some(err) = &stats.validation_error {
-        println!("  {}: {}", "validation error".red(), err,);
+    let has_errors = !stats.validation_errors.is_empty();
+    if has_errors {
+        let n = stats.validation_errors.len();
+        println!("  {}: {}", "validation errors".red(), n);
+        for err in &stats.validation_errors {
+            println!("    {err}");
+        }
     } else {
         println!(
             "  {}: {}/{}",
