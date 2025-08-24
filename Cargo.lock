@@ -1914,9 +1914,9 @@ dependencies = [
 
 [[package]]
 name = "wasm-encoder"
-version = "0.230.0"
+version = "0.237.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d4349d0943718e6e434b51b9639e876293093dca4b96384fb136ab5bd5ce6660"
+checksum = "efe92d1321afa53ffc88a57c497bb7330c3cf84c98ffdba4a4caf6a0684fad3c"
 dependencies = [
  "leb128fmt",
  "wasmparser",
@@ -1924,9 +1924,9 @@ dependencies = [
 
 [[package]]
 name = "wasmparser"
-version = "0.230.0"
+version = "0.237.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "808198a69b5a0535583370a51d459baa14261dfab04800c4864ee9e1a14346ed"
+checksum = "7d2a40ca0d2bdf4b0bf36c13a737d0b2c58e4c8aaefe1c57f336dd75369ca250"
 dependencies = [
  "bitflags 2.9.0",
  "hashbrown 0.15.2",

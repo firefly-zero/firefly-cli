@@ -9,8 +9,8 @@ use std::collections::HashMap;
 use std::ffi::OsString;
 use std::fs;
 use std::path::{Path, PathBuf};
-use wasmparser::Parser;
-use wasmparser::Payload::*;
+use wasmparser::{Parser, WasmFeatures};
+use wasmparser::{Payload::*, Validator};
 
 pub fn cmd_inspect(vfs: &Path, args: &InspectArgs) -> Result<()> {
     let (author_id, app_id) = get_id(vfs.to_path_buf(), args).context("get app ID")?;
@@ -62,6 +62,8 @@ fn get_id(vfs: PathBuf, args: &InspectArgs) -> Result<(String, String)> {
 struct WasmStats {
     imports: Vec<(String, String)>,
     exports: Vec<String>,
+    validation_error: Option<String>,
+    required_features: Vec<&'static str>,
     memory: u64,
     globals: u32,
     functions: u32,
@@ -73,6 +75,14 @@ fn inspect_wasm(bin_path: &Path) -> anyhow::Result<WasmStats> {
     let parser = Parser::new(0);
     let mut stats = WasmStats::default();
     let input_bytes = std::fs::read(bin_path).context("read wasm binary")?;
+
+    let mut validator = Validator::new_with_features(WasmFeatures::all());
+    if let Err(err) = validator.validate_all(&input_bytes) {
+        stats.validation_error = Some(format!("{err}"));
+    } else {
+        stats.required_features = get_required_features(&input_bytes);
+    }
+
     let input = parser.parse_all(&input_bytes);
     for payload in input {
         let payload = payload?;
@@ -115,6 +125,26 @@ fn inspect_wasm(bin_path: &Path) -> anyhow::Result<WasmStats> {
     stats.imports.sort();
     stats.exports.sort();
     Ok(stats)
+}
+
+/// Get the list of wasm features (specs) that must be supported to run the binary.
+fn get_required_features(input_bytes: &[u8]) -> Vec<&'static str> {
+    let mut res = Vec::new();
+    for (name, feature) in WasmFeatures::all().iter_names() {
+        if requires_feature(input_bytes, feature) {
+            res.push(name);
+        }
+    }
+    res.sort_unstable();
+    res
+}
+
+/// Check if the binary can be parsed with the given feature disabled.
+fn requires_feature(input_bytes: &[u8], feature: WasmFeatures) -> bool {
+    let mut features = WasmFeatures::all();
+    features.remove(feature);
+    let mut validator = Validator::new_with_features(features);
+    validator.validate_all(input_bytes).is_err()
 }
 
 struct ImageStats {
@@ -286,6 +316,20 @@ fn print_wasm_stats(stats: &WasmStats) {
     for export in &stats.exports {
         // TODO: when we stabilize the list of callbacks, highlight unknown exports.
         println!("    {export}");
+    }
+
+    if let Some(err) = &stats.validation_error {
+        println!("  {}: {}", "validation error".red(), err,);
+    } else {
+        println!(
+            "  {}: {}/{}",
+            "required features".cyan(),
+            stats.required_features.len(),
+            WasmFeatures::all().iter().count(),
+        );
+        for feature in &stats.required_features {
+            println!("    {}", feature.to_ascii_lowercase().replace('_', " "));
+        }
     }
 }
 
