@@ -65,6 +65,7 @@ struct WasmStats {
     validation_errors: Vec<String>,
     required_features: Vec<&'static str>,
     memory: u64,
+    memory_bytes: u64,
     globals: u32,
     functions: u32,
     code_size: u32,
@@ -109,6 +110,8 @@ fn inspect_wasm(bin_path: &Path) -> anyhow::Result<WasmStats> {
                 for memory in memories {
                     let memory = memory?;
                     stats.memory += memory.initial;
+                    let page_size = 2u64.pow(memory.page_size_log2.unwrap_or(16));
+                    stats.memory_bytes += memory.initial * page_size;
                 }
             }
             ExportSection(exports) => {
@@ -349,7 +352,14 @@ fn print_wasm_stats(stats: &WasmStats) {
     println!("  {}: {}", "data size".cyan(), data_size);
     println!("  {}: {}", "functions".cyan(), stats.functions);
     println!("  {}:   {}", "globals".cyan(), stats.globals);
-    println!("  {}:    {} page(s)", "memory".cyan(), stats.memory);
+    let mem_size = format_size(stats.memory_bytes);
+    println!(
+        "  {}:    {} page{} ({})",
+        "memory".cyan(),
+        stats.memory,
+        if stats.memory == 1 { "" } else { "s" },
+        mem_size.trim(),
+    );
     println!("  {}:   {}", "imports".cyan(), stats.imports.len());
     for (mod_name, func_name) in &stats.imports {
         let mod_name = mod_name.clone().magenta();
