@@ -58,11 +58,16 @@ fn get_id(vfs: PathBuf, args: &InspectArgs) -> Result<(String, String)> {
     Ok(res)
 }
 
+struct ValErr {
+    source: String,
+    message: String,
+}
+
 #[derive(Default)]
 struct WasmStats {
     imports: Vec<(String, String)>,
     exports: Vec<String>,
-    validation_errors: Vec<String>,
+    validation_errors: Vec<ValErr>,
     required_features: Vec<&'static str>,
     memory: u64,
     memory_bytes: u64,
@@ -79,7 +84,11 @@ fn inspect_wasm(bin_path: &Path) -> anyhow::Result<WasmStats> {
 
     let mut validator = Validator::new_with_features(WasmFeatures::all());
     if let Err(err) = validator.validate_all(&input_bytes) {
-        stats.validation_errors.push(format!("{err}"));
+        let err = ValErr {
+            source: "module".to_owned(),
+            message: format!("{err}"),
+        };
+        stats.validation_errors.push(err);
     } else {
         stats.required_features = get_required_features(&input_bytes);
     }
@@ -91,7 +100,10 @@ fn inspect_wasm(bin_path: &Path) -> anyhow::Result<WasmStats> {
         if !matches!(payload, CodeSectionEntry(_)) {
             if let Err(err) = validator.payload(&payload) {
                 let sname = get_section_name(&payload);
-                let err = format!("{sname} section: {err}");
+                let err = ValErr {
+                    source: format!("{sname} section"),
+                    message: format!("{err}"),
+                };
                 stats.validation_errors.push(err);
             }
         }
@@ -376,7 +388,7 @@ fn print_wasm_stats(stats: &WasmStats) {
         let n = stats.validation_errors.len();
         println!("  {}: {}", "validation errors".red(), n);
         for err in &stats.validation_errors {
-            println!("    {err}");
+            println!("    {}: {}", err.source.clone().magenta(), err.message);
         }
     } else {
         println!(
