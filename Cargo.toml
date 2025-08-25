@@ -67,8 +67,8 @@ toml = "0.8.22"
 # Download remote files (`url` field in `firefly.toml`)
 ureq = "2.12.1"
 # Build together post-processed wasm binaries
-wasm-encoder = "0.230.0"
+wasm-encoder = "0.237.0"
 # Parse wasm binaries for post-processing (removing custom sections)
-wasmparser = "0.230.0"
+wasmparser = "0.237.0"
 # Work with zip archives (distribution format for ROMs)
 zip = { version = "4.3.0", default-features = false, features = ["zstd"] }

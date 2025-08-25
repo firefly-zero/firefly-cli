@@ -9,8 +9,8 @@ use std::collections::HashMap;
 use std::ffi::OsString;
 use std::fs;
 use std::path::{Path, PathBuf};
-use wasmparser::Parser;
-use wasmparser::Payload::*;
+use wasmparser::{Parser, Payload, WasmFeatures};
+use wasmparser::{Payload::*, Validator};
 
 pub fn cmd_inspect(vfs: &Path, args: &InspectArgs) -> Result<()> {
     let (author_id, app_id) = get_id(vfs.to_path_buf(), args).context("get app ID")?;
@@ -58,11 +58,19 @@ fn get_id(vfs: PathBuf, args: &InspectArgs) -> Result<(String, String)> {
     Ok(res)
 }
 
+struct ValErr {
+    source: String,
+    message: String,
+}
+
 #[derive(Default)]
 struct WasmStats {
     imports: Vec<(String, String)>,
     exports: Vec<String>,
+    validation_errors: Vec<ValErr>,
+    required_features: Vec<&'static str>,
     memory: u64,
+    memory_bytes: u64,
     globals: u32,
     functions: u32,
     code_size: u32,
@@ -73,9 +81,32 @@ fn inspect_wasm(bin_path: &Path) -> anyhow::Result<WasmStats> {
     let parser = Parser::new(0);
     let mut stats = WasmStats::default();
     let input_bytes = std::fs::read(bin_path).context("read wasm binary")?;
+
+    let mut validator = Validator::new_with_features(WasmFeatures::all());
+    if let Err(err) = validator.validate_all(&input_bytes) {
+        let err = ValErr {
+            source: "module".to_owned(),
+            message: format!("{err}"),
+        };
+        stats.validation_errors.push(err);
+    } else {
+        stats.required_features = get_required_features(&input_bytes);
+    }
+
     let input = parser.parse_all(&input_bytes);
+    let mut validator = Validator::new_with_features(WasmFeatures::all());
     for payload in input {
         let payload = payload?;
+        if !matches!(payload, CodeSectionEntry(_)) {
+            if let Err(err) = validator.payload(&payload) {
+                let sname = get_section_name(&payload);
+                let err = ValErr {
+                    source: format!("{sname} section"),
+                    message: format!("{err}"),
+                };
+                stats.validation_errors.push(err);
+            }
+        }
         match payload {
             ImportSection(imports) => {
                 for import in imports {
@@ -91,6 +122,8 @@ fn inspect_wasm(bin_path: &Path) -> anyhow::Result<WasmStats> {
                 for memory in memories {
                     let memory = memory?;
                     stats.memory += memory.initial;
+                    let page_size = 2u64.pow(memory.page_size_log2.unwrap_or(16));
+                    stats.memory_bytes += memory.initial * page_size;
                 }
             }
             ExportSection(exports) => {
@@ -115,6 +148,61 @@ fn inspect_wasm(bin_path: &Path) -> anyhow::Result<WasmStats> {
     stats.imports.sort();
     stats.exports.sort();
     Ok(stats)
+}
+
+/// Get the list of wasm features (specs) that must be supported to run the binary.
+fn get_required_features(input_bytes: &[u8]) -> Vec<&'static str> {
+    let mut res = Vec::new();
+    for (name, feature) in WasmFeatures::all().iter_names() {
+        if requires_feature(input_bytes, feature) {
+            res.push(name);
+        }
+    }
+    res.sort_unstable();
+    res
+}
+
+/// Check if the binary can be parsed with the given feature disabled.
+fn requires_feature(input_bytes: &[u8], feature: WasmFeatures) -> bool {
+    let mut features = WasmFeatures::all();
+    features.remove(feature);
+    let mut validator = Validator::new_with_features(features);
+    validator.validate_all(input_bytes).is_err()
+}
+
+const fn get_section_name(payload: &Payload<'_>) -> &'static str {
+    match payload {
+        Version { .. } => "version",
+        TypeSection(_) => "type",
+        ImportSection(_) => "import",
+        FunctionSection(_) => "function",
+        TableSection(_) => "table",
+        MemorySection(_) => "memory",
+        TagSection(_) => "tag",
+        GlobalSection(_) => "global",
+        ExportSection(_) => "export",
+        StartSection { .. } => "start",
+        ElementSection(_) => "element",
+        DataCountSection { .. } => "data_count",
+        DataSection(_) => "data",
+        CodeSectionStart { .. } => "code",
+        CodeSectionEntry(..) => "code entry",
+        ModuleSection { .. } => "module",
+        InstanceSection(_) => "instance",
+        CoreTypeSection(_) => "core_type",
+        ComponentSection { .. } => "component",
+        ComponentInstanceSection(_) => "component_instance",
+        ComponentAliasSection(_) => "component_alias",
+        ComponentTypeSection(_) => "component_type",
+        ComponentCanonicalSection(_) => "component_canonical",
+        ComponentStartSection { .. } => "component_start",
+        ComponentImportSection(_) => "component_import",
+        ComponentExportSection(_) => "component_export",
+        CustomSection(_) => "custom",
+        UnknownSection { .. } => "unknown",
+        End(_) => "end",
+        _ => "unsupported",
+    }
 }
 
 struct ImageStats {
@@ -276,7 +364,14 @@ fn print_wasm_stats(stats: &WasmStats) {
     println!("  {}: {}", "data size".cyan(), data_size);
     println!("  {}: {}", "functions".cyan(), stats.functions);
     println!("  {}:   {}", "globals".cyan(), stats.globals);
-    println!("  {}:    {} page(s)", "memory".cyan(), stats.memory);
+    let mem_size = format_size(stats.memory_bytes);
+    println!(
+        "  {}:    {} page{} ({})",
+        "memory".cyan(),
+        stats.memory,
+        if stats.memory == 1 { "" } else { "s" },
+        mem_size.trim(),
+    );
     println!("  {}:   {}", "imports".cyan(), stats.imports.len());
     for (mod_name, func_name) in &stats.imports {
         let mod_name = mod_name.clone().magenta();
@@ -286,6 +381,25 @@ fn print_wasm_stats(stats: &WasmStats) {
     for export in &stats.exports {
         // TODO: when we stabilize the list of callbacks, highlight unknown exports.
         println!("    {export}");
+    }
+
+    let has_errors = !stats.validation_errors.is_empty();
+    if has_errors {
+        let n = stats.validation_errors.len();
+        println!("  {}: {}", "validation errors".red(), n);
+        for err in &stats.validation_errors {
+            println!("    {}: {}", err.source.clone().magenta(), err.message);
+        }
+    } else {
+        println!(
+            "  {}: {}/{}",
+            "required features".cyan(),
+            stats.required_features.len(),
+            WasmFeatures::all().iter().count(),
+        );
+        for feature in &stats.required_features {
+            println!("    {}", feature.to_ascii_lowercase().replace('_', " "));
+        }
     }
 }
 
