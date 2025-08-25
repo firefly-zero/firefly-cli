@@ -16,9 +16,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@master
         with:
+          toolchain: nightly
           targets: wasm32-unknown-unknown
+          components: rust-src
       - uses: arduino/setup-task@v1
         with:
           repo-token: ${{ github.token }}

@@ -152,7 +152,14 @@ fn build_rust_inner(config: &Config, example: bool) -> anyhow::Result<()> {
         bail!("cannot convert project directory name to UTF-8")
     };
     let in_path = path_to_utf8(&config.root_path)?;
-    let mut cmd_args = vec!["build", "--target", "wasm32-unknown-unknown", "--release"];
+    let mut cmd_args = vec![
+        "+nightly",
+        "build",
+        "-Zbuild-std=std",
+        "--target",
+        "wasm32-unknown-unknown",
+        "--release",
+    ];
     if example {
         cmd_args.push("--example");
         cmd_args.push(example_name);
