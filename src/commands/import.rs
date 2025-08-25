@@ -62,11 +62,11 @@ fn fetch_archive(path: &str) -> Result<PathBuf> {
     if !path.ends_with(".zip") {
         let url = format!("https://catalog.fireflyzero.com/{path}.json");
         let resp = ureq::get(&url).call().context("send HTTP request")?;
-        if resp.status() == 200 && resp.header("Content-Type") == Some("application/json") {
-            let app: CatalogApp =
-                serde_json::from_reader(&mut resp.into_reader()).context("parse JSON")?;
-            path = app.download;
-        }
+        let mut body = resp.into_body().into_reader();
+        let app: CatalogApp = serde_json::from_reader(&mut body).context("parse JSON")?;
+        // TODO(@orsinium): the download link might be a download page,
+        // not the actual ROM file.
+        path = app.download;
     }
 
     // Local path is given. Just use it.
@@ -79,7 +79,8 @@ fn fetch_archive(path: &str) -> Result<PathBuf> {
     let resp = ureq::get(&path).call().context("send HTTP request")?;
     let out_path = temp_dir().join("rom.zip");
     let mut file = File::create(&out_path)?;
-    std::io::copy(&mut resp.into_reader(), &mut file).context("write response into a file")?;
+    let mut body = resp.into_body().into_reader();
+    std::io::copy(&mut body, &mut file).context("write response into a file")?;
     println!("⌛ installing...");
     Ok(out_path)
 }

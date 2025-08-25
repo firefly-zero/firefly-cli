@@ -162,14 +162,8 @@ fn download_key(url: &str) -> anyhow::Result<(String, Vec<u8>)> {
     let Some(author) = file_name.strip_suffix(".der") else {
         bail!("the key file must have .der extension")
     };
-    let resp = ureq::get(url).call()?;
-    let mut buf: Vec<u8> = Vec::new();
-    let status = resp.status();
-    if status >= 400 {
-        let text = resp.status_text();
-        bail!("cannot download the key: {status} ({text})",)
-    }
-    resp.into_reader().read_to_end(&mut buf)?;
+    let resp = ureq::get(url).call().context("download the key")?;
+    let buf = resp.into_body().read_to_vec()?;
     Ok((author.to_string(), buf))
 }
 

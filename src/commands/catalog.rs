@@ -1,5 +1,5 @@
 use crate::args::{CatalogListArgs, CatalogShowArgs};
-use anyhow::{bail, Context, Result};
+use anyhow::{Context, Result};
 use crossterm::style::Stylize;
 use serde::Deserialize;
 use std::collections::HashMap;
@@ -39,11 +39,8 @@ struct Author {
 
 pub fn cmd_catalog_list(_args: &CatalogListArgs) -> Result<()> {
     let resp = ureq::get(LIST_URL).call().context("send request")?;
-    if resp.status() != 200 || resp.header("Content-Type") != Some("application/json") {
-        bail!("cannot connect to the catalog")
-    }
-    let apps: Vec<ShortApp> =
-        serde_json::from_reader(&mut resp.into_reader()).context("parse JSON")?;
+    let mut body = resp.into_body().into_reader();
+    let apps: Vec<ShortApp> = serde_json::from_reader(&mut body).context("parse JSON")?;
     let id_width = apps.iter().map(|app| app.id.len()).max().unwrap();
     for app in apps {
         println!(
@@ -70,10 +67,8 @@ pub fn cmd_catalog_show(args: &CatalogShowArgs) -> Result<()> {
 pub fn show_app(args: &CatalogShowArgs) -> Result<()> {
     let url = format!("{BASE_URL}{}.json", args.id);
     let resp = ureq::get(&url).call().context("send request")?;
-    if resp.status() != 200 || resp.header("Content-Type") != Some("application/json") {
-        bail!("the app not found")
-    }
-    let app: App = serde_json::from_reader(&mut resp.into_reader()).context("parse JSON")?;
+    let mut body = resp.into_body().into_reader();
+    let app: App = serde_json::from_reader(&mut body).context("parse JSON")?;
     println!("{} {}", col("title"), app.name);
     println!("{} {}", col("author"), app.author.name);
     println!("{} {}", col("added"), app.added);
@@ -96,10 +91,8 @@ pub fn show_app(args: &CatalogShowArgs) -> Result<()> {
 pub fn show_author(args: &CatalogShowArgs) -> Result<()> {
     let url = format!("{BASE_URL}{}.json", args.id);
     let resp = ureq::get(&url).call().context("send request")?;
-    if resp.status() != 200 || resp.header("Content-Type") != Some("application/json") {
-        bail!("the author not found")
-    }
-    let aut: Author = serde_json::from_reader(&mut resp.into_reader()).context("parse JSON")?;
+    let mut body = resp.into_body().into_reader();
+    let aut: Author = serde_json::from_reader(&mut body).context("parse JSON")?;
     println!("{} {}", col("name"), aut.name);
     if let Some(pronouns) = aut.pronouns {
         println!("{} {}", col("pronouns"), pronouns);

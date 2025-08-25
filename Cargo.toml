@@ -43,6 +43,7 @@ image = { version = "0.25.6", default-features = false, features = ["png"] }
 # Generate PNG images (compress frame)
 libflate = "2.1.0"
 # Random device name generation
+# NOTE: Cannot be updated to 0.9.0+ until rsa is updated to 0.10.0+.
 rand = "0.8.5"
 # Signatures
 rsa = { version = "0.9.8", default-features = false, features = [
@@ -65,7 +66,7 @@ sha2 = "0.10.9"
 # Deserialize firefly.toml
 toml = "0.9.5"
 # Download remote files (`url` field in `firefly.toml`)
-ureq = "2.12.1"
+ureq = "3.1.0"
 # Build together post-processed wasm binaries
 wasm-encoder = "0.237.0"
 # Parse wasm binaries for post-processing (removing custom sections)

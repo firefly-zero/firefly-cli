@@ -177,7 +177,7 @@ impl<'a> Commander<'a> {
     /// Download a file from the give URL and save it into the given path.
     fn wget(&self, path: &[&str], url: &str) -> Result<()> {
         let resp = ureq::get(url).call().context("send request")?;
-        let mut reader = resp.into_reader();
+        let mut reader = resp.into_body().into_reader();
         let mut full_path = self.root.unwrap().to_path_buf();
         for part in path {
             full_path = full_path.join(part);
