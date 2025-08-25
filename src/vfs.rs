@@ -31,22 +31,13 @@ pub fn init_vfs(path: &Path) -> anyhow::Result<()> {
     fs::create_dir_all(path.join("sys").join("pub")).context("create sys/pub directory")?;
     fs::create_dir_all(path.join("sys").join("priv")).context("create sys/priv directory")?;
     fs::create_dir_all(path.join("data")).context("create data directory")?;
-    let name = generate_valid_name();
-
-    // TODO: remove it. Name is now stored in settings.
-    let name_path = path.join("sys").join("name");
-    if !name_path.exists() {
-        println!("new device name: {name}");
-        fs::write(name_path, name.clone()).context("write name file")?;
-    }
-
     let settings_path = path.join("sys").join("config");
     if !settings_path.exists() {
         let mut settings = firefly_types::Settings {
             xp: 0,
             badges: 0,
             lang: [b'e', b'n'],
-            name,
+            name: generate_valid_name(),
             timezone: detect_tz(),
         };
         if !settings.timezone.contains('/') {
@@ -167,16 +158,10 @@ mod tests {
         assert!(path.join("data").metadata().unwrap().is_dir());
         assert_eq!(path.join("roms").read_dir().unwrap().count(), 0);
         assert_eq!(path.join("data").read_dir().unwrap().count(), 0);
-        assert_eq!(path.join("sys").read_dir().unwrap().count(), 4);
+        assert_eq!(path.join("sys").read_dir().unwrap().count(), 3);
         assert_eq!(path.join("sys").join("priv").read_dir().unwrap().count(), 0);
         assert_eq!(path.join("sys").join("pub").read_dir().unwrap().count(), 0);
-        assert!(path.join("sys").join("name").exists());
         assert!(path.join("sys").join("config").exists());
-        let name_path = path.join("sys").join("name");
-        let name = std::fs::read_to_string(name_path).unwrap();
-        assert!(name.contains('-'));
-        assert!(name.len() >= 7);
-        assert!(name.len() <= 15);
     }
 
     #[test]

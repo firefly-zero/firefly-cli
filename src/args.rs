@@ -66,6 +66,11 @@ pub enum Commands {
     /// Run interactive session.
     Repl(ReplArgs),
 
+    /// Manage screenshots.
+    #[command(subcommand)]
+    #[clap(alias("shot"), alias("screenshot"), alias("screenshots"))]
+    Shots(ShotsCommands),
+
     /// Manage signing keys.
     #[command(subcommand)]
     #[clap(alias("keys"))]
@@ -127,6 +132,19 @@ pub enum CatalogCommands {
     /// Show info about an app or author.
     #[clap(alias("info"), alias("app"), alias("author"))]
     Show(CatalogShowArgs),
+}
+
+#[derive(Subcommand, Debug)]
+pub enum ShotsCommands {
+    /// Download screenshot from vfs.
+    #[clap(
+        alias("get"),
+        alias("fetch"),
+        alias("cp"),
+        alias("copy"),
+        alias("import")
+    )]
+    Download(ShotsDownloadArgs),
 }
 
 #[derive(Debug, Parser)]
@@ -244,6 +262,16 @@ pub struct NewArgs {
 pub struct EmulatorArgs {
     /// Arguments to pass into the emulator.
     pub args: Vec<String>,
+}
+
+#[derive(Debug, Parser)]
+pub struct ShotsDownloadArgs {
+    /// Screenshot(s) to download: author ID, app ID, or screenshot path.
+    pub source: String,
+
+    /// Directory where to save the screenshots.
+    #[arg(short, long, default_value = None)]
+    pub output: Option<PathBuf>,
 }
 
 #[derive(Debug, Parser)]

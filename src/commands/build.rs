@@ -1,6 +1,6 @@
 use crate::args::BuildArgs;
 use crate::audio::convert_wav;
-use crate::commands::import::write_stats;
+use crate::commands::import::{create_data_dir, write_stats};
 use crate::config::{Config, FileConfig};
 use crate::crypto::hash_dir;
 use crate::file_names::*;
@@ -86,6 +86,7 @@ pub fn cmd_build(vfs: PathBuf, args: &BuildArgs) -> anyhow::Result<()> {
     write_boards(&config).context("write boards")?;
     write_installed(&config).context("write app-name")?;
     create_rom_stats(&config).context("create default stats file")?;
+    create_data_dir(&meta, &config.vfs_path).context("create app data directory")?;
     write_stats(&meta, &config.vfs_path).context("write stats")?;
     write_key(&config).context("write key")?;
     write_hash(&config.rom_path).context("write hash")?;
