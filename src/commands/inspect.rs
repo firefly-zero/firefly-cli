@@ -12,6 +12,25 @@ use std::path::{Path, PathBuf};
 use wasmparser::{Parser, Payload, WasmFeatures};
 use wasmparser::{Payload::*, Validator};
 
+// https://github.com/wasmi-labs/wasmi/?tab=readme-ov-file#webassembly-features
+const SUPPORTED_FEATURES: [WasmFeatures; 15] = [
+    WasmFeatures::FLOATS,
+    WasmFeatures::MUTABLE_GLOBAL,
+    WasmFeatures::SATURATING_FLOAT_TO_INT,
+    WasmFeatures::SIGN_EXTENSION,
+    WasmFeatures::MULTI_VALUE,
+    WasmFeatures::BULK_MEMORY,
+    WasmFeatures::REFERENCE_TYPES,
+    WasmFeatures::TAIL_CALL,
+    WasmFeatures::EXTENDED_CONST,
+    WasmFeatures::MULTI_MEMORY,
+    WasmFeatures::CUSTOM_PAGE_SIZES,
+    WasmFeatures::MEMORY64,
+    WasmFeatures::WIDE_ARITHMETIC,
+    WasmFeatures::SIMD,
+    WasmFeatures::RELAXED_SIMD,
+];
+
 pub fn cmd_inspect(vfs: &Path, args: &InspectArgs) -> Result<()> {
     let (author_id, app_id) = get_id(vfs.to_path_buf(), args).context("get app ID")?;
     let rom_path = vfs.join("roms").join(&author_id).join(&app_id);
@@ -63,12 +82,18 @@ struct ValErr {
     message: String,
 }
 
+#[derive(PartialEq, PartialOrd, Eq, Ord)]
+struct Feature {
+    name: &'static str,
+    supported: bool,
+}
+
 #[derive(Default)]
 struct WasmStats {
     imports: Vec<(String, String)>,
     exports: Vec<String>,
     validation_errors: Vec<ValErr>,
-    required_features: Vec<&'static str>,
+    required_features: Vec<Feature>,
     memory: u64,
     memory_bytes: u64,
     globals: u32,
@@ -151,11 +176,12 @@ fn inspect_wasm(bin_path: &Path) -> anyhow::Result<WasmStats> {
 }
 
 /// Get the list of wasm features (specs) that must be supported to run the binary.
-fn get_required_features(input_bytes: &[u8]) -> Vec<&'static str> {
+fn get_required_features(input_bytes: &[u8]) -> Vec<Feature> {
     let mut res = Vec::new();
     for (name, feature) in WasmFeatures::all().iter_names() {
         if requires_feature(input_bytes, feature) {
-            res.push(name);
+            let supported = SUPPORTED_FEATURES.contains(&feature);
+            res.push(Feature { name, supported });
         }
     }
     res.sort_unstable();
@@ -391,14 +417,17 @@ fn print_wasm_stats(stats: &WasmStats) {
             println!("    {}: {}", err.source.clone().magenta(), err.message);
         }
     } else {
-        println!(
-            "  {}: {}/{}",
-            "required features".cyan(),
-            stats.required_features.len(),
-            WasmFeatures::all().iter().count(),
-        );
+        let n = stats.required_features.len();
+        let max = WasmFeatures::all().iter().count();
+        println!("  {}: {}/{}", "required features".cyan(), n, max);
         for feature in &stats.required_features {
-            println!("    {}", feature.to_ascii_lowercase().replace('_', " "));
+            let name = feature.name.to_ascii_lowercase().replace('_', " ");
+            let name = if feature.supported {
+                format!("✅ {}", name.green())
+            } else {
+                format!("❓ {}", name.red())
+            };
+            println!("    {name}");
         }
     }
 }
