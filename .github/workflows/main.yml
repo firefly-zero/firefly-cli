@@ -20,6 +20,7 @@ jobs:
         with:
           toolchain: nightly
           targets: wasm32-unknown-unknown
+          components: rust-src
       - uses: arduino/setup-task@v1
         with:
           repo-token: ${{ github.token }}
