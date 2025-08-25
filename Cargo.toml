@@ -54,7 +54,7 @@ rust-embed = { version = "8.7.2", default-features = false, features = [
     "debug-embed",
 ] }
 # REPL
-rustyline = "15.0.0"
+rustyline = "17.0.1"
 # Deserialize firefly.toml (required by `toml`)
 serde = { version = "1.0.219", features = ["serde_derive", "derive"] }
 # Deserialize JSON API responses from the firefly catalog
