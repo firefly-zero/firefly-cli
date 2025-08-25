@@ -19,11 +19,11 @@ categories = [
 
 [dependencies]
 # Simpler error handling
-anyhow = "1.0.98"
+anyhow = "1.0.99"
 # Get current date and time
 chrono = { version = "0.4.41", default-features = false, features = ["clock"] }
 # Framework for parsing CLI args
-clap = { version = "4.5.41", features = ["derive"] }
+clap = { version = "4.5.45", features = ["derive"] }
 # Detect message boundaries in serial port output from device
 cobs = "0.4.0"
 # Generate PNG images (sign chunks)
@@ -35,7 +35,7 @@ data-encoding = "2.9.0"
 # Find the best place to sotre the VFS
 directories = "6.0.0"
 # Serialize app config into meta file in the ROM
-firefly-types = { version = "0.5.1" }
+firefly-types = { version = "0.6.1" }
 # Decode wav files
 hound = "3.5.1"
 # Parse PNG images
@@ -43,32 +43,33 @@ image = { version = "0.25.6", default-features = false, features = ["png"] }
 # Generate PNG images (compress frame)
 libflate = "2.1.0"
 # Random device name generation
+# NOTE: Cannot be updated to 0.9.0+ until rsa is updated to 0.10.0+.
 rand = "0.8.5"
 # Signatures
 rsa = { version = "0.9.8", default-features = false, features = [
     "std",
     "sha2",
 ] }
-rust-embed = { version = "8.7.1", default-features = false, features = [
+rust-embed = { version = "8.7.2", default-features = false, features = [
     "debug-embed",
 ] }
 # REPL
-rustyline = "15.0.0"
+rustyline = "17.0.1"
 # Deserialize firefly.toml (required by `toml`)
 serde = { version = "1.0.219", features = ["serde_derive", "derive"] }
 # Deserialize JSON API responses from the firefly catalog
-serde_json = "1.0.140"
+serde_json = "1.0.143"
 # Communicating with running device
-serialport = "4.7.1"
+serialport = "4.7.2"
 # Calculate file checksum
 sha2 = "0.10.9"
 # Deserialize firefly.toml
-toml = "0.8.22"
+toml = "0.9.5"
 # Download remote files (`url` field in `firefly.toml`)
-ureq = "2.12.1"
+ureq = "3.1.0"
 # Build together post-processed wasm binaries
 wasm-encoder = "0.237.0"
 # Parse wasm binaries for post-processing (removing custom sections)
 wasmparser = "0.237.0"
 # Work with zip archives (distribution format for ROMs)
-zip = { version = "4.3.0", default-features = false, features = ["zstd"] }
+zip = { version = "4.5.0", default-features = false, features = ["zstd"] }

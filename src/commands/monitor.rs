@@ -126,14 +126,14 @@ fn request_device_stats(stream: &mut SerialStream, stats: &mut Stats) -> Result<
 }
 
 fn parse_stats(stats: &mut Stats, resp: serial::Response) {
+    use serial::Response::*;
     match resp {
-        serial::Response::Cheat(_) => {}
-        serial::Response::Log(log) => {
+        Log(log) => {
             let now = chrono::Local::now().format("%H:%M:%S");
             let log = format!("[{now}] {log}");
             stats.log = Some(log);
         }
-        serial::Response::Fuel(cb, fuel) => {
+        Fuel(cb, fuel) => {
             use serial::Callback::*;
             match cb {
                 Update => stats.update = Some(fuel),
@@ -141,12 +141,15 @@ fn parse_stats(stats: &mut Stats, resp: serial::Response) {
                 RenderLine | Cheat | Boot => {}
             }
         }
-        serial::Response::CPU(cpu) => {
+        CPU(cpu) => {
             if cpu.total_ns > 0 {
                 stats.cpu = Some(cpu);
             }
         }
-        serial::Response::Memory(mem) => stats.mem = Some(mem),
+        Memory(mem) => {
+            stats.mem = Some(mem);
+        }
+        _ => {}
     }
 }
 

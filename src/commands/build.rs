@@ -208,7 +208,7 @@ fn convert_file(name: &str, config: &Config, file_config: &FileConfig) -> anyhow
     Ok(())
 }
 
-/// If file doesn't exist, donload it from `url` and validate `sha256`.
+/// If file doesn't exist, download it from `url` and validate `sha256`.
 fn download_file(input_path: &Path, file_config: &FileConfig) -> anyhow::Result<()> {
     if input_path.exists() {
         return Ok(());
@@ -217,10 +217,7 @@ fn download_file(input_path: &Path, file_config: &FileConfig) -> anyhow::Result<
         bail!("file does not exist and no url specified");
     };
     let resp = ureq::get(url).call().context("send request")?;
-    let mut bytes: Vec<u8> = vec![];
-    resp.into_reader()
-        .read_to_end(&mut bytes)
-        .context("read response")?;
+    let bytes = resp.into_body().read_to_vec().context("read response")?;
     if let Some(expected_hash) = &file_config.sha256 {
         let mut hasher = Sha256::new();
         hasher.update(&bytes);
