@@ -40,7 +40,7 @@ pub fn cmd_inspect(vfs: &Path, args: &InspectArgs) -> Result<()> {
 
     {
         let sizes = collect_sizes(&rom_path);
-        print_sizes(&sizes);
+        print_sizes(sizes);
     }
     {
         let meta_path = rom_path.join(META);
@@ -51,15 +51,15 @@ pub fn cmd_inspect(vfs: &Path, args: &InspectArgs) -> Result<()> {
     {
         let bin_path = rom_path.join(BIN);
         let wasm_stats = inspect_wasm(&bin_path).context("inspect wasm binary")?;
-        print_wasm_stats(&wasm_stats);
+        print_wasm_stats(wasm_stats);
     }
     {
         let images_stats = inspect_images(&rom_path).context("inspect images")?;
-        print_images_stats(&images_stats);
+        print_images_stats(images_stats);
     }
     {
         let audios_stats = inspect_audios(&rom_path).context("inspect audios")?;
-        print_audios_stats(&audios_stats);
+        print_audios_stats(audios_stats);
     }
     Ok(())
 }
@@ -84,7 +84,7 @@ struct ValErr {
 
 #[derive(PartialEq, PartialOrd, Eq, Ord)]
 struct Feature {
-    name: &'static str,
+    name: String,
     supported: bool,
 }
 
@@ -181,6 +181,7 @@ fn get_required_features(input_bytes: &[u8]) -> Vec<Feature> {
     for (name, feature) in WasmFeatures::all().iter_names() {
         if requires_feature(input_bytes, feature) {
             let supported = SUPPORTED_FEATURES.contains(&feature);
+            let name = name.to_ascii_lowercase().replace('_', " ");
             res.push(Feature { name, supported });
         }
     }
@@ -368,18 +369,18 @@ fn print_meta(meta: &Meta<'_>) {
     println!();
 }
 
-fn print_sizes(sizes: &HashMap<OsString, u64>) {
+fn print_sizes(sizes: HashMap<OsString, u64>) {
     println!("{}", "files".blue());
     let width = sizes.keys().map(|n| n.len()).max().unwrap_or_default();
     for (name, size) in sizes {
         let name = name.to_str().unwrap_or("???");
-        let size = format_size(*size);
+        let size = format_size(size);
         println!("  {name:width$} {size}");
     }
     println!();
 }
 
-fn print_wasm_stats(stats: &WasmStats) {
+fn print_wasm_stats(stats: WasmStats) {
     let code_size = format_size(stats.code_size.into());
     let code_size = code_size.trim_start();
     let data_size = format_size(stats.data_size as u64);
@@ -399,12 +400,12 @@ fn print_wasm_stats(stats: &WasmStats) {
         mem_size.trim(),
     );
     println!("  {}:   {}", "imports".cyan(), stats.imports.len());
-    for (mod_name, func_name) in &stats.imports {
-        let mod_name = mod_name.clone().magenta();
+    for (mod_name, func_name) in stats.imports {
+        let mod_name = mod_name.magenta();
         println!("    {mod_name}.{func_name}");
     }
     println!("  {}:   {}", "exports".cyan(), stats.exports.len());
-    for export in &stats.exports {
+    for export in stats.exports {
         // TODO: when we stabilize the list of callbacks, highlight unknown exports.
         println!("    {export}");
     }
@@ -413,26 +414,25 @@ fn print_wasm_stats(stats: &WasmStats) {
     if has_errors {
         let n = stats.validation_errors.len();
         println!("  {}: {}", "validation errors".red(), n);
-        for err in &stats.validation_errors {
-            println!("    {}: {}", err.source.clone().magenta(), err.message);
+        for err in stats.validation_errors {
+            println!("    {}: {}", err.source.magenta(), err.message);
         }
     } else {
         let n = stats.required_features.len();
         let max = WasmFeatures::all().iter().count();
         println!("  {}: {}/{}", "required features".cyan(), n, max);
-        for feature in &stats.required_features {
-            let name = feature.name.to_ascii_lowercase().replace('_', " ");
+        for feature in stats.required_features {
             let name = if feature.supported {
-                format!("✅ {}", name.green())
+                format!("✅ {}", feature.name.green())
             } else {
-                format!("❓ {}", name.red())
+                format!("❓ {}", feature.name.red())
             };
             println!("    {name}");
         }
     }
 }
 
-fn print_images_stats(stats: &Vec<ImageStats>) {
+fn print_images_stats(stats: Vec<ImageStats>) {
     if stats.is_empty() {
         return;
     }
@@ -443,16 +443,16 @@ fn print_images_stats(stats: &Vec<ImageStats>) {
     }
 }
 
-fn print_image_stats(stats: &ImageStats) {
-    println!("  {}", stats.name.clone().magenta());
+fn print_image_stats(stats: ImageStats) {
+    println!("  {}", stats.name.magenta());
     println!("    {}:    {}", "bpp".cyan(), stats.bpp);
     println!("    {}:  {}", "width".cyan(), stats.width);
     println!("    {}: {}", "height".cyan(), stats.height);
     println!("    {}: {}", "pixels".cyan(), stats.pixels);
     println!("    {}", "colors".cyan());
-    for (i, swap) in stats.swaps.iter().enumerate() {
+    for (i, swap) in stats.swaps.into_iter().enumerate() {
         if let Some(swap) = swap {
-            let name = get_color_name(*swap);
+            let name = get_color_name(swap);
             let swap = swap + 1;
             println!("      {i:>2} -> {swap:>2}  {name}");
         } else {
@@ -461,7 +461,7 @@ fn print_image_stats(stats: &ImageStats) {
     }
 }
 
-fn print_audios_stats(stats: &Vec<AudioStats>) {
+fn print_audios_stats(stats: Vec<AudioStats>) {
     if stats.is_empty() {
         return;
     }
@@ -472,8 +472,8 @@ fn print_audios_stats(stats: &Vec<AudioStats>) {
     }
 }
 
-fn print_audio_stats(stats: &AudioStats) {
-    println!("  {}", stats.name.clone().magenta());
+fn print_audio_stats(stats: AudioStats) {
+    println!("  {}", stats.name.magenta());
     let mono = if stats.channels == 1 {
         "mono"
     } else {
