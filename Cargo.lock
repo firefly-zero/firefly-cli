@@ -464,7 +464,7 @@ dependencies = [
  "libc",
  "option-ext",
  "redox_users",
- "windows-sys 0.59.0",
+ "windows-sys 0.60.2",
 ]
 
 [[package]]
@@ -538,9 +538,9 @@ dependencies = [
 
 [[package]]
 name = "firefly-types"
-version = "0.5.1"
+version = "0.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e87d85fdb19db129d33583d4d149f5e4dea8ca5e6799b0ef619e71a470ecadd0"
+checksum = "ed3307f3d141ed9ae61633599755e1433d88400c5935bbab436f2346f34541a7"
 dependencies = [
  "postcard",
  "serde",
