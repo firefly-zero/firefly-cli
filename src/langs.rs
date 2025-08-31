@@ -172,6 +172,7 @@ fn build_rust_inner(config: &Config, example: bool) -> anyhow::Result<()> {
     let output = Command::new("cargo")
         .args(cmd_args)
         .current_dir(in_path)
+        .env("RUSTFLAGS", "-Clink-arg=-zstack-size=4096")
         .output()
         .context("run cargo build")?;
     check_output(&output)?;
