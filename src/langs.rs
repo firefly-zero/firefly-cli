@@ -145,22 +145,22 @@ fn build_rust(config: &Config) -> anyhow::Result<()> {
 }
 
 fn build_rust_inner(config: &Config, example: bool) -> anyhow::Result<()> {
-    let Some(example_name) = config.root_path.file_name() else {
-        bail!("empty project path");
-    };
-    let Some(example_name) = example_name.to_str() else {
-        bail!("cannot convert project directory name to UTF-8")
-    };
     let in_path = path_to_utf8(&config.root_path)?;
     let mut cmd_args = vec![
         "+nightly",
         "build",
-        "-Zbuild-std=std",
+        "-Zbuild-std",
         "--target",
         "wasm32-unknown-unknown",
         "--release",
     ];
     if example {
+        let Some(example_name) = config.root_path.file_name() else {
+            bail!("empty project path");
+        };
+        let Some(example_name) = example_name.to_str() else {
+            bail!("cannot convert project directory name to UTF-8")
+        };
         cmd_args.push("--example");
         cmd_args.push(example_name);
     }
