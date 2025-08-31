@@ -89,7 +89,6 @@ fn new_rust(name: &str) -> Result<()> {
     c.cd(name)?;
     c.run(&["cargo", "add", "firefly_rust"])?;
     c.copy_asset(&["src", "main.rs"], "main.rs")?;
-    c.copy_asset(&[".cargo", "config.toml"], "cargo-config.toml")?;
 
     {
         let path = Path::new(name).join("Cargo.toml");

@@ -1,4 +1,0 @@
-[target.wasm32-unknown-unknown]
-# Reduce stack size from 1 Mb to 4 Kb.
-# https://github.com/SFBdragon/talc/issues/33#issuecomment-2491685321
-rustflags = ["-C", "link-arg=-zstack-size=4096"]
