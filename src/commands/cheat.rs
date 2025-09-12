@@ -67,7 +67,7 @@ pub fn cheat_device(args: &CheatArgs, port: &str) -> Result<()> {
             }
             Ok(serial::Response::Log(log)) => println!("🪵 {log}"),
             Ok(_) => (),
-            Err(err) => println!("❌ ERROR(cli): {err}"),
+            Err(err) => return Err(err),
         }
     }
     bail!("timed out waiting for response")
