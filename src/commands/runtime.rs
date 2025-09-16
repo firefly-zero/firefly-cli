@@ -43,6 +43,16 @@ pub fn cmd_restart(root_args: &RuntimeArgs) -> Result<()> {
     bail!("timed out waiting for response")
 }
 
+pub fn cmd_id(root_args: &RuntimeArgs) -> Result<()> {
+    eprintln!("⏳️ connecting...");
+    let mut stream = connect(&root_args.port)?;
+    stream.set_timeout(2);
+    let (author_id, app_id) = read_app_id(&mut *stream).context("fetch ID")?;
+    eprintln!("✅ got the ID:");
+    println!("{author_id}.{app_id}");
+    Ok(())
+}
+
 pub fn read_app_id(stream: &mut dyn Stream) -> Result<(String, String)> {
     println!("⌛ fetching running app ID...");
     stream

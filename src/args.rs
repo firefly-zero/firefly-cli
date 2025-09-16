@@ -346,11 +346,16 @@ pub struct RuntimeArgs {
 
 #[derive(Debug, Parser)]
 pub enum RuntimeCommands {
+    /// Restart the running app.
     #[clap(alias("reload"))]
     Restart,
 
-    #[clap(alias("close"), alias("stop"), alias("terminate"))]
+    /// Close the running app and go back to launcher.
+    #[clap(alias("close"), alias("stop"), alias("terminate"), alias("launcher"))]
     Exit,
+
+    /// Fetch and print the ID of the running app.
+    Id,
 }
 
 #[derive(Debug, Parser)]
