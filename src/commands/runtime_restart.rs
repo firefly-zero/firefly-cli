@@ -1,9 +1,9 @@
-use crate::args::{RestartArgs, RuntimeArgs};
+use crate::args::RuntimeArgs;
 use crate::net::{connect, Stream};
 use anyhow::{bail, Context, Result};
 use firefly_types::serial;
 
-pub fn cmd_restart(root_args: &RuntimeArgs, _: &RestartArgs) -> Result<()> {
+pub fn cmd_restart(root_args: &RuntimeArgs) -> Result<()> {
     println!("⏳️ connecting...");
     let mut stream = connect(&root_args.port)?;
     stream.set_timeout(2);

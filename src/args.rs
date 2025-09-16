@@ -115,7 +115,7 @@ pub enum KeyCommands {
 pub enum NameCommands {
     /// Show the current device name.
     #[clap(alias("show"), alias("echo"))]
-    Get(NameGetArgs),
+    Get,
 
     /// Set a new device name.
     #[clap(alias("change"))]
@@ -123,7 +123,7 @@ pub enum NameCommands {
 
     /// Set a new device name.
     #[clap(alias("gen"), alias("new"))]
-    Generate(NameGenerateArgs),
+    Generate,
 }
 
 #[derive(Subcommand, Debug)]
@@ -165,15 +165,9 @@ pub struct KeyExportArgs {
 }
 
 #[derive(Debug, Parser)]
-pub struct NameGetArgs {}
-
-#[derive(Debug, Parser)]
 pub struct NameSetArgs {
     pub name: String,
 }
-
-#[derive(Debug, Parser)]
-pub struct NameGenerateArgs {}
 
 #[derive(Debug, Parser, Default)]
 pub struct BuildArgs {
@@ -353,11 +347,8 @@ pub struct RuntimeArgs {
 #[derive(Debug, Parser)]
 pub enum RuntimeCommands {
     #[clap(alias("reload"))]
-    Restart(RestartArgs),
+    Restart,
 }
-
-#[derive(Debug, Parser)]
-pub struct RestartArgs {}
 
 #[derive(Debug, Parser)]
 pub struct ReplArgs {

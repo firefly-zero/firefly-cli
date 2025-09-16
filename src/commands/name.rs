@@ -1,11 +1,11 @@
-use crate::args::*;
+use crate::args::NameSetArgs;
 use crate::vfs::generate_valid_name;
 use anyhow::{bail, Context, Result};
 use firefly_types::Encode;
 use std::fs;
 use std::path::Path;
 
-pub fn cmd_name_get(vfs: &Path, _args: &NameGetArgs) -> Result<()> {
+pub fn cmd_name_get(vfs: &Path) -> Result<()> {
     let name_path = vfs.join("sys").join("name");
     let name = fs::read_to_string(name_path)?;
     if let Err(err) = firefly_types::validate_id(&name) {
@@ -27,7 +27,7 @@ pub fn cmd_name_set(vfs: &Path, args: &NameSetArgs) -> Result<()> {
     Ok(())
 }
 
-pub fn cmd_name_generate(vfs: &Path, _args: &NameGenerateArgs) -> Result<()> {
+pub fn cmd_name_generate(vfs: &Path) -> Result<()> {
     let name = generate_valid_name();
     write_name(vfs, &name)?;
     println!("new name: {name}");
