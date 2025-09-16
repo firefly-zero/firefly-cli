@@ -28,6 +28,9 @@ pub fn run_command(vfs: PathBuf, command: &Commands) -> anyhow::Result<()> {
         Commands::Name(NameCommands::Get(args)) => cmd_name_get(&vfs, args),
         Commands::Name(NameCommands::Set(args)) => cmd_name_set(&vfs, args),
         Commands::Name(NameCommands::Generate(args)) => cmd_name_generate(&vfs, args),
+        Commands::Runtime(root_args) => match &root_args.command {
+            RuntimeCommands::Restart(args) => cmd_restart(root_args, args),
+        },
         Commands::Vfs => cmd_vfs(),
     }
 }

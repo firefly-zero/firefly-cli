@@ -60,6 +60,9 @@ pub enum Commands {
     /// Show live runtime logs from a running device.
     Logs(LogsArgs),
 
+    /// Control a running device or emulator.
+    Runtime(RuntimeArgs),
+
     /// Inspect contents of the ROM: files, metadata, wasm binary.
     Inspect(InspectArgs),
 
@@ -333,6 +336,28 @@ pub struct CheatArgs {
     #[arg(default_value = ".")]
     pub root: PathBuf,
 }
+
+#[derive(Debug, Parser)]
+pub struct RuntimeArgs {
+    /// Path to serial port to connect to a running device.
+    #[arg(long, default_value = None)]
+    pub port: Option<String>,
+
+    #[arg(long, default_value_t = 115_200)]
+    pub baud_rate: u32,
+
+    #[command(subcommand)]
+    pub command: RuntimeCommands,
+}
+
+#[derive(Debug, Parser)]
+pub enum RuntimeCommands {
+    #[clap(alias("reload"))]
+    Restart(RestartArgs),
+}
+
+#[derive(Debug, Parser)]
+pub struct RestartArgs {}
 
 #[derive(Debug, Parser)]
 pub struct ReplArgs {
