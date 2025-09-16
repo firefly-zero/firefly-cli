@@ -1,3 +1,8 @@
+use std::{
+    io::{Read, Write},
+    net::TcpStream,
+};
+
 use anyhow::{Context, Result};
 use firefly_types::{
     serial::{Request, Response},
@@ -54,6 +59,11 @@ fn find_frame(chunk: &[u8]) -> &[u8] {
     chunk
 }
 
+pub trait Stream {
+    fn send(&mut self, req: &Request) -> Result<()>;
+    fn next(&mut self) -> Result<Response>;
+}
+
 pub struct SerialStream {
     port: Box<dyn SerialPort + 'static>,
     buf: Vec<u8>,
@@ -73,15 +83,17 @@ impl SerialStream {
         self.buf.extend_from_slice(&chunk[..n]);
         Ok(())
     }
+}
 
-    pub fn send(&mut self, req: &Request) -> Result<()> {
+impl Stream for SerialStream {
+    fn send(&mut self, req: &Request) -> Result<()> {
         let buf = req.encode_vec().context("encode request")?;
         self.port.write_all(&buf[..]).context("send request")?;
         self.port.flush().context("flush request")?;
         Ok(())
     }
 
-    pub fn next(&mut self) -> Result<Response> {
+    fn next(&mut self) -> Result<Response> {
         loop {
             let (frame, rest) = read_cobs_frame(&self.buf);
             self.buf = Vec::from(rest);
@@ -92,6 +104,22 @@ impl SerialStream {
             let response = Response::decode(&frame)?;
             return Ok(response);
         }
+    }
+}
+
+impl Stream for TcpStream {
+    fn send(&mut self, req: &Request) -> Result<()> {
+        let buf = req.encode_vec().context("encode request")?;
+        self.write_all(&buf).context("send request")?;
+        self.flush().context("flush request")?;
+        Ok(())
+    }
+
+    fn next(&mut self) -> Result<Response> {
+        let mut buf = vec![0; 64];
+        self.read(&mut buf).context("read response")?;
+        let resp = Response::decode(&buf).context("decode response")?;
+        Ok(resp)
     }
 }
 

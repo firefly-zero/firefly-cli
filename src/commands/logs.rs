@@ -1,4 +1,7 @@
-use crate::{args::LogsArgs, serial::SerialStream};
+use crate::{
+    args::LogsArgs,
+    serial::{SerialStream, Stream},
+};
 use anyhow::{Context, Result};
 use crossterm::{
     cursor::MoveToColumn,
