@@ -1,7 +1,4 @@
-use crate::{
-    args::LogsArgs,
-    serial::{SerialStream, Stream},
-};
+use crate::{args::LogsArgs, net::connect};
 use anyhow::{Context, Result};
 use crossterm::{
     cursor::MoveToColumn,
@@ -10,17 +7,11 @@ use crossterm::{
     terminal::{Clear, ClearType},
 };
 use firefly_types::serial::Response;
-use std::{
-    io::{stdout, Write},
-    time::Duration,
-};
+use std::io::{stdout, Write};
 
 pub fn cmd_logs(args: &LogsArgs) -> Result<()> {
-    let port = serialport::new(&args.port, args.baud_rate)
-        .timeout(Duration::from_secs(3600))
-        .open()
-        .context("open the serial port")?;
-    let mut stream = SerialStream::new(port);
+    let port = Some(args.port.to_string());
+    let mut stream = connect(&port).context("open the serial port")?;
     println!("listening...");
     let mut prev_time = chrono::Local::now(); // when the previous record was received
     let mut prev_text = String::new(); // the text of the previous log record

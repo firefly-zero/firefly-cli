@@ -1,6 +1,5 @@
 use crate::args::MonitorArgs;
-use crate::net::connect;
-use crate::serial::{is_timeout, Stream};
+use crate::net::{connect, is_timeout, Stream};
 use anyhow::{Context, Result};
 use crossterm::{cursor, event, execute, style, terminal};
 use firefly_types::serial;
