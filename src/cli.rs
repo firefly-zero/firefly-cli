@@ -30,6 +30,7 @@ pub fn run_command(vfs: PathBuf, command: &Commands) -> anyhow::Result<()> {
         Commands::Name(NameCommands::Generate) => cmd_name_generate(&vfs),
         Commands::Runtime(root_args) => match &root_args.command {
             RuntimeCommands::Restart => cmd_restart(root_args),
+            RuntimeCommands::Exit => cmd_exit(root_args),
         },
         Commands::Vfs => cmd_vfs(),
     }

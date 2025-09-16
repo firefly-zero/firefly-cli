@@ -348,6 +348,9 @@ pub struct RuntimeArgs {
 pub enum RuntimeCommands {
     #[clap(alias("reload"))]
     Restart,
+
+    #[clap(alias("close"), alias("stop"), alias("terminate"))]
+    Exit,
 }
 
 #[derive(Debug, Parser)]
