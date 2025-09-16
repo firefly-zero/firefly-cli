@@ -1,6 +1,5 @@
 use crate::args::{RestartArgs, RuntimeArgs};
-use crate::net::connect;
-use crate::net::Stream;
+use crate::net::{connect, Stream};
 use anyhow::{bail, Context, Result};
 use firefly_types::serial;
 

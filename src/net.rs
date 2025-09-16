@@ -1,14 +1,11 @@
 use anyhow::{Context, Result};
+use firefly_types::serial::{Request, Response};
+use firefly_types::Encode;
+use serialport::SerialPort;
 use std::io::{Read, Write};
 use std::net::{IpAddr, Ipv4Addr, SocketAddr, TcpStream};
 use std::thread::sleep;
 use std::time::Duration;
-
-use firefly_types::{
-    serial::{Request, Response},
-    Encode,
-};
-use serialport::SerialPort;
 
 static IP: IpAddr = IpAddr::V4(Ipv4Addr::UNSPECIFIED);
 const TCP_PORT_MIN: u16 = 3210;

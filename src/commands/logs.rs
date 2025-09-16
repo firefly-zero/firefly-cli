@@ -1,11 +1,10 @@
-use crate::{args::LogsArgs, net::connect};
+use crate::args::LogsArgs;
+use crate::net::connect;
 use anyhow::{Context, Result};
-use crossterm::{
-    cursor::MoveToColumn,
-    execute,
-    style::Stylize,
-    terminal::{Clear, ClearType},
-};
+use crossterm::cursor::MoveToColumn;
+use crossterm::execute;
+use crossterm::style::Stylize;
+use crossterm::terminal::{Clear, ClearType};
 use firefly_types::serial::Response;
 use std::io::{stdout, Write};
 
