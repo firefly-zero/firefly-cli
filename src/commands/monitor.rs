@@ -1,11 +1,9 @@
 use crate::args::MonitorArgs;
-use crate::net::connect;
-use crate::serial::{is_timeout, SerialStream};
+use crate::net::{connect, is_timeout, Stream};
 use anyhow::{Context, Result};
 use crossterm::{cursor, event, execute, style, terminal};
-use firefly_types::{serial, Encode};
-use std::io::{self, Read, Write};
-use std::net::TcpStream;
+use firefly_types::serial;
+use std::io;
 use std::path::Path;
 use std::time::{Duration, Instant};
 
@@ -41,57 +39,33 @@ pub fn cmd_monitor(_vfs: &Path, args: &MonitorArgs) -> Result<()> {
     execute!(io::stdout(), terminal::EnterAlternateScreen).context("enter alt screen")?;
     execute!(io::stdout(), cursor::Hide).context("hide cursor")?;
     terminal::enable_raw_mode().context("enable raw mode")?;
-    let res = if let Some(port) = &args.port {
-        monitor_device(port, args)
-    } else {
-        monitor_emulator()
-    };
+    let res = monitor_inner(args);
     terminal::disable_raw_mode().context("disable raw mode")?;
     execute!(io::stdout(), cursor::Show).context("show cursor")?;
     execute!(io::stdout(), terminal::LeaveAlternateScreen).context("leave alt screen")?;
     res
 }
 
-fn monitor_device(port: &str, args: &MonitorArgs) -> Result<()> {
-    let mut stream = connect_device(port, args)?;
+fn monitor_inner(args: &MonitorArgs) -> Result<()> {
+    let mut stream = connect(&args.port)?;
+    stream.set_timeout(3600);
     let mut stats = Stats::default();
-    request_device_stats(&mut stream, &mut stats)?;
+    request_device_stats(&mut *stream, &mut stats)?;
     loop {
         if should_exit() {
             return Ok(());
         }
-        read_device(&mut stream, &mut stats)?;
+        read_device(&mut *stream, &mut stats)?;
         render_stats(&stats).context("render stats")?;
     }
-}
-
-fn monitor_emulator() -> Result<()> {
-    let mut stream = connect_emulator()?;
-    let mut stats = Stats::default();
-    loop {
-        if should_exit() {
-            return Ok(());
-        }
-        stream = read_emulator(stream, &mut stats)?;
-        render_stats(&stats).context("render stats")?;
-    }
-}
-
-/// Receive and parse one stats message from emulator.
-fn read_emulator(mut stream: TcpStream, stats: &mut Stats) -> Result<TcpStream> {
-    let mut buf = vec![0; 64];
-    let size = stream.read(&mut buf).context("read response")?;
-    if size == 0 {
-        let stream = connect().context("reconnecting")?;
-        return Ok(stream);
-    }
-    let resp = serial::Response::decode(&buf[..size]).context("decode response")?;
-    parse_stats(stats, resp);
-    Ok(stream)
 }
 
 /// Receive and parse one stats message from device.
-fn read_device(stream: &mut SerialStream, stats: &mut Stats) -> Result<()> {
+fn read_device(stream: &mut dyn Stream, stats: &mut Stats) -> Result<()> {
+    // if size == 0 {
+    //     let stream = connect().context("reconnecting")?;
+    //     return Ok(stream);
+    // }
     match stream.next() {
         Ok(resp) => {
             parse_stats(stats, resp);
@@ -107,7 +81,7 @@ fn read_device(stream: &mut SerialStream, stats: &mut Stats) -> Result<()> {
 }
 
 /// Send a message into the running device requesting to enable stats collection.
-fn request_device_stats(stream: &mut SerialStream, stats: &mut Stats) -> Result<()> {
+fn request_device_stats(stream: &mut dyn Stream, stats: &mut Stats) -> Result<()> {
     let now = Instant::now();
     let should_update = match stats.last_msg {
         Some(last_msg) => {
@@ -151,50 +125,6 @@ fn parse_stats(stats: &mut Stats, resp: serial::Response) {
         }
         _ => {}
     }
-}
-
-/// Connect to running emulator using serial USB port (JTag-over-USB).
-fn connect_device(port: &str, args: &MonitorArgs) -> Result<SerialStream> {
-    let port = serialport::new(port, args.baud_rate)
-        .timeout(Duration::from_millis(10))
-        .open()
-        .context("open the serial port")?;
-
-    execute!(
-        io::stdout(),
-        terminal::Clear(terminal::ClearType::All),
-        cursor::MoveTo(0, 0),
-        style::Print("waiting for stats..."),
-    )?;
-    Ok(SerialStream::new(port))
-}
-
-/// Connect to a running emulator and enable stats.
-fn connect_emulator() -> Result<TcpStream, anyhow::Error> {
-    execute!(
-        io::stdout(),
-        terminal::Clear(terminal::ClearType::All),
-        cursor::MoveTo(0, 0),
-        style::Print("connecting..."),
-    )?;
-    let mut stream = connect()?;
-
-    execute!(
-        io::stdout(),
-        terminal::Clear(terminal::ClearType::All),
-        cursor::MoveTo(0, 0),
-        style::Print("waiting for stats..."),
-    )?;
-
-    // enable stats collection
-    {
-        let req = serial::Request::Stats(true);
-        let buf = req.encode_vec().context("encode request")?;
-        stream.write_all(&buf[..]).context("send request")?;
-        stream.flush().context("flush request")?;
-    }
-
-    Ok(stream)
 }
 
 /// Check if the `Q` or `Esc` button is pressed.

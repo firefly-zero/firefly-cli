@@ -1,13 +1,10 @@
 use rand::Rng;
-use sha2::{
-    digest::{consts::U32, generic_array::GenericArray},
-    Digest, Sha256,
-};
-use std::{
-    collections::HashMap,
-    fs,
-    path::{Path, PathBuf},
-};
+use sha2::digest::consts::U32;
+use sha2::digest::generic_array::GenericArray;
+use sha2::{Digest, Sha256};
+use std::collections::HashMap;
+use std::fs;
+use std::path::{Path, PathBuf};
 
 pub fn make_tmp_vfs() -> PathBuf {
     let mut rng = rand::thread_rng();

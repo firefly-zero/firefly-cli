@@ -1,10 +1,7 @@
-use anyhow::{bail, Context, Result};
-use std::{
-    io::Write,
-    path::{Path, PathBuf},
-};
-
 use crate::args::ShotsDownloadArgs;
+use anyhow::{bail, Context, Result};
+use std::io::Write;
+use std::path::{Path, PathBuf};
 
 const WIDTH: u32 = 240;
 const HEIGHT: u32 = 160;

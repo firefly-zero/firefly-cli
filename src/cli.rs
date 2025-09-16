@@ -25,9 +25,14 @@ pub fn run_command(vfs: PathBuf, command: &Commands) -> anyhow::Result<()> {
         Commands::Key(KeyCommands::Rm(args)) => cmd_key_rm(&vfs, args),
         Commands::Catalog(CatalogCommands::List(args)) => cmd_catalog_list(args),
         Commands::Catalog(CatalogCommands::Show(args)) => cmd_catalog_show(args),
-        Commands::Name(NameCommands::Get(args)) => cmd_name_get(&vfs, args),
+        Commands::Name(NameCommands::Get) => cmd_name_get(&vfs),
         Commands::Name(NameCommands::Set(args)) => cmd_name_set(&vfs, args),
-        Commands::Name(NameCommands::Generate(args)) => cmd_name_generate(&vfs, args),
+        Commands::Name(NameCommands::Generate) => cmd_name_generate(&vfs),
+        Commands::Runtime(root_args) => match &root_args.command {
+            RuntimeCommands::Restart => cmd_restart(root_args),
+            RuntimeCommands::Exit => cmd_exit(root_args),
+            RuntimeCommands::Id => cmd_id(root_args),
+        },
         Commands::Vfs => cmd_vfs(),
     }
 }

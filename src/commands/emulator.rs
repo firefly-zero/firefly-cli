@@ -1,4 +1,5 @@
-use crate::{args::EmulatorArgs, langs::check_output};
+use crate::args::EmulatorArgs;
+use crate::langs::check_output;
 use anyhow::{bail, Context, Result};
 use std::process::Command;
 

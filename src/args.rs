@@ -60,6 +60,9 @@ pub enum Commands {
     /// Show live runtime logs from a running device.
     Logs(LogsArgs),
 
+    /// Control a running device or emulator.
+    Runtime(RuntimeArgs),
+
     /// Inspect contents of the ROM: files, metadata, wasm binary.
     Inspect(InspectArgs),
 
@@ -112,7 +115,7 @@ pub enum KeyCommands {
 pub enum NameCommands {
     /// Show the current device name.
     #[clap(alias("show"), alias("echo"))]
-    Get(NameGetArgs),
+    Get,
 
     /// Set a new device name.
     #[clap(alias("change"))]
@@ -120,7 +123,7 @@ pub enum NameCommands {
 
     /// Set a new device name.
     #[clap(alias("gen"), alias("new"))]
-    Generate(NameGenerateArgs),
+    Generate,
 }
 
 #[derive(Subcommand, Debug)]
@@ -162,15 +165,9 @@ pub struct KeyExportArgs {
 }
 
 #[derive(Debug, Parser)]
-pub struct NameGetArgs {}
-
-#[derive(Debug, Parser)]
 pub struct NameSetArgs {
     pub name: String,
 }
-
-#[derive(Debug, Parser)]
-pub struct NameGenerateArgs {}
 
 #[derive(Debug, Parser, Default)]
 pub struct BuildArgs {
@@ -332,6 +329,33 @@ pub struct CheatArgs {
     /// Path to the project root.
     #[arg(default_value = ".")]
     pub root: PathBuf,
+}
+
+#[derive(Debug, Parser)]
+pub struct RuntimeArgs {
+    /// Path to serial port to connect to a running device.
+    #[arg(long, default_value = None)]
+    pub port: Option<String>,
+
+    #[arg(long, default_value_t = 115_200)]
+    pub baud_rate: u32,
+
+    #[command(subcommand)]
+    pub command: RuntimeCommands,
+}
+
+#[derive(Debug, Parser)]
+pub enum RuntimeCommands {
+    /// Restart the running app.
+    #[clap(alias("reload"))]
+    Restart,
+
+    /// Close the running app and go back to launcher.
+    #[clap(alias("close"), alias("stop"), alias("terminate"), alias("launcher"))]
+    Exit,
+
+    /// Fetch and print the ID of the running app.
+    Id,
 }
 
 #[derive(Debug, Parser)]

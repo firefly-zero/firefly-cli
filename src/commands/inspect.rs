@@ -9,8 +9,8 @@ use std::collections::HashMap;
 use std::ffi::OsString;
 use std::fs;
 use std::path::{Path, PathBuf};
-use wasmparser::{Parser, Payload, WasmFeatures};
-use wasmparser::{Payload::*, Validator};
+use wasmparser::Payload::*;
+use wasmparser::{Parser, Payload, Validator, WasmFeatures};
 
 // https://github.com/wasmi-labs/wasmi/?tab=readme-ov-file#webassembly-features
 const SUPPORTED_FEATURES: [WasmFeatures; 15] = [
