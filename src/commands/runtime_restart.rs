@@ -6,7 +6,7 @@ use firefly_types::serial;
 pub fn cmd_restart(root_args: &RuntimeArgs, _: &RestartArgs) -> Result<()> {
     println!("⏳️ connecting...");
     let mut stream = connect(&root_args.port)?;
-    // stream.set_read_timeout(Some(Duration::from_secs(1)))?;
+    stream.set_timeout(2);
 
     println!("⌛ fetching running app ID...");
     let (author_id, app_id) = read_app_id_emulator(&mut *stream).context("fetch ID")?;

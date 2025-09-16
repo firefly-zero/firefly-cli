@@ -11,6 +11,7 @@ use std::io::{stdout, Write};
 pub fn cmd_logs(args: &LogsArgs) -> Result<()> {
     let port = Some(args.port.to_string());
     let mut stream = connect(&port).context("open the serial port")?;
+    stream.set_timeout(3600);
     println!("listening...");
     let mut prev_time = chrono::Local::now(); // when the previous record was received
     let mut prev_text = String::new(); // the text of the previous log record

@@ -48,6 +48,7 @@ pub fn cmd_monitor(_vfs: &Path, args: &MonitorArgs) -> Result<()> {
 
 fn monitor_inner(args: &MonitorArgs) -> Result<()> {
     let mut stream = connect(&args.port)?;
+    stream.set_timeout(3600);
     let mut stats = Stats::default();
     request_device_stats(&mut *stream, &mut stats)?;
     loop {

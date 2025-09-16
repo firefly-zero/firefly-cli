@@ -8,7 +8,7 @@ use std::path::Path;
 pub fn cmd_cheat(args: &CheatArgs) -> Result<()> {
     println!("⏳️ connecting...");
     let mut stream = connect(&args.port)?;
-    // stream.set_read_timeout(Some(Duration::from_secs(1)))?;
+    stream.set_timeout(2);
 
     {
         let cmd = parse_command(&args.command, &args.root)?;

@@ -95,6 +95,7 @@ fn find_frame(chunk: &[u8]) -> &[u8] {
 pub trait Stream {
     fn send(&mut self, req: &Request) -> Result<()>;
     fn next(&mut self) -> Result<Response>;
+    fn set_timeout(&mut self, sec: u64);
 }
 
 pub struct SerialStream {
@@ -138,6 +139,11 @@ impl Stream for SerialStream {
             return Ok(response);
         }
     }
+
+    fn set_timeout(&mut self, secs: u64) {
+        let timeout = Duration::from_secs(secs);
+        _ = self.port.set_timeout(timeout);
+    }
 }
 
 impl Stream for TcpStream {
@@ -153,6 +159,12 @@ impl Stream for TcpStream {
         self.read(&mut buf).context("read response")?;
         let resp = Response::decode(&buf).context("decode response")?;
         Ok(resp)
+    }
+
+    fn set_timeout(&mut self, secs: u64) {
+        let timeout = Duration::from_secs(secs);
+        _ = self.set_read_timeout(Some(timeout));
+        _ = self.set_write_timeout(Some(timeout));
     }
 }
 
