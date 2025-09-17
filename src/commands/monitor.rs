@@ -46,7 +46,7 @@ pub fn cmd_monitor(root_args: &RuntimeArgs) -> Result<()> {
 }
 
 fn monitor_inner(root_args: &RuntimeArgs) -> Result<()> {
-    let mut stream = connect(&root_args.port)?;
+    let mut stream = connect(root_args)?;
     stream.set_timeout(3600);
     let mut stats = Stats::default();
     request_device_stats(&mut *stream, &mut stats)?;

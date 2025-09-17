@@ -9,7 +9,7 @@ use firefly_types::serial::Response;
 use std::io::{stdout, Write};
 
 pub fn cmd_logs(root_args: &RuntimeArgs) -> Result<()> {
-    let mut stream = connect(&root_args.port).context("open the serial port")?;
+    let mut stream = connect(root_args).context("open the serial port")?;
     stream.set_timeout(3600);
     println!("listening...");
     let mut prev_time = chrono::Local::now(); // when the previous record was received

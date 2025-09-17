@@ -5,7 +5,7 @@ use firefly_types::serial;
 
 pub fn cmd_exit(root_args: &RuntimeArgs) -> Result<()> {
     println!("⏳️ connecting...");
-    let mut stream = connect(&root_args.port)?;
+    let mut stream = connect(root_args)?;
     stream.set_timeout(2);
 
     println!("⌛ exiting the running app...");
@@ -24,7 +24,7 @@ pub fn cmd_exit(root_args: &RuntimeArgs) -> Result<()> {
 
 pub fn cmd_restart(root_args: &RuntimeArgs) -> Result<()> {
     println!("⏳️ connecting...");
-    let mut stream = connect(&root_args.port)?;
+    let mut stream = connect(root_args)?;
     stream.set_timeout(2);
 
     let (author_id, app_id) = read_app_id(&mut *stream).context("fetch ID")?;
@@ -45,7 +45,7 @@ pub fn cmd_restart(root_args: &RuntimeArgs) -> Result<()> {
 
 pub fn cmd_id(root_args: &RuntimeArgs) -> Result<()> {
     eprintln!("⏳️ connecting...");
-    let mut stream = connect(&root_args.port)?;
+    let mut stream = connect(root_args)?;
     stream.set_timeout(2);
     let (author_id, app_id) = read_app_id(&mut *stream).context("fetch ID")?;
     eprintln!("✅ got the ID:");
