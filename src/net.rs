@@ -1,3 +1,4 @@
+use crate::args::RuntimeArgs;
 use anyhow::{Context, Result};
 use firefly_types::serial::{Request, Response};
 use firefly_types::Encode;
@@ -11,18 +12,16 @@ static IP: IpAddr = IpAddr::V4(Ipv4Addr::UNSPECIFIED);
 const TCP_PORT_MIN: u16 = 3210;
 const TCP_PORT_MAX: u16 = 3217;
 
-#[expect(clippy::ref_option)]
-pub fn connect(port: &Option<String>) -> Result<Box<dyn Stream>> {
-    let stream: Box<dyn Stream> = if let Some(port) = port {
-        Box::new(connect_device(port)?)
+pub fn connect(root_args: &RuntimeArgs) -> Result<Box<dyn Stream>> {
+    let stream: Box<dyn Stream> = if let Some(port) = &root_args.port {
+        Box::new(connect_device(port, root_args.baud_rate)?)
     } else {
         Box::new(connect_emulator()?)
     };
     Ok(stream)
 }
 
-fn connect_device(port: &str) -> Result<SerialStream> {
-    let baud_rate = 115_200;
+fn connect_device(port: &str, baud_rate: u32) -> Result<SerialStream> {
     let port = serialport::new(port, baud_rate)
         .open()
         .context("open the serial port")?;

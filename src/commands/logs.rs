@@ -1,4 +1,4 @@
-use crate::args::LogsArgs;
+use crate::args::RuntimeArgs;
 use crate::net::connect;
 use anyhow::{Context, Result};
 use crossterm::cursor::MoveToColumn;
@@ -8,9 +8,8 @@ use crossterm::terminal::{Clear, ClearType};
 use firefly_types::serial::Response;
 use std::io::{stdout, Write};
 
-pub fn cmd_logs(args: &LogsArgs) -> Result<()> {
-    let port = Some(args.port.to_string());
-    let mut stream = connect(&port).context("open the serial port")?;
+pub fn cmd_logs(root_args: &RuntimeArgs) -> Result<()> {
+    let mut stream = connect(root_args).context("open the serial port")?;
     stream.set_timeout(3600);
     println!("listening...");
     let mut prev_time = chrono::Local::now(); // when the previous record was received

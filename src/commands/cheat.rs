@@ -1,13 +1,13 @@
-use crate::args::CheatArgs;
+use crate::args::{CheatArgs, RuntimeArgs};
 use crate::config::Config;
 use crate::net::connect;
 use anyhow::{bail, Context, Result};
 use firefly_types::serial;
 use std::path::Path;
 
-pub fn cmd_cheat(args: &CheatArgs) -> Result<()> {
+pub fn cmd_cheat(root_args: &RuntimeArgs, args: &CheatArgs) -> Result<()> {
     println!("⏳️ connecting...");
-    let mut stream = connect(&args.port)?;
+    let mut stream = connect(root_args)?;
     stream.set_timeout(2);
 
     {

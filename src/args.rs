@@ -51,15 +51,6 @@ pub enum Commands {
     /// Show the full path to the virtual filesystem.
     Vfs,
 
-    /// Send a cheat code into a running game.
-    Cheat(CheatArgs),
-
-    /// Show runtime stats for a running device (or emulator).
-    Monitor(MonitorArgs),
-
-    /// Show live runtime logs from a running device.
-    Logs(LogsArgs),
-
     /// Control a running device or emulator.
     Runtime(RuntimeArgs),
 
@@ -272,27 +263,6 @@ pub struct ShotsDownloadArgs {
 }
 
 #[derive(Debug, Parser)]
-pub struct MonitorArgs {
-    /// Path to serial port to connect to a running device.
-    #[arg(long, default_value = None)]
-    pub port: Option<String>,
-
-    #[arg(long, default_value_t = 115_200)]
-    pub baud_rate: u32,
-}
-
-#[derive(Debug, Parser)]
-pub struct LogsArgs {
-    /// Path to serial port to connect to a running device.
-    #[arg(long)]
-    pub port: String,
-
-    /// The serial port Baud rate.
-    #[arg(long, default_value_t = 115_200)]
-    pub baud_rate: u32,
-}
-
-#[derive(Debug, Parser)]
 pub struct InspectArgs {
     /// ID of the ROM to inspect.
     ///
@@ -319,13 +289,6 @@ pub struct CheatArgs {
     #[arg()]
     pub value: String,
 
-    /// Path to serial port to connect to a running device.
-    #[arg(long, default_value = None)]
-    pub port: Option<String>,
-
-    #[arg(long, default_value_t = 115_200)]
-    pub baud_rate: u32,
-
     /// Path to the project root.
     #[arg(default_value = ".")]
     pub root: PathBuf,
@@ -346,6 +309,19 @@ pub struct RuntimeArgs {
 
 #[derive(Debug, Parser)]
 pub enum RuntimeCommands {
+    /// Send a cheat code.
+    Cheat(CheatArgs),
+
+    /// Show runtime stats.
+    Monitor,
+
+    /// Show live runtime logs.
+    Logs,
+
+    /// Take a screenshot.
+    #[clap(alias("shot"), alias("snap"), alias("photo"))]
+    Screenshot,
+
     /// Restart the running app.
     #[clap(alias("reload"))]
     Restart,
