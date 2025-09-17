@@ -51,15 +51,6 @@ pub enum Commands {
     /// Show the full path to the virtual filesystem.
     Vfs,
 
-    /// Send a cheat code into a running game.
-    Cheat(CheatArgs),
-
-    /// Show runtime stats for a running device (or emulator).
-    Monitor(MonitorArgs),
-
-    /// Show live runtime logs from a running device.
-    Logs(LogsArgs),
-
     /// Control a running device or emulator.
     Runtime(RuntimeArgs),
 
@@ -346,6 +337,15 @@ pub struct RuntimeArgs {
 
 #[derive(Debug, Parser)]
 pub enum RuntimeCommands {
+    /// Send a cheat code.
+    Cheat(CheatArgs),
+
+    /// Show runtime stats.
+    Monitor(MonitorArgs),
+
+    /// Show live runtime logs.
+    Logs(LogsArgs),
+
     /// Restart the running app.
     #[clap(alias("reload"))]
     Restart,

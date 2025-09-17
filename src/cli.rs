@@ -4,36 +4,43 @@ use std::fmt::Display;
 use std::path::PathBuf;
 
 pub fn run_command(vfs: PathBuf, command: &Commands) -> anyhow::Result<()> {
+    use Commands::*;
     match command {
-        Commands::Build(args) => cmd_build(vfs, args),
-        Commands::Export(args) => cmd_export(&vfs, args),
-        Commands::Import(args) => cmd_import(&vfs, args),
-        Commands::New(args) => cmd_new(args),
-        Commands::Emulator(args) => cmd_emulator(args),
-        Commands::Badges(args) => cmd_badges(&vfs, args),
-        Commands::Boards(args) => cmd_boards(&vfs, args),
-        Commands::Cheat(args) => cmd_cheat(args),
-        Commands::Monitor(args) => cmd_monitor(&vfs, args),
-        Commands::Logs(args) => cmd_logs(args),
-        Commands::Inspect(args) => cmd_inspect(&vfs, args),
-        Commands::Repl(args) => cmd_repl(&vfs, args),
-        Commands::Shots(ShotsCommands::Download(args)) => cmd_shots_download(&vfs, args),
-        Commands::Key(KeyCommands::New(args)) => cmd_key_new(&vfs, args),
-        Commands::Key(KeyCommands::Add(args)) => cmd_key_add(&vfs, args),
-        Commands::Key(KeyCommands::Pub(args)) => cmd_key_pub(&vfs, args),
-        Commands::Key(KeyCommands::Priv(args)) => cmd_key_priv(&vfs, args),
-        Commands::Key(KeyCommands::Rm(args)) => cmd_key_rm(&vfs, args),
-        Commands::Catalog(CatalogCommands::List(args)) => cmd_catalog_list(args),
-        Commands::Catalog(CatalogCommands::Show(args)) => cmd_catalog_show(args),
-        Commands::Name(NameCommands::Get) => cmd_name_get(&vfs),
-        Commands::Name(NameCommands::Set(args)) => cmd_name_set(&vfs, args),
-        Commands::Name(NameCommands::Generate) => cmd_name_generate(&vfs),
-        Commands::Runtime(root_args) => match &root_args.command {
+        Build(args) => cmd_build(vfs, args),
+        Export(args) => cmd_export(&vfs, args),
+        Import(args) => cmd_import(&vfs, args),
+        New(args) => cmd_new(args),
+        Emulator(args) => cmd_emulator(args),
+        Badges(args) => cmd_badges(&vfs, args),
+        Boards(args) => cmd_boards(&vfs, args),
+        Inspect(args) => cmd_inspect(&vfs, args),
+        Repl(args) => cmd_repl(&vfs, args),
+        Shots(ShotsCommands::Download(args)) => cmd_shots_download(&vfs, args),
+        Key(command) => match command {
+            KeyCommands::New(args) => cmd_key_new(&vfs, args),
+            KeyCommands::Add(args) => cmd_key_add(&vfs, args),
+            KeyCommands::Pub(args) => cmd_key_pub(&vfs, args),
+            KeyCommands::Priv(args) => cmd_key_priv(&vfs, args),
+            KeyCommands::Rm(args) => cmd_key_rm(&vfs, args),
+        },
+        Catalog(command) => match command {
+            CatalogCommands::List(args) => cmd_catalog_list(args),
+            CatalogCommands::Show(args) => cmd_catalog_show(args),
+        },
+        Name(command) => match command {
+            NameCommands::Get => cmd_name_get(&vfs),
+            NameCommands::Set(args) => cmd_name_set(&vfs, args),
+            NameCommands::Generate => cmd_name_generate(&vfs),
+        },
+        Runtime(root_args) => match &root_args.command {
             RuntimeCommands::Restart => cmd_restart(root_args),
             RuntimeCommands::Exit => cmd_exit(root_args),
             RuntimeCommands::Id => cmd_id(root_args),
+            RuntimeCommands::Cheat(args) => cmd_cheat(args),
+            RuntimeCommands::Monitor(args) => cmd_monitor(&vfs, args),
+            RuntimeCommands::Logs(args) => cmd_logs(args),
         },
-        Commands::Vfs => cmd_vfs(),
+        Vfs => cmd_vfs(),
     }
 }
 
