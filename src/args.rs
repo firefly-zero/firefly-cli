@@ -318,6 +318,10 @@ pub enum RuntimeCommands {
     /// Show live runtime logs.
     Logs,
 
+    /// Take a screenshot.
+    #[clap(alias("shot"), alias("snap"), alias("photo"))]
+    Screenshot,
+
     /// Restart the running app.
     #[clap(alias("reload"))]
     Restart,

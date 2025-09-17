@@ -36,6 +36,7 @@ pub fn run_command(vfs: PathBuf, command: &Commands) -> anyhow::Result<()> {
             RuntimeCommands::Restart => cmd_restart(root_args),
             RuntimeCommands::Exit => cmd_exit(root_args),
             RuntimeCommands::Id => cmd_id(root_args),
+            RuntimeCommands::Screenshot => cmd_screenshot(root_args),
             RuntimeCommands::Cheat(args) => cmd_cheat(root_args, args),
             RuntimeCommands::Monitor => cmd_monitor(root_args),
             RuntimeCommands::Logs => cmd_logs(root_args),
