@@ -1,10 +1,9 @@
-use crate::args::MonitorArgs;
+use crate::args::RuntimeArgs;
 use crate::net::{connect, is_timeout, Stream};
 use anyhow::{Context, Result};
 use crossterm::{cursor, event, execute, style, terminal};
 use firefly_types::serial;
 use std::io;
-use std::path::Path;
 use std::time::{Duration, Instant};
 
 const COL1: u16 = 8;
@@ -35,19 +34,19 @@ impl Stats {
     }
 }
 
-pub fn cmd_monitor(_vfs: &Path, args: &MonitorArgs) -> Result<()> {
+pub fn cmd_monitor(root_args: &RuntimeArgs) -> Result<()> {
     execute!(io::stdout(), terminal::EnterAlternateScreen).context("enter alt screen")?;
     execute!(io::stdout(), cursor::Hide).context("hide cursor")?;
     terminal::enable_raw_mode().context("enable raw mode")?;
-    let res = monitor_inner(args);
+    let res = monitor_inner(root_args);
     terminal::disable_raw_mode().context("disable raw mode")?;
     execute!(io::stdout(), cursor::Show).context("show cursor")?;
     execute!(io::stdout(), terminal::LeaveAlternateScreen).context("leave alt screen")?;
     res
 }
 
-fn monitor_inner(args: &MonitorArgs) -> Result<()> {
-    let mut stream = connect(&args.port)?;
+fn monitor_inner(root_args: &RuntimeArgs) -> Result<()> {
+    let mut stream = connect(&root_args.port)?;
     stream.set_timeout(3600);
     let mut stats = Stats::default();
     request_device_stats(&mut *stream, &mut stats)?;

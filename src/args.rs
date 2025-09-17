@@ -263,27 +263,6 @@ pub struct ShotsDownloadArgs {
 }
 
 #[derive(Debug, Parser)]
-pub struct MonitorArgs {
-    /// Path to serial port to connect to a running device.
-    #[arg(long, default_value = None)]
-    pub port: Option<String>,
-
-    #[arg(long, default_value_t = 115_200)]
-    pub baud_rate: u32,
-}
-
-#[derive(Debug, Parser)]
-pub struct LogsArgs {
-    /// Path to serial port to connect to a running device.
-    #[arg(long)]
-    pub port: String,
-
-    /// The serial port Baud rate.
-    #[arg(long, default_value_t = 115_200)]
-    pub baud_rate: u32,
-}
-
-#[derive(Debug, Parser)]
 pub struct InspectArgs {
     /// ID of the ROM to inspect.
     ///
@@ -310,13 +289,6 @@ pub struct CheatArgs {
     #[arg()]
     pub value: String,
 
-    /// Path to serial port to connect to a running device.
-    #[arg(long, default_value = None)]
-    pub port: Option<String>,
-
-    #[arg(long, default_value_t = 115_200)]
-    pub baud_rate: u32,
-
     /// Path to the project root.
     #[arg(default_value = ".")]
     pub root: PathBuf,
@@ -341,10 +313,10 @@ pub enum RuntimeCommands {
     Cheat(CheatArgs),
 
     /// Show runtime stats.
-    Monitor(MonitorArgs),
+    Monitor,
 
     /// Show live runtime logs.
-    Logs(LogsArgs),
+    Logs,
 
     /// Restart the running app.
     #[clap(alias("reload"))]
