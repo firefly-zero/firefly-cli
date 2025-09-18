@@ -322,6 +322,10 @@ pub enum RuntimeCommands {
     #[clap(alias("shot"), alias("snap"), alias("photo"))]
     Screenshot,
 
+    /// Launch the given app.
+    #[clap(alias("start"), alias("execute"), alias("open"))]
+    Launch(LaunchArgs),
+
     /// Restart the running app.
     #[clap(alias("reload"))]
     Restart,
@@ -332,6 +336,13 @@ pub enum RuntimeCommands {
 
     /// Fetch and print the ID of the running app.
     Id,
+}
+
+#[derive(Debug, Parser)]
+pub struct LaunchArgs {
+    /// The app ID to launch. For example, "lux.snek".
+    #[arg()]
+    pub id: String,
 }
 
 #[derive(Debug, Parser)]
