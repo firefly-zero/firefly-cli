@@ -30,9 +30,20 @@ pub fn cmd_launch(root_args: &RuntimeArgs, args: &LaunchArgs) -> Result<()> {
     println!("⏳️ connecting...");
     let mut stream = connect(root_args)?;
     stream.set_timeout(2);
+
+    if args.id == "sys.connector" || args.id == "sys.disconnector" {
+        bail!("cannot connect or disconnect through CLI yet");
+    }
     let Some((author_id, app_id)) = args.id.split_once('.') else {
         bail!("the ID must contain a dot");
     };
+    if let Err(err) = firefly_types::validate_id(author_id) {
+        bail!("invalid author ID: {err}");
+    }
+    if let Err(err) = firefly_types::validate_id(app_id) {
+        bail!("invalid app ID: {err}");
+    }
+
     println!("⌛ launching {}...", args.id);
     let id = (author_id.to_string(), app_id.to_string());
     let req = serial::Request::Launch(id);
@@ -79,9 +90,15 @@ fn wait_for_ok(stream: Box<dyn Stream>) -> Result<()> {
     let mut stream = stream;
     for _ in 0..5 {
         let resp = stream.next()?;
-        if matches!(resp, serial::Response::Ok) {
-            println!("✅ done");
-            return Ok(());
+        match resp {
+            serial::Response::Ok => {
+                println!("✅ done");
+                return Ok(());
+            }
+            serial::Response::Log(log) => {
+                println!("🪵 {log}");
+            }
+            _ => {}
         }
     }
     bail!("timed out waiting for response")
