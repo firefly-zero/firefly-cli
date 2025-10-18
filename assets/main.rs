@@ -2,18 +2,18 @@
 #![no_main]
 use firefly_rust as ff;
 
-#[no_mangle]
-extern fn boot() {
+#[unsafe(no_mangle)]
+extern "C" fn boot() {
     // ...
 }
 
-#[no_mangle]
-extern fn update() {
+#[unsafe(no_mangle)]
+extern "C" fn update() {
     // ...
 }
 
-#[no_mangle]
-extern fn render() {
+#[unsafe(no_mangle)]
+extern "C" fn render() {
     ff::clear_screen(ff::Color::White);
     ff::draw_triangle(
         ff::Point { x: 60, y: 10 },
