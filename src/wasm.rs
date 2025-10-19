@@ -75,9 +75,28 @@ pub fn optimize(bin_path: &Path) -> anyhow::Result<()> {
         return Ok(());
     }
 
-    // TODO: only allow features supported by the runtime (wasmi).
+    // https://github.com/wasmi-labs/wasmi/?tab=readme-ov-file#webassembly-features
     let output = Command::new("wasm-opt")
-        .args(["-Oz", "--all-features", "-o", bin_path, bin_path])
+        .args([
+            "-Oz",
+            "--disable-exception-handling",
+            "--disable-gc",
+            "--disable-typed-function-references",
+            "--enable-bulk-memory",
+            "--enable-extended-const",
+            "--enable-memory64",
+            "--enable-multivalue",
+            "--enable-mutable-globals",
+            "--enable-nontrapping-float-to-int",
+            "--enable-reference-types",
+            "--enable-relaxed-simd",
+            "--enable-sign-ext",
+            "--enable-simd",
+            "--enable-tail-call",
+            "-o",
+            bin_path,
+            bin_path,
+        ])
         .output()
         .context("run wasm-opt")?;
     if !output.status.success() {
