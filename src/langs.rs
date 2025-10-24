@@ -37,7 +37,9 @@ pub fn build_bin(config: &Config, args: &BuildArgs) -> anyhow::Result<()> {
     if !args.no_strip {
         strip_custom(&bin_path)?;
     }
-    if !args.no_opt {
+    // TODO(@orsinium): Moon binaries cannot be parsed by wasm-opt, figure out why.
+    //     [parse exception: block cannot pop from outside (at 0:7745)]
+    if !args.no_opt && !matches!(lang, Lang::Moon) {
         optimize(&bin_path).context("optimize wasm binary")?;
     }
     Ok(())
@@ -67,6 +69,9 @@ fn detect_lang(root: &Path) -> anyhow::Result<Lang> {
         return Ok(Lang::Python);
     }
     if root.join("moon.pkg.json").exists() {
+        return Ok(Lang::Moon);
+    }
+    if root.join("moon.mod.json").exists() {
         return Ok(Lang::Moon);
     }
     if root.join("main.c").exists() {
