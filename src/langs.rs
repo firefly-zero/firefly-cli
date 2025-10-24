@@ -169,12 +169,13 @@ fn build_rust_inner(config: &Config, example: bool) -> anyhow::Result<()> {
             cmd_args.push(arg.as_str());
         }
     }
-    let output = Command::new("cargo")
-        .args(cmd_args)
-        .current_dir(in_path)
-        .env("RUSTFLAGS", "-Clink-arg=-zstack-size=4096")
-        .output()
-        .context("run cargo build")?;
+    let mut cmd = Command::new("cargo");
+    let mut cmd = cmd.args(cmd_args).current_dir(in_path);
+    let cargo_config = config.root_path.join(".cargo").join("config.toml");
+    if !cargo_config.exists() {
+        cmd = cmd.env("RUSTFLAGS", "-Clink-arg=-zstack-size=4096");
+    }
+    let output = cmd.output().context("run cargo build")?;
     check_output(&output)?;
     let cargo_out_path = find_rust_result(&config.root_path)?;
     let out_path = config.rom_path.join(BIN);
