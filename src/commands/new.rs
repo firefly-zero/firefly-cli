@@ -25,10 +25,11 @@ pub fn cmd_new(args: &NewArgs) -> Result<()> {
         Lang::Go => new_go(&args.name).context("new Go project")?,
         Lang::Rust => new_rust(&args.name).context("new Rust project")?,
         Lang::Zig => new_zig(&args.name).context("new Zig project")?,
-        Lang::TS => todo!("TypeScript is not supported yet"),
+        Lang::TS => bail!("TypeScript is not supported yet"),
         Lang::C => new_c(&args.name).context("new C project")?,
         Lang::Cpp => new_cpp(&args.name).context("new C++ project")?,
-        Lang::Python => todo!("Python is not supported yet"),
+        Lang::Python => bail!("Python is not supported yet"),
+        Lang::Moon => bail!("Moon starter project is not supported yet"),
     }
     write_config(&args.name)?;
     init_git(&args.name)?;

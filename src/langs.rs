@@ -28,6 +28,7 @@ pub fn build_bin(config: &Config, args: &BuildArgs) -> anyhow::Result<()> {
         Lang::C => build_c(config),
         Lang::Cpp => build_cpp(config),
         Lang::Python => build_python(config),
+        Lang::Moon => build_moon(config),
     }?;
     let bin_path = config.rom_path.join(BIN);
     if !bin_path.is_file() {
@@ -36,7 +37,9 @@ pub fn build_bin(config: &Config, args: &BuildArgs) -> anyhow::Result<()> {
     if !args.no_strip {
         strip_custom(&bin_path)?;
     }
-    if !args.no_opt {
+    // TODO(@orsinium): Moon binaries cannot be parsed by wasm-opt, figure out why.
+    //     [parse exception: block cannot pop from outside (at 0:7745)]
+    if !args.no_opt && !matches!(lang, Lang::Moon) {
         optimize(&bin_path).context("optimize wasm binary")?;
     }
     Ok(())
@@ -64,6 +67,12 @@ fn detect_lang(root: &Path) -> anyhow::Result<Lang> {
     }
     if root.join("pyproject.toml").exists() {
         return Ok(Lang::Python);
+    }
+    if root.join("moon.pkg.json").exists() {
+        return Ok(Lang::Moon);
+    }
+    if root.join("moon.mod.json").exists() {
+        return Ok(Lang::Moon);
     }
     if root.join("main.c").exists() {
         return Ok(Lang::C);
@@ -308,6 +317,7 @@ fn find_wasi_sdk() -> anyhow::Result<PathBuf> {
     Ok(path)
 }
 
+// Build Zig project.
 fn build_zig(config: &Config) -> anyhow::Result<()> {
     check_installed("Zig", "zig", "version")?;
     let mut cmd_args = vec!["build"];
@@ -331,6 +341,43 @@ fn build_zig(config: &Config) -> anyhow::Result<()> {
     Ok(())
 }
 
+// Build Moon project.
+fn build_moon(config: &Config) -> anyhow::Result<()> {
+    check_installed("Moon", "moon", "version")?;
+    let mut cmd_args = vec!["build", "--target", "wasm"];
+    if let Some(additional_args) = &config.compile_args {
+        for arg in additional_args {
+            cmd_args.push(arg.as_str());
+        }
+    }
+    let output = Command::new("moon")
+        .args(cmd_args)
+        .current_dir(&config.root_path)
+        .output()
+        .context("run moon build")?;
+    check_output(&output)?;
+
+    let from_dir = config
+        .root_path
+        .join("target")
+        .join("wasm")
+        .join("release")
+        .join("build");
+    let from_path = find_wasm(&from_dir)?;
+    let out_path = config.rom_path.join(BIN);
+    std::fs::copy(&from_path, out_path).context("copy wasm binary")?;
+    std::fs::remove_file(from_path).context("remove wasm file")?;
+    Ok(())
+}
+
+fn build_ts(_config: &Config) -> anyhow::Result<()> {
+    todo!("TypeScript is not supported yet")
+}
+
+fn build_python(_config: &Config) -> anyhow::Result<()> {
+    todo!("Python is not supported yet")
+}
+
 /// Find a wasm binary in the given directory.
 fn find_wasm(from_dir: &Path) -> anyhow::Result<PathBuf> {
     let from_dir = std::fs::read_dir(from_dir)?;
@@ -351,14 +398,6 @@ fn find_wasm(from_dir: &Path) -> anyhow::Result<PathBuf> {
         Some(result) => Ok(result),
         None => bail!("cannot find wasm binary"),
     }
-}
-
-fn build_ts(_config: &Config) -> anyhow::Result<()> {
-    todo!("TypeScript is not supported yet")
-}
-
-fn build_python(_config: &Config) -> anyhow::Result<()> {
-    todo!("Python is not supported yet")
 }
 
 /// Convert a file system path to UTF-8 if possible.

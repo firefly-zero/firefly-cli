@@ -24,6 +24,7 @@ jobs:
       - uses: arduino/setup-task@v1
         with:
           repo-token: ${{ github.token }}
+      - run: sudo apt update
       - run: sudo apt install -qq -y libudev-dev
       - run: task test
 
@@ -37,6 +38,7 @@ jobs:
       - uses: arduino/setup-task@v1
         with:
           repo-token: ${{ github.token }}
+      - run: sudo apt update
       - run: sudo apt install -qq -y libudev-dev
       - run: task lint
 
