@@ -24,7 +24,8 @@ jobs:
       - uses: arduino/setup-task@v1
         with:
           repo-token: ${{ github.token }}
-      - run: sudo apt install -qq -y libudev-dev
+      - run: apt update
+      - run: apt install -qq -y libudev-dev
       - run: task test
 
   lint:
@@ -37,7 +38,8 @@ jobs:
       - uses: arduino/setup-task@v1
         with:
           repo-token: ${{ github.token }}
-      - run: sudo apt install -qq -y libudev-dev
+      - run: apt update
+      - run: apt install -qq -y libudev-dev
       - run: task lint
 
   markdownlint-cli:
