@@ -53,7 +53,7 @@ fn write_config(lang: &Lang, name: &str) -> Result<()> {
     _ = writeln!(config, "app_name = \"{}\"", to_titlecase(name));
 
     if matches!(lang, Lang::Lua) {
-        _ = writeln!(config, "[files]");
+        _ = writeln!(config, "\n[files]");
         _ = writeln!(config, r#"main = {{ path = "main.lua", copy = true }}"#);
     }
 
