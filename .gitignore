@@ -2,3 +2,4 @@
 /.task/
 /test_app/target/
 .zig-cache/
+/assets/target/
