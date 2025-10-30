@@ -184,4 +184,5 @@ pub enum Lang {
     Cpp,
     Python,
     Moon,
+    Lua,
 }
