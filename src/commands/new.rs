@@ -29,16 +29,17 @@ pub fn cmd_new(args: &NewArgs) -> Result<()> {
         Lang::C => new_c(&args.name).context("new C project")?,
         Lang::Cpp => new_cpp(&args.name).context("new C++ project")?,
         Lang::Python => bail!("Python is not supported yet"),
+        Lang::Lua => new_lua(&args.name).context("new Lua project")?,
         Lang::Moon => new_moon(&args.name).context("new Moon project")?,
     }
-    write_config(&args.name)?;
+    write_config(&lang, &args.name)?;
     init_git(&args.name)?;
     println!("✅ project created");
     Ok(())
 }
 
 /// Create and dump firefly.toml config.
-fn write_config(name: &str) -> Result<()> {
+fn write_config(lang: &Lang, name: &str) -> Result<()> {
     use std::fmt::Write;
 
     let root = Path::new(name);
@@ -50,6 +51,11 @@ fn write_config(name: &str) -> Result<()> {
     _ = writeln!(config, "app_id = \"{name}\"");
     _ = writeln!(config, "author_name = \"{}\"", to_titlecase(&username));
     _ = writeln!(config, "app_name = \"{}\"", to_titlecase(name));
+
+    if matches!(lang, Lang::Lua) {
+        _ = writeln!(config, "\n[files]");
+        _ = writeln!(config, r#"main = {{ path = "main.lua", copy = true }}"#);
+    }
 
     std::fs::write(config_path, config).context("write config")?;
     Ok(())
@@ -77,7 +83,8 @@ fn parse_lang(lang: &str) -> Result<Lang> {
         "ts" | "typescript" | "js" | "javascript" => Lang::TS,
         "cpp" | "c++" => Lang::Cpp,
         "python" | "py" => Lang::Python,
-        "moon" | "moonbit" => Lang::Moon,
+        "moon" | "moonbit" | "mbt" => Lang::Moon,
+        "lua" => Lang::Lua,
         _ => bail!("unsupported language: {lang}"),
     };
     Ok(result)
@@ -146,6 +153,15 @@ fn new_c_or_cpp(name: &str, main: &str) -> Result<()> {
     Ok(())
 }
 
+/// Create a new Lua project.
+fn new_lua(name: &str) -> Result<()> {
+    let mut c = Commander::default();
+    c.cd(name)?;
+    c.copy_asset(&["main.lua"], "main.lua")?;
+    Ok(())
+}
+
+/// Create a new Moon project.
 fn new_moon(name: &str) -> Result<()> {
     check_installed("Moon", "moon", "version")?;
     let mut c = Commander::default();

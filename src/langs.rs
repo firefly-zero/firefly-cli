@@ -28,6 +28,7 @@ pub fn build_bin(config: &Config, args: &BuildArgs) -> anyhow::Result<()> {
         Lang::C => build_c(config),
         Lang::Cpp => build_cpp(config),
         Lang::Python => build_python(config),
+        Lang::Lua => build_lua(config),
         Lang::Moon => build_moon(config),
     }?;
     let bin_path = config.rom_path.join(BIN);
@@ -79,6 +80,9 @@ fn detect_lang(root: &Path) -> anyhow::Result<Lang> {
     }
     if root.join("main.cpp").exists() {
         return Ok(Lang::Cpp);
+    }
+    if root.join("main.lua").exists() {
+        return Ok(Lang::Lua);
     }
     if root.join("src").join("main.c").exists() {
         return Ok(Lang::C);
@@ -367,6 +371,22 @@ fn build_moon(config: &Config) -> anyhow::Result<()> {
     let out_path = config.rom_path.join(BIN);
     std::fs::copy(&from_path, out_path).context("copy wasm binary")?;
     std::fs::remove_file(from_path).context("remove wasm file")?;
+    Ok(())
+}
+
+// Build Lua project.
+fn build_lua(config: &Config) -> anyhow::Result<()> {
+    let from_path = config.root_path.join("main.wasm");
+    if !from_path.is_file() {
+        let url = "https://github.com/firefly-zero/firefly-lua/releases/latest/download/main.wasm";
+        let resp = ureq::get(url).call().context("send request")?;
+        let mut file = std::fs::File::create(&from_path).context("open main.wasm")?;
+        let mut body = resp.into_body();
+        let mut body = body.as_reader();
+        std::io::copy(&mut body, &mut file)?;
+    }
+    let out_path = config.rom_path.join(BIN);
+    std::fs::copy(&from_path, out_path).context("copy wasm binary")?;
     Ok(())
 }
 
