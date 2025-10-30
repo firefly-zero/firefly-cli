@@ -29,7 +29,7 @@ pub fn cmd_new(args: &NewArgs) -> Result<()> {
         Lang::C => new_c(&args.name).context("new C project")?,
         Lang::Cpp => new_cpp(&args.name).context("new C++ project")?,
         Lang::Python => bail!("Python is not supported yet"),
-        Lang::Moon => bail!("Moon starter project is not supported yet"),
+        Lang::Moon => new_moon(&args.name).context("new Moon project")?,
     }
     write_config(&args.name)?;
     init_git(&args.name)?;
@@ -77,6 +77,7 @@ fn parse_lang(lang: &str) -> Result<Lang> {
         "ts" | "typescript" | "js" | "javascript" => Lang::TS,
         "cpp" | "c++" => Lang::Cpp,
         "python" | "py" => Lang::Python,
+        "moon" | "moonbit" => Lang::Moon,
         _ => bail!("unsupported language: {lang}"),
     };
     Ok(result)
@@ -142,6 +143,17 @@ fn new_c_or_cpp(name: &str, main: &str) -> Result<()> {
         c.wget(&["vendor", "firefly", fname], url)?;
     }
     c.copy_asset(&[main], main)?;
+    Ok(())
+}
+
+fn new_moon(name: &str) -> Result<()> {
+    check_installed("Moon", "moon", "version")?;
+    let mut c = Commander::default();
+    c.cd(name)?;
+    c.copy_asset(&["main.mbt"], "main.mbt")?;
+    c.copy_asset(&["moon.mod.json"], "moon.mod.json")?;
+    c.copy_asset(&["moon.pkg.json"], "moon.pkg.json")?;
+    c.run(&["moon", "add", "applejag/firefly"])?;
     Ok(())
 }
 
