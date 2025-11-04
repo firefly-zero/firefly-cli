@@ -1,9 +1,10 @@
 {
   "is-main": true,
-  "import": ["applejag/firefly"],
+  "import": ["firefly/firefly"],
   "link": {
     "wasm": {
-      "exports": ["boot", "update", "render"]
+      "exports": ["boot", "update", "render"],
+      "export-memory-name": "memory"
     }
   }
 }

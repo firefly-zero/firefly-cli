@@ -169,7 +169,7 @@ fn new_moon(name: &str) -> Result<()> {
     c.copy_asset(&["main.mbt"], "main.mbt")?;
     c.copy_asset(&["moon.mod.json"], "moon.mod.json")?;
     c.copy_asset(&["moon.pkg.json"], "moon.pkg.json")?;
-    c.run(&["moon", "add", "applejag/firefly"])?;
+    c.run(&["moon", "add", "firefly/firefly"])?;
     Ok(())
 }
 
