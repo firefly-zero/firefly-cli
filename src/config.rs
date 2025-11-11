@@ -179,6 +179,7 @@ pub enum Lang {
     Go,
     Rust,
     Zig,
+    AS,
     TS,
     C,
     Cpp,
