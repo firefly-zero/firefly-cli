@@ -422,7 +422,7 @@ fn build_as(config: &Config) -> anyhow::Result<()> {
         .args(cmd_args)
         .current_dir(&config.root_path)
         .output()
-        .context("run moon build")?;
+        .context("run asc assembly")?;
     check_output(&output)?;
 
     let from_path = config.root_path.join("main.wasm");
