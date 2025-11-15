@@ -25,7 +25,7 @@ pub fn cmd_new(args: &NewArgs) -> Result<()> {
         Lang::Go => new_go(&args.name).context("new Go project")?,
         Lang::Rust => new_rust(&args.name).context("new Rust project")?,
         Lang::Zig => new_zig(&args.name).context("new Zig project")?,
-        Lang::TS => bail!("TypeScript is not supported yet"),
+        Lang::AS | Lang::TS => new_as(&args.name).context("new AssemblyScript project")?,
         Lang::C => new_c(&args.name).context("new C project")?,
         Lang::Cpp => new_cpp(&args.name).context("new C++ project")?,
         Lang::Python => bail!("Python is not supported yet"),
@@ -80,6 +80,7 @@ fn parse_lang(lang: &str) -> Result<Lang> {
         "go" | "golang" => Lang::Go,
         "rust" | "rs" => Lang::Rust,
         "zig" => Lang::Zig,
+        "as" | "assemblyscript" => Lang::AS,
         "ts" | "typescript" | "js" | "javascript" => Lang::TS,
         "cpp" | "c++" => Lang::Cpp,
         "python" | "py" => Lang::Python,
@@ -171,6 +172,20 @@ fn new_moon(name: &str) -> Result<()> {
     c.copy_asset(&["moon.pkg.json"], "moon.pkg.json")?;
     c.run(&["moon", "update"])?;
     c.run(&["moon", "add", "firefly/firefly"])?;
+    Ok(())
+}
+
+/// Create a new [AssemblyScript] project.
+///
+/// [AssemblyScript]: https://www.assemblyscript.org/
+fn new_as(name: &str) -> Result<()> {
+    let mut c = Commander::default();
+    c.cd(name)?;
+    c.copy_asset(&["package.json"], "package.json")?;
+    c.run(&["npm", "install", "--save", "assemblyscript"])?;
+    c.run(&["npm", "install", "--save", "firefly-as"])?;
+    c.copy_asset(&["assembly", "tsconfig.json"], "tsconfig.json")?;
+    c.copy_asset(&["assembly", "index.ts"], "index.ts")?;
     Ok(())
 }
 

@@ -24,6 +24,7 @@ pub fn build_bin(config: &Config, args: &BuildArgs) -> anyhow::Result<()> {
         Lang::Go => build_go(config),
         Lang::Rust => build_rust(config),
         Lang::Zig => build_zig(config),
+        Lang::AS => build_as(config),
         Lang::TS => build_ts(config),
         Lang::C => build_c(config),
         Lang::Cpp => build_cpp(config),
@@ -62,6 +63,15 @@ fn detect_lang(root: &Path) -> anyhow::Result<Lang> {
     }
     if root.join("build.zig.zon").exists() {
         return Ok(Lang::Zig);
+    }
+    if root.join("asconfig.json").exists() {
+        return Ok(Lang::AS);
+    }
+    if root.join("assembly").join("index.ts").exists() {
+        return Ok(Lang::AS);
+    }
+    if root.join("assembly").join("tsconfig.json").exists() {
+        return Ok(Lang::AS);
     }
     if root.join("package.json").exists() {
         return Ok(Lang::TS);
@@ -387,6 +397,38 @@ fn build_lua(config: &Config) -> anyhow::Result<()> {
     }
     let out_path = config.rom_path.join(BIN);
     std::fs::copy(&from_path, out_path).context("copy wasm binary")?;
+    Ok(())
+}
+
+fn build_as(config: &Config) -> anyhow::Result<()> {
+    check_installed("AssemblyScript", "npx", "--version")?;
+    let mut cmd_args = vec![
+        "asc",
+        "assembly",
+        "--use",
+        "abort=~lib/firefly-as/assembly/stubs/handleAbort",
+        "--outFile",
+        "main.wasm",
+    ];
+    if let Some(additional_args) = &config.compile_args {
+        for arg in additional_args {
+            cmd_args.push(arg.as_str());
+        }
+    } else {
+        cmd_args.push("--optimize");
+        cmd_args.push("--noAssert");
+    }
+    let output = Command::new("npx")
+        .args(cmd_args)
+        .current_dir(&config.root_path)
+        .output()
+        .context("run asc assembly")?;
+    check_output(&output)?;
+
+    let from_path = config.root_path.join("main.wasm");
+    let out_path = config.rom_path.join(BIN);
+    std::fs::copy(&from_path, out_path).context("copy wasm binary")?;
+    std::fs::remove_file(from_path).context("remove wasm file")?;
     Ok(())
 }
 
