@@ -15,6 +15,7 @@ mod new;
 mod repl;
 mod runtime;
 mod shots;
+mod test;
 mod vfs;
 
 pub use badges::cmd_badges;
@@ -34,4 +35,5 @@ pub use new::cmd_new;
 pub use repl::cmd_repl;
 pub use runtime::{cmd_exit, cmd_id, cmd_launch, cmd_restart, cmd_screenshot};
 pub use shots::cmd_shots_download;
+pub use test::cmd_test;
 pub use vfs::cmd_vfs;
