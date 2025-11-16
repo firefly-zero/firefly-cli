@@ -33,6 +33,10 @@ pub enum Commands {
     /// Launch firefly-emulator.
     Emulator(EmulatorArgs),
 
+    /// Run tests.
+    #[clap(alias("tests"), alias("pytest"))]
+    Test(TestArgs),
+
     /// List all badges (aka achievements) defined in the given app.
     #[clap(alias("badge"), alias("achievements"), alias("achievement"))]
     Badges(BadgesArgs),
@@ -159,6 +163,9 @@ pub struct KeyExportArgs {
 pub struct NameSetArgs {
     pub name: String,
 }
+
+#[derive(Debug, Parser)]
+pub struct TestArgs {}
 
 #[derive(Debug, Parser, Default)]
 pub struct BuildArgs {
