@@ -47,6 +47,9 @@ fn parse_palette(raw: &RawPalette) -> Result<Palette> {
     if len > 16 {
         bail!("too many colors")
     }
+    if len < 2 {
+        bail!("too few colors")
+    }
     if raw.get("0").is_some() {
         bail!("color IDs must start at 1");
     }
@@ -61,8 +64,7 @@ fn parse_palette(raw: &RawPalette) -> Result<Palette> {
         let idx = usize::from(id - 1);
         palette[idx] = color;
     }
-
-    todo!()
+    Ok(palette)
 }
 
 #[expect(clippy::cast_possible_truncation)]
@@ -93,4 +95,50 @@ pub fn get_builtin_palette(name: &str) -> Result<&'static Palette> {
         _ => bail!("palette {name} not found"),
     };
     Ok(palette)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_parse_palettes() {
+        let mut p = RawPalette::new();
+        p.insert("1".to_string(), 0x_ff_00_00);
+        p.insert("2".to_string(), 0x_00_ff_00);
+        p.insert("3".to_string(), 0x_00_00_ff);
+        let mut ps = HashMap::new();
+        ps.insert("rgb".to_string(), p);
+        let res = parse_palettes(Some(&ps)).unwrap();
+        assert_eq!(res.len(), 1);
+        let exp: Palette = [
+            Some(Rgb([0xff, 0x00, 0x00])),
+            Some(Rgb([0x00, 0xff, 0x00])),
+            Some(Rgb([0x00, 0x00, 0xff])),
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+        ];
+        assert_eq!(*res.get("rgb").unwrap(), exp);
+    }
+
+    #[test]
+    fn test_get_palette() {
+        let mut p = Palettes::new();
+        p.insert("sup".to_string(), *SWEETIE16);
+        assert_eq!(get_palette(None, &p).unwrap(), SWEETIE16);
+        assert_eq!(get_palette(Some("sup"), &p).unwrap(), SWEETIE16);
+        assert_eq!(get_palette(Some("sweetie16"), &p).unwrap(), SWEETIE16);
+        assert!(get_palette(Some("foobar"), &p).is_err());
+    }
 }
