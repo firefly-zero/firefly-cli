@@ -42,6 +42,9 @@ pub struct Config {
     /// Mapping of board IDs to boards.
     pub boards: Option<HashMap<String, BoardConfig>>,
 
+    /// Mapping of board IDs to boards.
+    pub palettes: Option<HashMap<String, HashMap<String, u32>>>,
+
     /// Path to the project root.
     #[serde(skip)]
     pub root_path: PathBuf,
@@ -108,6 +111,9 @@ pub struct FileConfig {
 
     /// The file hash to validate when downloading the file.
     pub sha256: Option<String>,
+
+    /// The name of the color palette in the list of palettes.
+    pub palette: Option<String>,
 
     /// If the file should be copied as-is, without any processing.
     #[serde(default)]
