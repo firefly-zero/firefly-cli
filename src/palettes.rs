@@ -11,7 +11,7 @@ type RawPalette = HashMap<String, u32>;
 ///
 /// <https://lospec.com/palette-list/sweetie-16>
 /// <https://github.com/nesbox/TIC-80/wiki/Palette>
-pub static SWEETIE16: &[Option<Rgb<u8>>; 16] = &[
+pub static SWEETIE16: &Palette = &[
     Some(Rgb([0x1a, 0x1c, 0x2c])), // black
     Some(Rgb([0x5d, 0x27, 0x5d])), // purple
     Some(Rgb([0xb1, 0x3e, 0x53])), // red
@@ -28,6 +28,44 @@ pub static SWEETIE16: &[Option<Rgb<u8>>; 16] = &[
     Some(Rgb([0x94, 0xb0, 0xc2])), // light gray
     Some(Rgb([0x56, 0x6c, 0x86])), // gray
     Some(Rgb([0x33, 0x3c, 0x57])), // dark gray
+];
+
+static PICO8: &Palette = &[
+    Some(Rgb([0x00, 0x00, 0x00])),
+    Some(Rgb([0x1D, 0x2B, 0x53])),
+    Some(Rgb([0x7E, 0x25, 0x53])),
+    Some(Rgb([0x00, 0x87, 0x51])),
+    Some(Rgb([0xAB, 0x52, 0x36])),
+    Some(Rgb([0x5F, 0x57, 0x4F])),
+    Some(Rgb([0xC2, 0xC3, 0xC7])),
+    Some(Rgb([0xFF, 0xF1, 0xE8])),
+    Some(Rgb([0xFF, 0x00, 0x4D])),
+    Some(Rgb([0xFF, 0xA3, 0x00])),
+    Some(Rgb([0xFF, 0xEC, 0x27])),
+    Some(Rgb([0x00, 0xE4, 0x36])),
+    Some(Rgb([0x29, 0xAD, 0xFF])),
+    Some(Rgb([0x83, 0x76, 0x9C])),
+    Some(Rgb([0xFF, 0x77, 0xA8])),
+    Some(Rgb([0xFF, 0xCC, 0xAA])),
+];
+
+static GAMEBOY: &Palette = &[
+    Some(Rgb([0x33, 0x2c, 0x50])),
+    Some(Rgb([0x46, 0x87, 0x8f])),
+    Some(Rgb([0x94, 0xe3, 0x44])),
+    Some(Rgb([0xe2, 0xf3, 0xe4])),
+    None,
+    None,
+    None,
+    None,
+    None,
+    None,
+    None,
+    None,
+    None,
+    None,
+    None,
+    None,
 ];
 
 pub fn parse_palettes(raws: Option<&HashMap<String, RawPalette>>) -> Result<Palettes> {
@@ -91,7 +129,9 @@ pub fn get_palette<'a>(name: Option<&str>, palettes: &'a Palettes) -> Result<&'a
 pub fn get_builtin_palette(name: &str) -> Result<&'static Palette> {
     let name = name.to_ascii_lowercase();
     let palette = match name.as_str() {
-        "sweetie16" | "sweetie-16" | "default" => SWEETIE16,
+        "sweetie16" | "sweetie-16" | "tic80" | "tic-80" | "default" => SWEETIE16,
+        "pico" | "pico8" | "pico-8" => PICO8,
+        "gameboy" | "game-boy" | "gb" | "kirokaze" => GAMEBOY,
         _ => bail!("palette {name} not found"),
     };
     Ok(palette)
