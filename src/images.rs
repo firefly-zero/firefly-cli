@@ -1,40 +1,17 @@
+use crate::palettes::{Color, Palette};
 use anyhow::{bail, Context, Result};
-use image::{Pixel, Rgb, Rgba, RgbaImage};
+use image::{Pixel, Rgba, RgbaImage};
 use std::fs::File;
 use std::io::Write;
 use std::path::Path;
 
-type Color = Option<Rgb<u8>>;
-
-static DEFAULT_PALETTE: &[Option<Rgb<u8>>; 16] = &[
-    // https://lospec.com/palette-list/sweetie-16
-    // https://github.com/nesbox/TIC-80/wiki/Palette
-    Some(Rgb([0x1a, 0x1c, 0x2c])), // black
-    Some(Rgb([0x5d, 0x27, 0x5d])), // purple
-    Some(Rgb([0xb1, 0x3e, 0x53])), // red
-    Some(Rgb([0xef, 0x7d, 0x57])), // orange
-    Some(Rgb([0xff, 0xcd, 0x75])), // yellow
-    Some(Rgb([0xa7, 0xf0, 0x70])), // light green
-    Some(Rgb([0x38, 0xb7, 0x64])), // green
-    Some(Rgb([0x25, 0x71, 0x79])), // dark green
-    Some(Rgb([0x29, 0x36, 0x6f])), // dark blue
-    Some(Rgb([0x3b, 0x5d, 0xc9])), // blue
-    Some(Rgb([0x41, 0xa6, 0xf6])), // light blue
-    Some(Rgb([0x73, 0xef, 0xf7])), // cyan
-    Some(Rgb([0xf4, 0xf4, 0xf4])), // white
-    Some(Rgb([0x94, 0xb0, 0xc2])), // light gray
-    Some(Rgb([0x56, 0x6c, 0x86])), // gray
-    Some(Rgb([0x33, 0x3c, 0x57])), // dark gray
-];
-
-pub fn convert_image(in_path: &Path, out_path: &Path) -> Result<()> {
+pub fn convert_image(in_path: &Path, out_path: &Path, sys_pal: &Palette) -> Result<()> {
     let file = image::ImageReader::open(in_path).context("open image file")?;
     let img = file.decode().context("decode image")?;
     let img = img.to_rgba8();
     if img.width() % 8 != 0 {
         bail!("image width must be divisible by 8");
     }
-    let sys_pal = DEFAULT_PALETTE;
     let mut img_pal = make_palette(&img, sys_pal).context("detect colors used in the image")?;
     let mut out = File::create(out_path).context("create output path")?;
     write_u8(&mut out, 0x21)?;
@@ -61,7 +38,7 @@ fn write_image<const BPP: u8, const PPB: usize>(
     mut out: File,
     img: &RgbaImage,
     img_pal: &[Color],
-    sys_pal: &[Color; 16],
+    sys_pal: &Palette,
 ) -> Result<()> {
     write_u8(&mut out, BPP)?; // BPP
     let Ok(width) = u16::try_from(img.width()) else {
@@ -99,7 +76,7 @@ fn write_image<const BPP: u8, const PPB: usize>(
 }
 
 /// Detect all colors used in the image
-fn make_palette(img: &RgbaImage, sys_pal: &[Color; 16]) -> Result<Vec<Color>> {
+fn make_palette(img: &RgbaImage, sys_pal: &Palette) -> Result<Vec<Color>> {
     let mut palette = Vec::new();
     for (x, y, pixel) in img.enumerate_pixels() {
         let color = convert_color(*pixel);
@@ -121,7 +98,7 @@ fn make_palette(img: &RgbaImage, sys_pal: &[Color; 16]) -> Result<Vec<Color>> {
 }
 
 /// Add empty colors at the end of the palette to match the BPP size.
-fn extend_palette(img_pal: &mut Vec<Color>, sys_pal: &[Color; 16], size: usize) {
+fn extend_palette(img_pal: &mut Vec<Color>, sys_pal: &Palette, size: usize) {
     let n = size - img_pal.len();
     for _ in 0..n {
         img_pal.push(sys_pal[0]);
@@ -170,7 +147,7 @@ const fn is_transparent(c: Rgba<u8>) -> bool {
 }
 
 /// Pick the color to be used to represent transparency
-fn pick_transparent(img_pal: &[Color], sys_pal: &[Color; 16]) -> Result<u8> {
+fn pick_transparent(img_pal: &[Color], sys_pal: &Palette) -> Result<u8> {
     if img_pal.iter().all(Option::is_some) {
         // no transparency needed
         return Ok(17);
@@ -192,6 +169,8 @@ fn pick_transparent(img_pal: &[Color], sys_pal: &[Color; 16]) -> Result<u8> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::palettes::SWEETIE16;
+    use image::Rgb;
 
     #[test]
     fn test_format_color() {
@@ -201,7 +180,7 @@ mod tests {
 
     #[test]
     fn test_pick_transparent() {
-        let pal = DEFAULT_PALETTE;
+        let pal = SWEETIE16;
         let c0 = pal[0];
         let c1 = pal[1];
         let c2 = pal[2];

@@ -26,6 +26,7 @@ mod repl_helper;
 mod vfs;
 mod wasm;
 
+mod palettes;
 #[cfg(test)]
 mod test_helpers;
 

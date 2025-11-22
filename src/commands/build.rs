@@ -7,6 +7,7 @@ use crate::file_names::*;
 use crate::fs::{collect_sizes, format_size};
 use crate::images::convert_image;
 use crate::langs::build_bin;
+use crate::palettes::{get_palette, parse_palettes, Palettes};
 use crate::vfs::init_vfs;
 use anyhow::{bail, Context};
 use chrono::Datelike;
@@ -72,13 +73,15 @@ pub fn cmd_build(vfs: PathBuf, args: &BuildArgs) -> anyhow::Result<()> {
     if !args.no_tip {
         show_tip();
     }
+    let palettes = parse_palettes(config.palettes.as_ref()).context("parse palettes")?;
     let old_sizes = collect_sizes(&config.rom_path);
+
     let meta = write_meta(&config).context("write metadata file")?;
     build_bin(&config, args).context("build binary")?;
     remove_old_files(&config.rom_path).context("remove old files")?;
     if let Some(files) = &config.files {
         for (name, file_config) in files {
-            convert_file(name, &config, file_config)
+            convert_file(name, &config, &palettes, file_config)
                 .with_context(|| format!("convert \"{name}\""))?;
         }
     }
@@ -172,36 +175,43 @@ fn remove_old_files(root: &Path) -> anyhow::Result<()> {
 }
 
 /// Get a file from config, convert it if needed, and write into the ROM.
-fn convert_file(name: &str, config: &Config, file_config: &FileConfig) -> anyhow::Result<()> {
+fn convert_file(
+    name: &str,
+    config: &Config,
+    palettes: &Palettes,
+    file_config: &FileConfig,
+) -> anyhow::Result<()> {
     if name == SIG || name == META || name == HASH || name == KEY {
         bail!("ROM file name \"{name}\" is reserved");
     }
-    let output_path = config.rom_path.join(name);
+    let out_path = config.rom_path.join(name);
     // The input path is defined in the config
     // and should be resolved relative to the project root.
-    let input_path = &config.root_path.join(&file_config.path);
-    download_file(input_path, file_config).context("download file")?;
+    let in_path = &config.root_path.join(&file_config.path);
+    download_file(in_path, file_config).context("download file")?;
     if file_config.copy {
-        fs::copy(input_path, &output_path)?;
+        fs::copy(in_path, &out_path)?;
         return Ok(());
     }
-    let Some(extension) = input_path.extension() else {
-        let file_name = input_path.to_str().unwrap().to_string();
+    let Some(extension) = in_path.extension() else {
+        let file_name = in_path.to_str().unwrap().to_string();
         bail!("cannot detect extension for {file_name}");
     };
     let Some(extension) = extension.to_str() else {
         bail!("cannot convert file extension to string");
     };
+    // TODO(@orsinium): fail if palette is set for a non-image file.
     match extension {
         "png" => {
-            convert_image(input_path, &output_path)?;
+            let palette = get_palette(file_config.palette.as_deref(), palettes)?;
+            convert_image(in_path, &out_path, palette)?;
         }
         "wav" => {
-            convert_wav(input_path, &output_path)?;
+            convert_wav(in_path, &out_path)?;
         }
         // firefly formats for fonts and images
         "fff" | "ffi" | "ffz" => {
-            fs::copy(input_path, &output_path)?;
+            fs::copy(in_path, &out_path)?;
         }
         _ => bail!("unknown file extension: {extension}"),
     }
