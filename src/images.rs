@@ -6,7 +6,7 @@ use std::path::Path;
 
 type Color = Option<Rgb<u8>>;
 
-static DEFAULT_PALETTE: &[Option<Rgb<u8>>] = &[
+static DEFAULT_PALETTE: &[Option<Rgb<u8>>; 16] = &[
     // https://lospec.com/palette-list/sweetie-16
     // https://github.com/nesbox/TIC-80/wiki/Palette
     Some(Rgb([0x1a, 0x1c, 0x2c])), // black
@@ -27,28 +27,29 @@ static DEFAULT_PALETTE: &[Option<Rgb<u8>>] = &[
     Some(Rgb([0x33, 0x3c, 0x57])), // dark gray
 ];
 
-pub fn convert_image(input_path: &Path, output_path: &Path) -> Result<()> {
-    let file = image::ImageReader::open(input_path).context("open image file")?;
+pub fn convert_image(in_path: &Path, out_path: &Path) -> Result<()> {
+    let file = image::ImageReader::open(in_path).context("open image file")?;
     let img = file.decode().context("decode image")?;
     let img = img.to_rgba8();
     if img.width() % 8 != 0 {
         bail!("image width must be divisible by 8");
     }
-    let palette = make_palette(&img).context("detect colors used in the image")?;
-    let mut out = File::create(output_path).context("create output path")?;
+    let sys_pal = DEFAULT_PALETTE;
+    let mut img_pal = make_palette(&img, sys_pal).context("detect colors used in the image")?;
+    let mut out = File::create(out_path).context("create output path")?;
     write_u8(&mut out, 0x21)?;
-    let colors = palette.len();
+    let colors = img_pal.len();
     if colors <= 2 {
-        let palette = extend_palette(palette, 2);
-        write_image::<1, 8>(out, &img, &palette).context("write 1BPP image")
+        extend_palette(&mut img_pal, sys_pal, 2);
+        write_image::<1, 8>(out, &img, &img_pal, sys_pal).context("write 1BPP image")
     } else if colors <= 4 {
-        let palette = extend_palette(palette, 4);
-        write_image::<2, 4>(out, &img, &palette).context("write 1BPP image")
+        extend_palette(&mut img_pal, sys_pal, 4);
+        write_image::<2, 4>(out, &img, &img_pal, sys_pal).context("write 1BPP image")
     } else if colors <= 16 {
-        let palette = extend_palette(palette, 16);
-        write_image::<4, 2>(out, &img, &palette).context("write 1BPP image")
+        extend_palette(&mut img_pal, sys_pal, 16);
+        write_image::<4, 2>(out, &img, &img_pal, sys_pal).context("write 1BPP image")
     } else {
-        let has_transparency = palette.iter().any(Option::is_none);
+        let has_transparency = img_pal.iter().any(Option::is_none);
         if has_transparency && colors == 17 {
             bail!("cannot use all 16 colors with transparency, remove one color");
         }
@@ -59,22 +60,23 @@ pub fn convert_image(input_path: &Path, output_path: &Path) -> Result<()> {
 fn write_image<const BPP: u8, const PPB: usize>(
     mut out: File,
     img: &RgbaImage,
-    palette: &[Color],
+    img_pal: &[Color],
+    sys_pal: &[Color; 16],
 ) -> Result<()> {
     write_u8(&mut out, BPP)?; // BPP
     let Ok(width) = u16::try_from(img.width()) else {
         bail!("the image is too big")
     };
     write_u16(&mut out, width)?; // image width
-    let transparent = pick_transparent(palette)?;
+    let transparent = pick_transparent(img_pal, sys_pal)?;
     write_u8(&mut out, transparent)?; // transparent color
 
     // palette swaps
     let mut byte = 0;
-    debug_assert!(palette.len() == 2 || palette.len() == 4 || palette.len() == 16);
-    for (i, color) in palette.iter().enumerate() {
+    debug_assert!(img_pal.len() == 2 || img_pal.len() == 4 || img_pal.len() == 16);
+    for (i, color) in img_pal.iter().enumerate() {
         let index = match color {
-            Some(color) => find_color_default(*color),
+            Some(color) => find_color(sys_pal, Some(*color)),
             None => transparent,
         };
         byte = (byte << 4) | index;
@@ -87,7 +89,7 @@ fn write_image<const BPP: u8, const PPB: usize>(
     let mut byte: u8 = 0;
     for (i, pixel) in img.pixels().enumerate() {
         let color = convert_color(*pixel);
-        let raw_color = find_color(palette, color);
+        let raw_color = find_color(img_pal, color);
         byte = (byte << BPP) | raw_color;
         if (i + 1) % PPB == 0 {
             write_u8(&mut out, byte)?;
@@ -97,14 +99,14 @@ fn write_image<const BPP: u8, const PPB: usize>(
 }
 
 /// Detect all colors used in the image
-fn make_palette(img: &RgbaImage) -> Result<Vec<Color>> {
+fn make_palette(img: &RgbaImage, sys_pal: &[Color; 16]) -> Result<Vec<Color>> {
     let mut palette = Vec::new();
     for (x, y, pixel) in img.enumerate_pixels() {
         let color = convert_color(*pixel);
         if !palette.contains(&color) {
-            if color.is_some() && !DEFAULT_PALETTE.contains(&color) {
+            if color.is_some() && !sys_pal.contains(&color) {
                 bail!(
-                    "found a color not present in the default color palette: {} (at x={x}, y={y})",
+                    "found a color not present in the color palette: {} (at x={x}, y={y})",
                     format_color(color),
                 );
             }
@@ -112,19 +114,18 @@ fn make_palette(img: &RgbaImage) -> Result<Vec<Color>> {
         }
     }
     palette.sort_by_key(|c| match c {
-        Some(c) => find_color_default(*c),
+        Some(c) => find_color(sys_pal, Some(*c)),
         None => 20,
     });
     Ok(palette)
 }
 
 /// Add empty colors at the end of the palette to match the BPP size.
-fn extend_palette(mut palette: Vec<Color>, size: usize) -> Vec<Color> {
-    let n = size - palette.len();
+fn extend_palette(img_pal: &mut Vec<Color>, sys_pal: &[Color; 16], size: usize) {
+    let n = size - img_pal.len();
     for _ in 0..n {
-        palette.push(DEFAULT_PALETTE[0]);
+        img_pal.push(sys_pal[0]);
     }
-    palette
 }
 
 fn write_u8(f: &mut File, v: u8) -> std::io::Result<()> {
@@ -135,11 +136,6 @@ fn write_u16(f: &mut File, v: u16) -> std::io::Result<()> {
     f.write_all(&v.to_le_bytes())
 }
 
-/// Find the index of the given color in the default palette.
-fn find_color_default(c: Rgb<u8>) -> u8 {
-    find_color(DEFAULT_PALETTE, Some(c))
-}
-
 /// Find the index of the given color in the given palette.
 fn find_color(palette: &[Color], c: Color) -> u8 {
     for (color, i) in palette.iter().zip(0u8..) {
@@ -147,7 +143,7 @@ fn find_color(palette: &[Color], c: Color) -> u8 {
             return i;
         }
     }
-    panic!("color not in the default palette")
+    panic!("color not in the palette")
 }
 
 /// Make human-friendly hex representation of the color code.
@@ -174,23 +170,23 @@ const fn is_transparent(c: Rgba<u8>) -> bool {
 }
 
 /// Pick the color to be used to represent transparency
-fn pick_transparent(palette: &[Color]) -> Result<u8> {
-    if palette.iter().all(Option::is_some) {
+fn pick_transparent(img_pal: &[Color], sys_pal: &[Color; 16]) -> Result<u8> {
+    if img_pal.iter().all(Option::is_some) {
         // no transparency needed
         return Ok(17);
     }
-    for (color, i) in DEFAULT_PALETTE.iter().zip(0u8..) {
-        if !palette.contains(color) {
+    for (color, i) in sys_pal.iter().zip(0u8..) {
+        if !img_pal.contains(color) {
             return Ok(i);
         }
     }
-    if palette.len() > 16 {
+    if img_pal.len() > 16 {
         bail!("the image cannot contain more than 16 colors")
     }
-    if palette.len() == 16 {
+    if img_pal.len() == 16 {
         bail!("an image cannot contain all 16 colors and transparency")
     }
-    bail!("image contains colors not from the default palette")
+    bail!("image contains colors not from the palette")
 }
 
 #[cfg(test)]
@@ -205,14 +201,15 @@ mod tests {
 
     #[test]
     fn test_pick_transparent() {
-        let c0 = DEFAULT_PALETTE[0];
-        let c1 = DEFAULT_PALETTE[1];
-        let c2 = DEFAULT_PALETTE[2];
-        let c3 = DEFAULT_PALETTE[3];
-        assert_eq!(pick_transparent(&[c0, c1]).unwrap(), 17);
-        assert_eq!(pick_transparent(&[c0, c1, None]).unwrap(), 2);
-        assert_eq!(pick_transparent(&[c0, None, c1]).unwrap(), 2);
-        assert_eq!(pick_transparent(&[c1, c0, None]).unwrap(), 2);
-        assert_eq!(pick_transparent(&[c0, c1, c2, c3, None]).unwrap(), 4);
+        let pal = DEFAULT_PALETTE;
+        let c0 = pal[0];
+        let c1 = pal[1];
+        let c2 = pal[2];
+        let c3 = pal[3];
+        assert_eq!(pick_transparent(&[c0, c1], pal).unwrap(), 17);
+        assert_eq!(pick_transparent(&[c0, c1, None], pal).unwrap(), 2);
+        assert_eq!(pick_transparent(&[c0, None, c1], pal).unwrap(), 2);
+        assert_eq!(pick_transparent(&[c1, c0, None], pal).unwrap(), 2);
+        assert_eq!(pick_transparent(&[c0, c1, c2, c3, None], pal).unwrap(), 4);
     }
 }
