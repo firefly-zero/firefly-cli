@@ -31,6 +31,7 @@ pub fn cmd_new(args: &NewArgs) -> Result<()> {
         Lang::Python => bail!("Python is not supported yet"),
         Lang::Lua => new_lua(&args.name).context("new Lua project")?,
         Lang::Moon => new_moon(&args.name).context("new Moon project")?,
+        Lang::Bitsy => new_bitsy(&args.name).context("new Bitsy project")?,
     }
     write_config(&lang, &args.name)?;
     init_git(&args.name)?;
@@ -52,9 +53,20 @@ fn write_config(lang: &Lang, name: &str) -> Result<()> {
     _ = writeln!(config, "author_name = \"{}\"", to_titlecase(&username));
     _ = writeln!(config, "app_name = \"{}\"", to_titlecase(name));
 
-    if matches!(lang, Lang::Lua) {
-        _ = writeln!(config, "\n[files]");
-        _ = writeln!(config, r#"main = {{ path = "main.lua", copy = true }}"#);
+    match lang {
+        Lang::Lua => {
+            _ = writeln!(config, "\n[files]");
+            _ = writeln!(config, r#"main = {{ path = "main.lua", copy = true }}"#);
+        }
+        Lang::Bitsy => {
+            _ = writeln!(config, "\n[files]");
+            _ = writeln!(config, r#"main = {{ path = "main.bitsy", copy = true }}"#);
+            _ = writeln!(
+                config,
+                r#"font = {{ path = "eg_6x9.fff", url = "https://fonts.fireflyzero.com/fonts/ascii/eg_6x9.fff" }}"#
+            );
+        }
+        _ => {}
     }
 
     std::fs::write(config_path, config).context("write config")?;
@@ -77,7 +89,7 @@ fn init_git(name: &str) -> Result<()> {
 fn parse_lang(lang: &str) -> Result<Lang> {
     let result = match lang.to_lowercase().as_str() {
         "c" => Lang::C,
-        "go" | "golang" => Lang::Go,
+        "go" | "golang" | "tinygo" => Lang::Go,
         "rust" | "rs" => Lang::Rust,
         "zig" => Lang::Zig,
         "as" | "assemblyscript" => Lang::AS,
@@ -86,6 +98,7 @@ fn parse_lang(lang: &str) -> Result<Lang> {
         "python" | "py" => Lang::Python,
         "moon" | "moonbit" | "mbt" => Lang::Moon,
         "lua" => Lang::Lua,
+        "bitsy" => Lang::Bitsy,
         _ => bail!("unsupported language: {lang}"),
     };
     Ok(result)
@@ -159,6 +172,14 @@ fn new_lua(name: &str) -> Result<()> {
     let mut c = Commander::default();
     c.cd(name)?;
     c.copy_asset(&["main.lua"], "main.lua")?;
+    Ok(())
+}
+
+/// Create a new Bitsy project.
+fn new_bitsy(name: &str) -> Result<()> {
+    let mut c = Commander::default();
+    c.cd(name)?;
+    c.copy_asset(&["main.bitsy"], "main.bitsy")?;
     Ok(())
 }
 

@@ -30,6 +30,7 @@ pub fn build_bin(config: &Config, args: &BuildArgs) -> anyhow::Result<()> {
         Lang::Cpp => build_cpp(config),
         Lang::Python => build_python(config),
         Lang::Lua => build_lua(config),
+        Lang::Bitsy => build_bitsy(config),
         Lang::Moon => build_moon(config),
     }?;
     let bin_path = config.rom_path.join(BIN);
@@ -93,6 +94,12 @@ fn detect_lang(root: &Path) -> anyhow::Result<Lang> {
     }
     if root.join("main.lua").exists() {
         return Ok(Lang::Lua);
+    }
+    if root.join("main.bitsy").exists() {
+        return Ok(Lang::Bitsy);
+    }
+    if root.join("main.bitsy.txt").exists() {
+        return Ok(Lang::Bitsy);
     }
     if root.join("src").join("main.c").exists() {
         return Ok(Lang::C);
@@ -386,9 +393,19 @@ fn build_moon(config: &Config) -> anyhow::Result<()> {
 
 // Build Lua project.
 fn build_lua(config: &Config) -> anyhow::Result<()> {
+    let url = "https://github.com/firefly-zero/firefly-lua/releases/latest/download/main.wasm";
+    build_interpreted(config, url)
+}
+
+// Build Bitsy project.
+fn build_bitsy(config: &Config) -> anyhow::Result<()> {
+    let url = "https://github.com/firefly-zero/firefly-bitsy/releases/latest/download/main.wasm";
+    build_interpreted(config, url)
+}
+
+fn build_interpreted(config: &Config, url: &str) -> anyhow::Result<()> {
     let from_path = config.root_path.join("main.wasm");
     if !from_path.is_file() {
-        let url = "https://github.com/firefly-zero/firefly-lua/releases/latest/download/main.wasm";
         let resp = ureq::get(url).call().context("send request")?;
         let mut file = std::fs::File::create(&from_path).context("open main.wasm")?;
         let mut body = resp.into_body();
