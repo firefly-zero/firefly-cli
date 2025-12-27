@@ -52,6 +52,28 @@ static PICO8: &Palette = &[
     Some(Rgb([0xFF, 0xCC, 0xAA])), // #FFCCAA: peach
 ];
 
+/// SLSO8 color palette.
+///
+/// <https://lospec.com/palette-list/slso8>
+static SLSO8: &Palette = &[
+    Some(Rgb([0x0d, 0x2b, 0x45])), // #0d2b45
+    Some(Rgb([0x20, 0x3c, 0x56])), // #203c56
+    Some(Rgb([0x54, 0x4e, 0x68])), // #544e68
+    Some(Rgb([0x8d, 0x69, 0x7a])), // #8d697a
+    Some(Rgb([0xd0, 0x81, 0x59])), // #d08159
+    Some(Rgb([0xff, 0xaa, 0x5e])), // #ffaa5e
+    Some(Rgb([0xff, 0xd4, 0xa3])), // #ffd4a3
+    Some(Rgb([0xff, 0xec, 0xd6])), // #ffecd6
+    None,
+    None,
+    None,
+    None,
+    None,
+    None,
+    None,
+    None,
+];
+
 /// The Kirokaze Gameboy color palette.
 ///
 /// <https://lospec.com/palette-list/kirokaze-gameboy>
@@ -161,6 +183,7 @@ pub fn get_builtin_palette(name: &str) -> Result<&'static Palette> {
         "pico" | "pico8" | "pico-8" => PICO8,
         "gameboy" | "game-boy" | "gb" | "kirokaze" => GAMEBOY,
         "wasm4" | "wasm-4" | "w4" => WASM4,
+        "slso8" | "siso8" => SLSO8,
         _ => bail!("palette {name} not found"),
     };
     Ok(palette)
