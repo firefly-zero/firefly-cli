@@ -92,7 +92,7 @@ impl Config {
         let mut badges = Vec::new();
         for id in 1u16..=len {
             let Some(badge) = badges_config.get(&id.to_string()) else {
-                bail!("badge IDs must be consequentive but ID {id} is missed");
+                bail!("badge IDs must be consecutive but ID {id} is missing");
             };
             badges.push(badge);
         }
@@ -106,7 +106,7 @@ pub struct FileConfig {
     /// Path to the file relative to the project root.
     pub path: PathBuf,
 
-    /// URL to download the file from if missed.
+    /// URL to download the file from if file doesn't exist.
     pub url: Option<String>,
 
     /// The file hash to validate when downloading the file.
@@ -179,7 +179,7 @@ pub struct BoardConfig {
     pub decimals: u8,
 }
 
-#[derive(Deserialize, Debug, Clone)]
+#[derive(Deserialize, Debug, Copy, Clone)]
 #[serde(rename_all = "lowercase")]
 pub enum Lang {
     Go,     // 🏃
@@ -193,4 +193,10 @@ pub enum Lang {
     Moon,   // 🐰
     Lua,    // 🌙
     Bitsy,  // 🐈‍⬛
+}
+
+impl Lang {
+    pub fn name(self) -> String {
+        format!("{self:?}").to_lowercase()
+    }
 }

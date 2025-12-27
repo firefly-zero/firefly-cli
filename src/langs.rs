@@ -16,8 +16,8 @@ pub fn build_bin(config: &Config, args: &BuildArgs) -> anyhow::Result<()> {
             return Ok(());
         }
     }
-    let lang: Lang = match &config.lang {
-        Some(lang) => lang.clone(),
+    let lang: Lang = match config.lang {
+        Some(lang) => lang,
         None => detect_lang(&config.root_path)?,
     };
     match lang {

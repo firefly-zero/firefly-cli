@@ -33,14 +33,14 @@ pub fn cmd_new(args: &NewArgs) -> Result<()> {
         Lang::Moon => new_moon(&args.name).context("new Moon project")?,
         Lang::Bitsy => new_bitsy(&args.name).context("new Bitsy project")?,
     }
-    write_config(&lang, &args.name)?;
+    write_config(lang, &args.name)?;
     init_git(&args.name)?;
     println!("✅ project created");
     Ok(())
 }
 
 /// Create and dump firefly.toml config.
-fn write_config(lang: &Lang, name: &str) -> Result<()> {
+fn write_config(lang: Lang, name: &str) -> Result<()> {
     use std::fmt::Write;
 
     let root = Path::new(name);
@@ -52,6 +52,7 @@ fn write_config(lang: &Lang, name: &str) -> Result<()> {
     _ = writeln!(config, "app_id = \"{name}\"");
     _ = writeln!(config, "author_name = \"{}\"", to_titlecase(&username));
     _ = writeln!(config, "app_name = \"{}\"", to_titlecase(name));
+    _ = writeln!(config, "lang = \"{}\"", lang.name());
 
     match lang {
         Lang::Lua => {

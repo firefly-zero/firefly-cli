@@ -294,7 +294,7 @@ fn write_boards(config: &Config) -> anyhow::Result<()> {
     let mut boards: Vec<firefly_types::Board<'_>> = Vec::new();
     for id in 1u16..=len {
         let Some(board) = configs.get(&id.to_string()) else {
-            bail!("board IDs must be consequentive but ID {id} is missed");
+            bail!("board IDs must be consecutive but ID {id} is missing");
         };
         let board = firefly_types::Board {
             position: board.position.unwrap_or(id),
@@ -371,7 +371,7 @@ fn write_key(config: &Config) -> anyhow::Result<()> {
     let pub_path = sys_path.join("pub").join(author_id);
     if !pub_path.exists() {
         // Don't show error here just yet.
-        // If the key is missed, the error will be reported later by write_sig.
+        // If the key is missing, the error will be reported later by write_sig.
         return Ok(());
     }
     let key_path = config.rom_path.join(KEY);
