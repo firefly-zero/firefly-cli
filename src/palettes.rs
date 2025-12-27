@@ -74,6 +74,28 @@ static GAMEBOY: &Palette = &[
     None,
 ];
 
+/// WASM-4 color palette.
+///
+/// <https://wasm4.org/docs/guides/basic-drawing>
+static WASM4: &Palette = &[
+    Some(Rgb([0xE0, 0xF8, 0xCF])), // #E0F8CF: white
+    Some(Rgb([0x86, 0xC0, 0x6C])), // #86C06C: light green
+    Some(Rgb([0x30, 0x68, 0x50])), // #306850: dark green
+    Some(Rgb([0x07, 0x18, 0x21])), // #071821: black
+    None,
+    None,
+    None,
+    None,
+    None,
+    None,
+    None,
+    None,
+    None,
+    None,
+    None,
+    None,
+];
+
 pub fn parse_palettes(raws: Option<&HashMap<String, RawPalette>>) -> Result<Palettes> {
     let mut palettes = Palettes::new();
     let Some(raws) = raws else {
@@ -138,6 +160,7 @@ pub fn get_builtin_palette(name: &str) -> Result<&'static Palette> {
         "sweetie16" | "sweetie-16" | "tic80" | "tic-80" | "default" => SWEETIE16,
         "pico" | "pico8" | "pico-8" => PICO8,
         "gameboy" | "game-boy" | "gb" | "kirokaze" => GAMEBOY,
+        "wasm4" | "wasm-4" | "w4" => WASM4,
         _ => bail!("palette {name} not found"),
     };
     Ok(palette)
