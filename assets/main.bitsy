@@ -69,7 +69,6 @@ SPR a
 NAME cat
 DLG 0
 POS 0 8,12
-BLIP 1
 
 ITM 0
 00000000
@@ -94,7 +93,6 @@ ITM 1
 00011000
 NAME key
 DLG 2
-BLIP 2
 
 DLG 0
 I'm a cat
@@ -110,18 +108,4 @@ NAME key dialog
 
 VAR a
 42
-
-BLIP 1
-E5,B5,B5
-NAME meow
-ENV 40 99 4 185 138
-BEAT 61 115
-SQR P2
-
-BLIP 2
-D5,E5,D5
-NAME pick up key
-ENV 99 65 6 96 152
-BEAT 95 0
-SQR P4
 
