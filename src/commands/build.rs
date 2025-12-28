@@ -66,6 +66,7 @@ static TIPS: &[&str] = &[
     "you can set a custom color palette: https://palettes.fireflyzero.com/",
     // We're not paid for any of these links, it's just resources we love.
     "good free sprite editor: https://apps.lospec.com/pixel-editor/",
+    "good free map editor: https://thorbjorn.itch.io/tiled",
     "good collection of free game assets: https://opengameart.org/",
     "https://youtu.be/dQw4w9WgXcQ",
 ];
