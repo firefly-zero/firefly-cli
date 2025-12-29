@@ -65,9 +65,15 @@ static TIPS: &[&str] = &[
     "follow us on Mastodon for updates: https://fosstodon.org/@fireflyzero",
     "you can set a custom color palette: https://palettes.fireflyzero.com/",
     // We're not paid for any of these links, it's just resources we love.
-    "good free sprite editor: https://apps.lospec.com/pixel-editor/",
-    "good free map editor: https://thorbjorn.itch.io/tiled",
-    "good collection of free game assets: https://opengameart.org/",
+    "free sprite editor: https://apps.lospec.com/pixel-editor/",
+    "free map editor: https://thorbjorn.itch.io/tiled",
+    "collection of free game assets: https://opengameart.org/",
+    "game assets: https://www.kenney.nl/assets/category:2D",
+    "creature generator: https://0x72.itch.io/pixeldudesmaker",
+    "creature editor: https://kenney.itch.io/creature-mixer",
+    "avatar editor: https://kenney.itch.io/avatar-mixer",
+    "spaceship/plane editor: https://kenney.itch.io/ship-mixer",
+    "tool to pack sprites into one atlas: https://free-tex-packer.com/",
     "https://youtu.be/dQw4w9WgXcQ",
 ];
 
