@@ -43,18 +43,18 @@ jobs:
       fail-fast: false
       matrix:
         job:
-          - { target: aarch64-unknown-linux-gnu, os: ubuntu-24.04, use-cross: true }
-          - { target: arm-unknown-linux-gnueabihf, os: ubuntu-24.04, use-cross: true }
-          - { target: arm-unknown-linux-musleabihf, os: ubuntu-24.04, use-cross: true }
+          - { target: aarch64-unknown-linux-gnu, os: ubuntu-24.04 }
+          - { target: arm-unknown-linux-gnueabihf, os: ubuntu-24.04 }
+          - { target: arm-unknown-linux-musleabihf, os: ubuntu-24.04 }
           - { target: i686-pc-windows-msvc, os: windows-2022 }
-          - { target: i686-unknown-linux-gnu, os: ubuntu-24.04, use-cross: true }
-          - { target: i686-unknown-linux-musl, os: ubuntu-24.04, use-cross: true }
+          - { target: i686-unknown-linux-gnu, os: ubuntu-24.04 }
+          - { target: i686-unknown-linux-musl, os: ubuntu-24.04 }
           - { target: x86_64-apple-darwin, os: macos-13 }
           - { target: aarch64-apple-darwin, os: macos-14 }
           - { target: x86_64-pc-windows-gnu, os: windows-2022 }
           - { target: x86_64-pc-windows-msvc, os: windows-2022 }
-          - { target: x86_64-unknown-linux-gnu, os: ubuntu-24.04, use-cross: true }
-          - { target: x86_64-unknown-linux-musl, os: ubuntu-24.04, use-cross: true }
+          - { target: x86_64-unknown-linux-gnu, os: ubuntu-24.04 }
+          - { target: x86_64-unknown-linux-musl, os: ubuntu-24.04 }
     env:
       BUILD_CMD: cargo
     steps:
@@ -66,13 +66,13 @@ jobs:
           targets: ${{ matrix.job.target }}
 
       - name: Install cross
-        if: matrix.job.use-cross
+        if: runner.os == 'Linux'
         uses: taiki-e/install-action@v2
         with:
           tool: cross
 
       - name: Overwrite build command env variable
-        if: matrix.job.use-cross
+        if: runner.os == 'Linux'
         shell: bash
         run: echo "BUILD_CMD=cross" >> $GITHUB_ENV
 
@@ -85,6 +85,9 @@ jobs:
           cargo -V
           rustc -V
 
+      - if: runner.os == 'Linux'
+        shell: bash
+        run: sudo apt-get update
       - if: runner.os == 'Linux'
         shell: bash
         run: sudo apt-get install -y libudev-dev
