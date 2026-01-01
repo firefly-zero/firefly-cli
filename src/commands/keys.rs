@@ -1,6 +1,6 @@
 use crate::args::{KeyArgs, KeyExportArgs};
 use crate::vfs::init_vfs;
-use anyhow::{bail, Context};
+use anyhow::{Context, bail};
 use rsa::pkcs1::{
     DecodeRsaPrivateKey, DecodeRsaPublicKey, EncodeRsaPrivateKey, EncodeRsaPublicKey,
 };

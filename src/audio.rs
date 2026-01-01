@@ -1,4 +1,4 @@
-use anyhow::{bail, Context, Result};
+use anyhow::{Context, Result, bail};
 use hound::{SampleFormat, WavReader};
 use std::fs::File;
 use std::io::Write;

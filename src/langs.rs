@@ -2,7 +2,7 @@ use crate::args::BuildArgs;
 use crate::config::{Config, Lang};
 use crate::file_names::BIN;
 use crate::wasm::{optimize, strip_custom};
-use anyhow::{bail, Context};
+use anyhow::{Context, bail};
 use std::env::temp_dir;
 use std::fs::File;
 use std::io::Write;
@@ -11,10 +11,10 @@ use std::process::{Command, Output};
 
 pub fn build_bin(config: &Config, args: &BuildArgs) -> anyhow::Result<()> {
     // Don't build the binary if it will be copied directly in "files".
-    if let Some(files) = &config.files {
-        if files.contains_key(BIN) {
-            return Ok(());
-        }
+    if let Some(files) = &config.files
+        && files.contains_key(BIN)
+    {
+        return Ok(());
     }
     let lang: Lang = match config.lang {
         Some(lang) => lang,
@@ -464,14 +464,16 @@ fn find_wasm(from_dir: &Path) -> anyhow::Result<PathBuf> {
     for file_path in from_dir {
         let file_path = file_path?;
         let file_path = file_path.path();
-        if let Some(ext) = file_path.extension() {
-            if ext == "wasm" {
-                if result.is_some() {
-                    bail!("found more than one wasm binary");
-                }
-                result = Some(file_path);
-            }
+        let Some(ext) = file_path.extension() else {
+            continue;
+        };
+        if ext != "wasm" {
+            continue;
         }
+        if result.is_some() {
+            bail!("found more than one wasm binary");
+        }
+        result = Some(file_path);
     }
     match result {
         Some(result) => Ok(result),
@@ -502,10 +504,11 @@ pub fn check_installed(lang: &str, bin: &str, arg: &str) -> anyhow::Result<()> {
     use std::fmt::Write;
 
     let output = Command::new(bin).args([arg]).output();
-    if let Ok(output) = output {
-        if output.status.success() {
-            return Ok(());
-        }
+    let Ok(output) = output else {
+        return Ok(());
+    };
+    if output.status.success() {
+        return Ok(());
     }
     let mut msg =
         format!("You're trying to build a {lang} app but you don't have {bin} installed.\n");

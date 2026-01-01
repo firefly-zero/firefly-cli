@@ -2,7 +2,7 @@ use anyhow::Context;
 use directories::ProjectDirs;
 use firefly_types::Encode;
 use rand::seq::SliceRandom;
-use rand::{thread_rng, Rng};
+use rand::{Rng, thread_rng};
 use std::collections::HashMap;
 use std::fs;
 use std::path::{Path, PathBuf};

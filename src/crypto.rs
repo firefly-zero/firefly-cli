@@ -1,5 +1,5 @@
 use crate::file_names::{HASH, SIG};
-use anyhow::{bail, Context};
+use anyhow::{Context, bail};
 use sha2::digest::consts::U32;
 use sha2::digest::generic_array::GenericArray;
 use sha2::{Digest, Sha256};

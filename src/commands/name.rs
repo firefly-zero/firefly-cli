@@ -1,6 +1,6 @@
 use crate::args::NameSetArgs;
 use crate::vfs::generate_valid_name;
-use anyhow::{bail, Context, Result};
+use anyhow::{Context, Result, bail};
 use firefly_types::Encode;
 use std::fs;
 use std::path::Path;

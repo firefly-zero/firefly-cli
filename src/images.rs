@@ -1,5 +1,5 @@
 use crate::palettes::{Color, Palette};
-use anyhow::{bail, Context, Result};
+use anyhow::{Context, Result, bail};
 use image::{Pixel, Rgba, RgbaImage};
 use std::fs::File;
 use std::io::Write;

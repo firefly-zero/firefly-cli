@@ -1,7 +1,7 @@
 use crate::args::RuntimeArgs;
 use anyhow::{Context, Result};
-use firefly_types::serial::{Request, Response};
 use firefly_types::Encode;
+use firefly_types::serial::{Request, Response};
 use serialport::SerialPort;
 use std::io::{Read, Write};
 use std::net::{IpAddr, Ipv4Addr, SocketAddr, TcpStream};

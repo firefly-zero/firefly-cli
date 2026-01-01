@@ -31,7 +31,7 @@ mod palettes;
 mod test_helpers;
 
 use crate::args::Cli;
-use crate::cli::{run_command, Error};
+use crate::cli::{Error, run_command};
 use crate::vfs::get_vfs_path;
 use clap::Parser;
 use crossterm::style::Stylize;

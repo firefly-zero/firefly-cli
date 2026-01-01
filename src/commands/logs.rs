@@ -6,7 +6,7 @@ use crossterm::execute;
 use crossterm::style::Stylize;
 use crossterm::terminal::{Clear, ClearType};
 use firefly_types::serial::Response;
-use std::io::{stdout, Write};
+use std::io::{Write, stdout};
 
 pub fn cmd_logs(root_args: &RuntimeArgs) -> Result<()> {
     let mut stream = connect(root_args).context("open the serial port")?;

@@ -1,5 +1,5 @@
 use crate::{args::TestArgs, langs::check_output};
-use anyhow::{bail, Context, Ok, Result};
+use anyhow::{Context, Ok, Result, bail};
 use std::{path::Path, process::Command};
 
 /// Run tests.

@@ -1,6 +1,6 @@
 use crate::args::{LaunchArgs, RuntimeArgs};
-use crate::net::{connect, Stream};
-use anyhow::{bail, Context, Result};
+use crate::net::{Stream, connect};
+use anyhow::{Context, Result, bail};
 use firefly_types::serial;
 
 pub fn cmd_exit(root_args: &RuntimeArgs) -> Result<()> {

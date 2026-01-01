@@ -7,19 +7,19 @@ use crate::file_names::*;
 use crate::fs::{collect_sizes, format_size};
 use crate::images::convert_image;
 use crate::langs::build_bin;
-use crate::palettes::{get_palette, parse_palettes, Palettes};
+use crate::palettes::{Palettes, get_palette, parse_palettes};
 use crate::vfs::init_vfs;
-use anyhow::{bail, Context};
+use anyhow::{Context, bail};
 use chrono::Datelike;
 use crossterm::style::Stylize;
 use data_encoding::HEXLOWER;
 use firefly_types::Encode;
 use rand::Rng;
+use rsa::RsaPrivateKey;
 use rsa::pkcs1::DecodeRsaPrivateKey;
 use rsa::pkcs1v15::SigningKey;
-use rsa::signature::hazmat::PrehashSigner;
 use rsa::signature::SignatureEncoding;
-use rsa::RsaPrivateKey;
+use rsa::signature::hazmat::PrehashSigner;
 use sha2::{Digest, Sha256};
 use std::borrow::Cow;
 use std::collections::HashMap;
@@ -117,7 +117,7 @@ pub fn cmd_build(vfs: PathBuf, args: &BuildArgs) -> anyhow::Result<()> {
 
 /// Serialize and write the ROM meta information.
 fn write_meta(config: &Config) -> anyhow::Result<firefly_types::Meta<'_>> {
-    use firefly_types::{validate_id, validate_name, Meta};
+    use firefly_types::{Meta, validate_id, validate_name};
     if let Err(err) = validate_id(&config.app_id) {
         bail!("validate app_id: {err}");
     }

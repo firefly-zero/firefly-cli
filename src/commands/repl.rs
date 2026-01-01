@@ -1,12 +1,12 @@
 use crate::args::{Cli, ReplArgs};
-use crate::cli::{run_command, Error};
+use crate::cli::{Error, run_command};
 use crate::repl_helper::Helper;
 use anyhow::Result;
 use clap::Parser;
 use crossterm::style::Stylize;
+use rustyline::Editor;
 use rustyline::error::ReadlineError;
 use rustyline::history::FileHistory;
-use rustyline::Editor;
 use std::path::Path;
 
 #[expect(clippy::unnecessary_wraps)]

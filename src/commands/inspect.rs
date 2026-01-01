@@ -2,7 +2,7 @@ use crate::args::InspectArgs;
 use crate::config::Config;
 use crate::file_names::{BIN, META};
 use crate::fs::{collect_sizes, format_size};
-use anyhow::{bail, Context, Result};
+use anyhow::{Context, Result, bail};
 use crossterm::style::Stylize;
 use firefly_types::{Encode, Meta};
 use std::collections::HashMap;
@@ -122,15 +122,15 @@ fn inspect_wasm(bin_path: &Path) -> anyhow::Result<WasmStats> {
     let mut validator = Validator::new_with_features(WasmFeatures::all());
     for payload in input {
         let payload = payload?;
-        if !matches!(payload, CodeSectionEntry(_)) {
-            if let Err(err) = validator.payload(&payload) {
-                let sname = get_section_name(&payload);
-                let err = ValErr {
-                    source: format!("{sname} section"),
-                    message: format!("{err}"),
-                };
-                stats.validation_errors.push(err);
-            }
+        if !matches!(payload, CodeSectionEntry(_))
+            && let Err(err) = validator.payload(&payload)
+        {
+            let sname = get_section_name(&payload);
+            let err = ValErr {
+                source: format!("{sname} section"),
+                message: format!("{err}"),
+            };
+            stats.validation_errors.push(err);
         }
         match payload {
             ImportSection(imports) => {

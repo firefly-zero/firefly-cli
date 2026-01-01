@@ -1,7 +1,7 @@
 use crate::args::NewArgs;
 use crate::config::Lang;
 use crate::langs::{check_installed, check_output};
-use anyhow::{bail, Context, Ok, Result};
+use anyhow::{Context, Ok, Result, bail};
 use rust_embed::Embed;
 use std::io::Write;
 use std::path::Path;

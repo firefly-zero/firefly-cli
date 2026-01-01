@@ -1,6 +1,6 @@
 use crate::args::BadgesArgs;
 use crate::file_names::BADGES;
-use anyhow::{bail, Context, Result};
+use anyhow::{Context, Result, bail};
 use crossterm::style::Stylize;
 use firefly_types::Encode;
 use std::path::Path;

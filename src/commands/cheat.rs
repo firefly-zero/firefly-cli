@@ -1,7 +1,7 @@
 use crate::args::{CheatArgs, RuntimeArgs};
 use crate::config::Config;
 use crate::net::connect;
-use anyhow::{bail, Context, Result};
+use anyhow::{Context, Result, bail};
 use firefly_types::serial;
 use std::path::Path;
 
@@ -61,7 +61,9 @@ fn parse_value(raw: &str) -> Result<i32> {
     }
     if raw.len() == 1 {
         if raw == "y" || raw == "n" {
-            println!("⚠️  interpreting the value as a character. Pass 'yes' or 'no' if you want to pass a boolean.");
+            println!(
+                "⚠️  interpreting the value as a character. Pass 'yes' or 'no' if you want to pass a boolean."
+            );
         }
         let ch = raw.chars().next().unwrap();
         let n: u32 = ch.into();

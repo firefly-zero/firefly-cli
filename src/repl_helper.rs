@@ -1,9 +1,9 @@
 use crate::args::Commands;
 use clap::Subcommand;
 use crossterm::style::Stylize;
+use rustyline::Context;
 use rustyline::highlight::CmdKind;
 use rustyline::hint::Hint;
-use rustyline::Context;
 use std::borrow::Cow;
 
 /// Helper is a struct that provides autocomplete and syntax highlighting for rustyline.

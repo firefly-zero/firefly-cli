@@ -1,6 +1,6 @@
 use crate::args::EmulatorArgs;
 use crate::langs::check_output;
-use anyhow::{bail, Context, Result};
+use anyhow::{Context, Result, bail};
 use std::process::Command;
 
 pub fn cmd_emulator(args: &EmulatorArgs) -> Result<()> {
@@ -62,10 +62,8 @@ fn run_dev(args: &EmulatorArgs) -> Result<bool> {
 
 fn binary_exists(bin: &str) -> bool {
     let output = Command::new(bin).arg("--help").output();
-    if let Ok(output) = output {
-        if output.status.success() {
-            return true;
-        }
-    }
-    false
+    let Ok(output) = output else {
+        return false;
+    };
+    output.status.success()
 }
