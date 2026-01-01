@@ -43,18 +43,17 @@ jobs:
       fail-fast: false
       matrix:
         job:
-          - { target: aarch64-unknown-linux-gnu, os: ubuntu-24.04 }
-          - { target: arm-unknown-linux-gnueabihf, os: ubuntu-24.04 }
+          # https://github.com/actions/runner-images
+          # Linux
           - { target: arm-unknown-linux-musleabihf, os: ubuntu-24.04 }
-          - { target: i686-pc-windows-msvc, os: windows-2022 }
-          - { target: i686-unknown-linux-gnu, os: ubuntu-24.04 }
+          - { target: x86_64-unknown-linux-musl, os: ubuntu-24.04 }
           - { target: i686-unknown-linux-musl, os: ubuntu-24.04 }
-          - { target: x86_64-apple-darwin, os: macos-13 }
+          # OS X
           - { target: aarch64-apple-darwin, os: macos-14 }
+          # Windows
+          - { target: i686-pc-windows-msvc, os: windows-2022 }
           - { target: x86_64-pc-windows-gnu, os: windows-2022 }
           - { target: x86_64-pc-windows-msvc, os: windows-2022 }
-          - { target: x86_64-unknown-linux-gnu, os: ubuntu-24.04 }
-          - { target: x86_64-unknown-linux-musl, os: ubuntu-24.04 }
     env:
       BUILD_CMD: cargo
     steps:
