@@ -32,6 +32,7 @@ pub fn cmd_new(args: &NewArgs) -> Result<()> {
         Lang::Lua => new_lua(&args.name).context("new Lua project")?,
         Lang::Moon => new_moon(&args.name).context("new Moon project")?,
         Lang::Bitsy => new_bitsy(&args.name).context("new Bitsy project")?,
+        Lang::Bulb => new_bulb(&args.name).context("new Bulb project")?,
     }
     write_config(lang, &args.name)?;
     init_git(&args.name)?;
@@ -54,20 +55,27 @@ fn write_config(lang: Lang, name: &str) -> Result<()> {
     _ = writeln!(config, "app_name = \"{}\"", to_titlecase(name));
     _ = writeln!(config, "lang = \"{}\"", lang.name());
 
+    let is_script = matches!(lang, Lang::Lua | Lang::Bitsy | Lang::Bulb);
+    if is_script {
+        _ = writeln!(config, "\n[files]");
+    }
     match lang {
         Lang::Lua => {
-            _ = writeln!(config, "\n[files]");
             _ = writeln!(config, r#"main = {{ path = "main.lua", copy = true }}"#);
         }
+        Lang::Bulb => {
+            _ = writeln!(config, r#"main = {{ path = "main.bulb", copy = true }}"#);
+        }
         Lang::Bitsy => {
-            _ = writeln!(config, "\n[files]");
             _ = writeln!(config, r#"main = {{ path = "main.bitsy", copy = true }}"#);
-            _ = writeln!(
-                config,
-                r#"font = {{ path = "eg_6x9.fff", url = "https://fonts.fireflyzero.com/fonts/ascii/eg_6x9.fff" }}"#
-            );
         }
         _ => {}
+    }
+    if is_script {
+        _ = writeln!(
+            config,
+            r#"font = {{ path = "eg_6x9.fff", url = "https://fonts.fireflyzero.com/fonts/ascii/eg_6x9.fff" }}"#
+        );
     }
 
     std::fs::write(config_path, config).context("write config")?;
@@ -100,6 +108,7 @@ fn parse_lang(lang: &str) -> Result<Lang> {
         "moon" | "moonbit" | "mbt" => Lang::Moon,
         "lua" => Lang::Lua,
         "bitsy" => Lang::Bitsy,
+        "bulb" | "bulbscript" | "bulb-script" => Lang::Bulb,
         _ => bail!("unsupported language: {lang}"),
     };
     Ok(result)
@@ -181,6 +190,14 @@ fn new_bitsy(name: &str) -> Result<()> {
     let mut c = Commander::default();
     c.cd(name)?;
     c.copy_asset(&["main.bitsy"], "main.bitsy")?;
+    Ok(())
+}
+
+/// Create a new Bulb project.
+fn new_bulb(name: &str) -> Result<()> {
+    let mut c = Commander::default();
+    c.cd(name)?;
+    c.copy_asset(&["main.bulb"], "main.bulb")?;
     Ok(())
 }
 
