@@ -31,6 +31,7 @@ pub fn build_bin(config: &Config, args: &BuildArgs) -> anyhow::Result<()> {
         Lang::Python => build_python(config),
         Lang::Lua => build_lua(config),
         Lang::Bitsy => build_bitsy(config),
+        Lang::Bulb => build_bulb(config),
         Lang::Moon => build_moon(config),
     }?;
     let bin_path = config.rom_path.join(BIN);
@@ -100,6 +101,9 @@ fn detect_lang(root: &Path) -> anyhow::Result<Lang> {
     }
     if root.join("main.bitsy.txt").exists() {
         return Ok(Lang::Bitsy);
+    }
+    if root.join("main.bulb").exists() {
+        return Ok(Lang::Bulb);
     }
     if root.join("src").join("main.c").exists() {
         return Ok(Lang::C);
@@ -400,6 +404,12 @@ fn build_lua(config: &Config) -> anyhow::Result<()> {
 // Build Bitsy project.
 fn build_bitsy(config: &Config) -> anyhow::Result<()> {
     let url = "https://github.com/firefly-zero/firefly-bitsy/releases/latest/download/main.wasm";
+    build_interpreted(config, url)
+}
+
+// Build Bulb Script project.
+fn build_bulb(config: &Config) -> anyhow::Result<()> {
+    let url = "https://github.com/firefly-zero/firefly-bulb/releases/latest/download/main.wasm";
     build_interpreted(config, url)
 }
 

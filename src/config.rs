@@ -182,17 +182,18 @@ pub struct BoardConfig {
 #[derive(Deserialize, Debug, Copy, Clone)]
 #[serde(rename_all = "lowercase")]
 pub enum Lang {
-    Go,     // 🏃
-    Rust,   // 🦀
-    Zig,    // ⚡️
     AS,     // 🟦
-    TS,     // 🟦
+    Bitsy,  // 🐈‍⬛
+    Bulb,   // 💡
     C,      // 🐀
     Cpp,    // 🐀
-    Python, // 🐍
-    Moon,   // 🐰
+    Go,     // 🏃
     Lua,    // 🌙
-    Bitsy,  // 🐈‍⬛
+    Moon,   // 🐰
+    Python, // 🐍
+    Rust,   // 🦀
+    TS,     // 🟦
+    Zig,    // ⚡️
 }
 
 impl Lang {
