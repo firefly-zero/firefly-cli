@@ -64,16 +64,16 @@ static TIPS: &[&str] = &[
     "you can download fonts from https://fonts.fireflyzero.com/",
     "follow us on Mastodon for updates: https://fosstodon.org/@fireflyzero",
     "you can set a custom color palette: https://palettes.fireflyzero.com/",
+    "simple pixel editor: https://pixel.fireflyzero.com/",
     // We're not paid for any of these links, it's just resources we love.
-    "free sprite editor: https://apps.lospec.com/pixel-editor/",
     "free map editor: https://thorbjorn.itch.io/tiled",
-    "collection of free game assets: https://opengameart.org/",
     "game assets: https://www.kenney.nl/assets/category:2D",
     "creature generator: https://0x72.itch.io/pixeldudesmaker",
     "creature editor: https://kenney.itch.io/creature-mixer",
     "avatar editor: https://kenney.itch.io/avatar-mixer",
     "spaceship/plane editor: https://kenney.itch.io/ship-mixer",
     "tool to pack sprites into one atlas: https://free-tex-packer.com/",
+    "convert any image to a color palette: https://lospec.com/palette-quantizer/",
     "https://youtu.be/dQw4w9WgXcQ",
 ];
 

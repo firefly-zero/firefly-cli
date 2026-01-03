@@ -65,6 +65,7 @@ fn write_config(lang: Lang, name: &str) -> Result<()> {
         }
         Lang::Bulb => {
             _ = writeln!(config, r#"main = {{ path = "main.bulb", copy = true }}"#);
+            _ = writeln!(config, r#"atlas = {{ path = "atlas.png" }}"#);
         }
         Lang::Bitsy => {
             _ = writeln!(config, r#"main = {{ path = "main.bitsy", copy = true }}"#);
@@ -198,6 +199,7 @@ fn new_bulb(name: &str) -> Result<()> {
     let mut c = Commander::default();
     c.cd(name)?;
     c.copy_asset(&["main.bulb"], "main.bulb")?;
+    c.copy_asset(&["atlas.png"], "atlas.png")?;
     Ok(())
 }
 
