@@ -143,6 +143,8 @@ fn new_zig(name: &str) -> Result<()> {
     c.copy_asset(&["src", "main.zig"], "main.zig")?;
     let fingerprint = format!("0xbf28cd64{:x}", rand::random::<u32>());
     c.replace(&["build.zig.zon"], "0xffffffffffffffff", &fingerprint)?;
+    let url = "https://github.com/firefly-zero/firefly-zig/archive/refs/tags/0.2.1.tar.gz";
+    c.run(&["zig", "fetch", "--save=firefly", url])?;
     Ok(())
 }
 
