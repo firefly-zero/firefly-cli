@@ -21,6 +21,7 @@ pub fn cmd_emulator(args: &EmulatorArgs) -> Result<()> {
             println!("running {bin}...");
             let output = Command::new(bin).args(&args.args).output()?;
             check_output(&output).context("run emulator")?;
+            return Ok(());
         }
     }
     bail!("emulator not installed");
