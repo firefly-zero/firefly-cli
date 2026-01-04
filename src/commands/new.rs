@@ -121,7 +121,7 @@ fn new_rust(name: &str) -> Result<()> {
     let mut c = Commander::default();
     c.run(&["cargo", "new", name])?;
     c.cd(name)?;
-    c.run(&["cargo", "add", "firefly_rust"])?;
+    c.run(&["cargo", "add", "firefly_rust", "--features", "alloc,talc"])?;
     c.copy_asset(&["src", "main.rs"], "main.rs")?;
 
     {
@@ -141,6 +141,10 @@ fn new_zig(name: &str) -> Result<()> {
     c.copy_asset(&["build.zig"], "build.zig")?;
     c.copy_asset(&["build.zig.zon"], "build.zig.zon")?;
     c.copy_asset(&["src", "main.zig"], "main.zig")?;
+    let fingerprint = format!("0xbf28cd64{:x}", rand::random::<u32>());
+    c.replace(&["build.zig.zon"], "0xffffffffffffffff", &fingerprint)?;
+    let url = "https://github.com/firefly-zero/firefly-zig/archive/refs/tags/0.2.1.tar.gz";
+    c.run(&["zig", "fetch", "--save=firefly", url])?;
     Ok(())
 }
 
@@ -287,6 +291,17 @@ impl<'a> Commander<'a> {
         std::fs::create_dir_all(dir_path).context("create dir")?;
         let mut writer = std::fs::File::create(full_path).context("create file")?;
         std::io::copy(&mut reader, &mut writer).context("save response")?;
+        Ok(())
+    }
+
+    fn replace(&self, path: &[&str], from: &str, to: &str) -> Result<()> {
+        let mut full_path = self.root.unwrap().to_path_buf();
+        for part in path {
+            full_path = full_path.join(part);
+        }
+        let content = std::fs::read_to_string(&full_path).context("read file")?;
+        let content = content.replace(from, to);
+        std::fs::write(full_path, content).context("save file")?;
         Ok(())
     }
 }

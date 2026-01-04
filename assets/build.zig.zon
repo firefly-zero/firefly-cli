@@ -1,12 +1,7 @@
 .{
     .name = .main,
     .version = "0.0.0",
-    .fingerprint = 0xbf28cd6471df7d9f,
-    .dependencies = .{
-        .firefly = .{
-            .url = "https://github.com/firefly-zero/firefly-zig/archive/refs/tags/0.1.0.tar.gz",
-            .hash = "12208d6832ba8b3a4c2a4569fd1404233d2e9fe1bcdf3a4a82f8cf2a87d40264b53b",
-        },
-    },
+    .fingerprint = 0xffffffffffffffff,
+    .dependencies = .{},
     .paths = .{"src"},
 }
