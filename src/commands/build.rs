@@ -119,8 +119,7 @@ fn check_provenance(c: &Config) {
         println!("  Please, change it before sharing the app with the world.");
     }
     if (c.launcher || c.sudo) && c.author_id != "sys" {
-        println!("⚠️  The app uses privileged system access.");
-        println!("  Make sure you trust the author.");
+        println!("⚠️  The app uses privileged system access. Make sure you trust the author.");
     }
     // TODO(@orsinium): Validate that "sys" apps are cloned from the official repos.
 }

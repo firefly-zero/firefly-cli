@@ -8,7 +8,11 @@
     clippy::nursery,
     clippy::allow_attributes
 )]
-#![allow(clippy::enum_glob_use, clippy::wildcard_imports)]
+#![allow(
+    clippy::enum_glob_use,
+    clippy::wildcard_imports,
+    clippy::case_sensitive_file_extension_comparisons
+)]
 #![expect(clippy::option_if_let_else)]
 
 mod args;
