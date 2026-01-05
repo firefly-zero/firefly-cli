@@ -48,6 +48,7 @@ pub fn cmd_import(vfs: &Path, args: &ImportArgs) -> Result<()> {
         println!("✅ installed: {rom_path}");
     }
     write_installed(&meta, vfs)?;
+    reset_launcher_cache(vfs).context("reset launcher cache")?;
     Ok(())
 }
 
@@ -111,6 +112,19 @@ fn write_installed(meta: &Meta<'_>, vfs_path: &Path) -> anyhow::Result<()> {
     if meta.launcher {
         let output_path = vfs_path.join("sys").join("launcher");
         fs::write(output_path, encoded).context("write launcher file")?;
+    }
+    Ok(())
+}
+
+fn reset_launcher_cache(vfs_path: &Path) -> anyhow::Result<()> {
+    let cache_path = vfs_path
+        .join("data")
+        .join("sys")
+        .join("launcher")
+        .join("etc")
+        .join("metas");
+    if cache_path.exists() {
+        std::fs::remove_file(cache_path)?;
     }
     Ok(())
 }
