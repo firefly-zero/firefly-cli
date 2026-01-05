@@ -49,7 +49,6 @@ static TIPS: &[&str] = &[
     // covering CLI subcommands
     "you can use `wasm2wat` and `firefly_cli inspect` to inspect the app binary",
     "use `firefly_cli export` to share the app with your friends",
-    "backup your private key (but keep it secret!): firefly_cli key priv",
     "use `firefly_cli runtime monitor` to see RAM and CPU consumption of a running app",
     // links to the docs
     "use cheat codes to make testing easier: https://docs.fireflyzero.com/dev/debugging/#-cheat-codes",

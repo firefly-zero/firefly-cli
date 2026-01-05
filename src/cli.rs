@@ -17,13 +17,6 @@ pub fn run_command(vfs: PathBuf, command: &Commands) -> anyhow::Result<()> {
         Inspect(args) => cmd_inspect(&vfs, args),
         Repl(args) => cmd_repl(&vfs, args),
         Shots(ShotsCommands::Download(args)) => cmd_shots_download(&vfs, args),
-        Key(command) => match command {
-            KeyCommands::New(args) => cmd_key_new(&vfs, args),
-            KeyCommands::Add(args) => cmd_key_add(&vfs, args),
-            KeyCommands::Pub(args) => cmd_key_pub(&vfs, args),
-            KeyCommands::Priv(args) => cmd_key_priv(&vfs, args),
-            KeyCommands::Rm(args) => cmd_key_rm(&vfs, args),
-        },
         Catalog(command) => match command {
             CatalogCommands::List(args) => cmd_catalog_list(args),
             CatalogCommands::Show(args) => cmd_catalog_show(args),

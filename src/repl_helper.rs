@@ -16,7 +16,7 @@ impl Helper {
         let mut hints = Vec::new();
         let cmds = [
             // commands
-            "build", "export", "import", "vfs", "cheat", "monitor", "key", "catalog",
+            "build", "export", "import", "vfs", "cheat", "monitor", "catalog",
             //
             // subcommands
             "new", "add", "pub", "priv", "rm", "list", "show",
