@@ -28,14 +28,24 @@ pub fn cmd_import(vfs: &Path, args: &ImportArgs) -> Result<()> {
 
     let meta_raw = read_meta_raw(&mut archive)?;
     let meta = Meta::decode(&meta_raw).context("parse meta")?;
+    if !id_matches(&args.path, &meta) {
+        bail!(
+            "app ID ({}.{}) doesn't match the expected ID",
+            meta.author_id,
+            meta.app_id
+        );
+    }
+    if (meta.launcher || meta.sudo) && meta.author_id != "sys" {
+        println!("⚠️  The app uses privileged system access. Make sure you trust the author.");
+    }
     let rom_path = vfs.join("roms").join(meta.author_id).join(meta.app_id);
 
     init_vfs(vfs).context("init VFS")?;
     _ = fs::remove_dir_all(&rom_path);
     create_dir_all(&rom_path).context("create ROM dir")?;
     archive.extract(&rom_path).context("extract archive")?;
-    if let Err(err) = verify(&rom_path) {
-        println!("⚠️  verification failed: {err}");
+    if let Err(err) = verify_hash(&rom_path) {
+        println!("⚠️  hash verification failed: {err}");
     }
     create_data_dir(&meta, vfs).context("create app data directory")?;
     write_stats(&meta, vfs).context("create app stats file")?;
@@ -47,14 +57,35 @@ pub fn cmd_import(vfs: &Path, args: &ImportArgs) -> Result<()> {
     Ok(())
 }
 
-fn fetch_archive(path: &str) -> Result<PathBuf> {
-    let mut path = path.to_string();
-    if path == "launcher" {
-        path = "https://github.com/firefly-zero/firefly-launcher/releases/latest/download/sys.launcher.zip".to_string();
+/// Check if the ID from the ID/path/URL that the user provided matches the app ID in meta.
+///
+/// Currently verifies ID only if the app source is the catalog.
+/// For installation from URL/file we let the URL/file to have any name.
+fn id_matches(given: &str, meta: &Meta<'_>) -> bool {
+    let is_catalog = !given.ends_with(".zip");
+    if !is_catalog {
+        return true;
     }
+    if given == "launcher" {
+        return meta.author_id == "sys" && meta.app_id == "launcher";
+    }
+    let full_id = format!("{}.{}", meta.author_id, meta.app_id);
+    given == full_id
+}
+
+/// Fetch the given app archive as a file.
+///
+/// * If file path is given, this path will be returned without any file modification.
+/// * If URL is given, the file will be downloaded.
+/// * If app ID is given, try downloading the app from the catalog.
+fn fetch_archive(path: &str) -> Result<PathBuf> {
+    let mut path = path;
+    if path == "launcher" {
+        path = "https://github.com/firefly-zero/firefly-launcher/releases/latest/download/sys.launcher.zip";
+    }
+    let mut path = path.to_string();
 
     // App ID is given. Fetch download URL from the catalog.
-    #[expect(clippy::case_sensitive_file_extension_comparisons)]
     if !path.ends_with(".zip") {
         let Some((author_id, app_id)) = path.split_once('.') else {
             bail!("app ID must contain dot");
@@ -90,6 +121,7 @@ fn fetch_archive(path: &str) -> Result<PathBuf> {
     Ok(out_path)
 }
 
+/// Read and parse app metadata from the app archive.
 fn read_meta_raw(archive: &mut ZipArchive<File>) -> Result<Vec<u8>> {
     let mut meta_raw = Vec::new();
     let mut meta_file = if archive.index_for_name(META).is_some() {
@@ -134,14 +166,14 @@ fn reset_launcher_cache(vfs_path: &Path) -> anyhow::Result<()> {
 }
 
 /// Verify SHA256 hash.
-fn verify(rom_path: &Path) -> anyhow::Result<()> {
+fn verify_hash(rom_path: &Path) -> anyhow::Result<()> {
     let hash_path = rom_path.join(HASH);
     let hash_expected: &[u8] = &fs::read(hash_path).context("read hash file")?;
     let hash_actual: &[u8] = &hash_dir(rom_path).context("calculate hash")?[..];
     if hash_actual != hash_expected {
         let exp = HEXLOWER.encode(hash_expected);
         let act = HEXLOWER.encode(hash_actual);
-        bail!("invalid hash:\n  expected: {exp}\n  got:      {act}");
+        bail!("expected: {exp}, got: {act}");
     }
     Ok(())
 }
@@ -318,5 +350,28 @@ mod tests {
 
         dirs_eq(&vfs.join("roms"), &vfs2.join("roms"));
         dirs_eq(&vfs.join("data"), &vfs2.join("data"));
+    }
+
+    #[test]
+    fn test_id_matches() {
+        let meta = Meta {
+            author_id: "sys",
+            app_id: "launcher",
+
+            app_name: "",
+            author_name: "",
+            launcher: true,
+            sudo: true,
+            version: 1,
+        };
+        assert!(id_matches("launcher", &meta));
+        assert!(id_matches("sys.launcher", &meta));
+        assert!(id_matches("sys.launcher.zip", &meta));
+        assert!(id_matches("/tmp/sys.launcher.zip", &meta));
+        let url = "https://github.com/firefly-zero/firefly-launcher/releases/latest/download/sys.launcher.zip";
+        assert!(id_matches(url, &meta));
+
+        assert!(!id_matches("lux.snek", &meta));
+        assert!(!id_matches("snek", &meta));
     }
 }
