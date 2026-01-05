@@ -74,10 +74,7 @@ static TIPS: &[&str] = &[
 pub fn cmd_build(vfs: PathBuf, args: &BuildArgs) -> anyhow::Result<()> {
     init_vfs(&vfs).context("init vfs")?;
     let config = Config::load(vfs, &args.root).context("load project config")?;
-    if config.author_id == "joearms" {
-        println!("⚠️  author_id in firefly.tom has the default value.");
-        println!("  Please, change it before sharing the app with the world.");
-    }
+    check_provenance(&config);
     if !args.no_tip {
         show_tip();
     }
@@ -113,6 +110,19 @@ pub fn cmd_build(vfs: PathBuf, args: &BuildArgs) -> anyhow::Result<()> {
     print_sizes(&old_sizes, &new_sizes);
     println!("\n✅ installed: {}.{}", config.author_id, config.app_id);
     Ok(())
+}
+
+/// Emit warnings for suspicious config.
+fn check_provenance(c: &Config) {
+    if c.author_id == "joearms" {
+        println!("⚠️  author_id in firefly.toml has the default value.");
+        println!("  Please, change it before sharing the app with the world.");
+    }
+    if (c.launcher || c.sudo) && c.author_id != "sys" {
+        println!("⚠️  The app uses privileged system access.");
+        println!("  Make sure you trust the author.");
+    }
+    // TODO(@orsinium): Validate that "sys" apps are cloned from the official repos.
 }
 
 /// Serialize and write the ROM meta information.
