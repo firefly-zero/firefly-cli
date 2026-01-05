@@ -15,11 +15,6 @@ use crossterm::style::Stylize;
 use data_encoding::HEXLOWER;
 use firefly_types::Encode;
 use rand::Rng;
-use rsa::RsaPrivateKey;
-use rsa::pkcs1::DecodeRsaPrivateKey;
-use rsa::pkcs1v15::SigningKey;
-use rsa::signature::SignatureEncoding;
-use rsa::signature::hazmat::PrehashSigner;
 use sha2::{Digest, Sha256};
 use std::borrow::Cow;
 use std::collections::HashMap;
@@ -54,7 +49,6 @@ static TIPS: &[&str] = &[
     // covering CLI subcommands
     "you can use `wasm2wat` and `firefly_cli inspect` to inspect the app binary",
     "use `firefly_cli export` to share the app with your friends",
-    "backup your private key (but keep it secret!): firefly_cli key priv",
     "use `firefly_cli runtime monitor` to see RAM and CPU consumption of a running app",
     // links to the docs
     "use cheat codes to make testing easier: https://docs.fireflyzero.com/dev/debugging/#-cheat-codes",
@@ -103,15 +97,11 @@ pub fn cmd_build(vfs: PathBuf, args: &BuildArgs) -> anyhow::Result<()> {
     write_badges(&config).context("write badges")?;
     write_boards(&config).context("write boards")?;
     create_rom_stats(&config).context("create default stats file")?;
+    write_hash(&config.rom_path).context("write hash")?;
 
     // Create default app data.
     create_data_dir(&meta, &config.vfs_path).context("create app data directory")?;
     write_stats(&meta, &config.vfs_path).context("write stats")?;
-
-    // Sign ROM.
-    write_key(&config).context("write key")?;
-    write_hash(&config.rom_path).context("write hash")?;
-    write_sig(&config).context("sign ROM")?;
 
     // Update system files.
     reset_launcher_cache(&config.vfs_path).context("reset launcher cache")?;
@@ -218,7 +208,7 @@ fn convert_file(
     palettes: &Palettes,
     file_config: &FileConfig,
 ) -> anyhow::Result<()> {
-    if name == SIG || name == META || name == HASH || name == KEY {
+    if name == META || name == HASH {
         bail!("ROM file name \"{name}\" is reserved");
     }
     let out_path = config.rom_path.join(name);
@@ -401,57 +391,12 @@ fn create_rom_stats(config: &Config) -> anyhow::Result<()> {
     Ok(())
 }
 
-/// Copy the public key for the author into the ROM.
-fn write_key(config: &Config) -> anyhow::Result<()> {
-    let sys_path = config.vfs_path.join("sys");
-    let author_id = &config.author_id;
-    let pub_path = sys_path.join("pub").join(author_id);
-    if !pub_path.exists() {
-        // Don't show error here just yet.
-        // If the key is missing, the error will be reported later by write_sig.
-        return Ok(());
-    }
-    let key_path = config.rom_path.join(KEY);
-    fs::copy(pub_path, key_path).context("copy public key")?;
-    Ok(())
-}
-
 /// Generate SHA256 hash for all the ROM files.
 fn write_hash(rom_path: &Path) -> anyhow::Result<()> {
     let hash = hash_dir(rom_path)?;
     let hash_path = rom_path.join(HASH);
     let mut hash_file = fs::File::create(hash_path).context("create file")?;
     hash_file.write_all(&hash[..]).context("write file")
-}
-
-/// Sign the ROM hash.
-fn write_sig(config: &Config) -> anyhow::Result<()> {
-    let sys_path = config.vfs_path.join("sys");
-    let author_id = &config.author_id;
-    let pub_path = sys_path.join("pub").join(author_id);
-    if !pub_path.exists() {
-        println!("⚠️  no key found for {author_id}, cannot sign ROM");
-        return Ok(());
-    }
-    let priv_path = sys_path.join("priv").join(author_id);
-    if !priv_path.exists() {
-        println!("⚠️  there is only public key for {author_id}, cannot sign ROM");
-        return Ok(());
-    }
-
-    let key_bytes = fs::read(priv_path).context("read private key")?;
-    let private_key = RsaPrivateKey::from_pkcs1_der(&key_bytes).context("parse key")?;
-    let signing_key = SigningKey::<Sha256>::new(private_key);
-
-    let hash_path = config.rom_path.join(HASH);
-    let hash_bytes = fs::read(hash_path).context("read hash")?;
-
-    let sig = signing_key.sign_prehash(&hash_bytes).context("sign hash")?;
-    let sig_bytes = sig.to_bytes();
-    let sig_path = config.rom_path.join(SIG);
-    fs::write(sig_path, sig_bytes).context("write signature to file")?;
-
-    Ok(())
 }
 
 /// Check that there are now big or empty files in the ROM.

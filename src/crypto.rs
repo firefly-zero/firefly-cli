@@ -1,4 +1,4 @@
-use crate::file_names::{HASH, SIG};
+use crate::file_names::HASH;
 use anyhow::{Context, bail};
 use sha2::digest::consts::U32;
 use sha2::digest::generic_array::GenericArray;
@@ -20,7 +20,7 @@ pub fn hash_dir(rom_path: &Path) -> anyhow::Result<GenericArray<u8, U32>> {
             bail!("the ROM dir must contain only files");
         }
         let file_name = path.file_name().context("get file name")?;
-        if file_name == HASH || file_name == SIG {
+        if file_name == HASH {
             continue;
         }
         hasher.update("\x00");

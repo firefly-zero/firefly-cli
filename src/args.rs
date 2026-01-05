@@ -69,11 +69,6 @@ pub enum Commands {
     #[clap(alias("shot"), alias("screenshot"), alias("screenshots"))]
     Shots(ShotsCommands),
 
-    /// Manage signing keys.
-    #[command(subcommand)]
-    #[clap(alias("keys"))]
-    Key(KeyCommands),
-
     /// Set, get, and generate device name.
     #[command(subcommand)]
     Name(NameCommands),
@@ -81,29 +76,6 @@ pub enum Commands {
     /// Interact with catalog.fireflyzero.com.
     #[command(subcommand)]
     Catalog(CatalogCommands),
-}
-
-#[derive(Subcommand, Debug)]
-pub enum KeyCommands {
-    /// Generate a new key pair.
-    #[clap(alias("gen"), alias("generate"))]
-    New(KeyArgs),
-
-    /// Add a new key from catalog, URL, or file.
-    #[clap(alias("import"))]
-    Add(KeyArgs),
-
-    /// Export public key.
-    #[clap(alias("export"), alias("public"))]
-    Pub(KeyExportArgs),
-
-    /// Export private key.
-    #[clap(alias("private"))]
-    Priv(KeyExportArgs),
-
-    /// Remove the public and private key.
-    #[clap(alias("remove"))]
-    Rm(KeyArgs),
 }
 
 #[derive(Subcommand, Debug)]
@@ -143,20 +115,6 @@ pub enum ShotsCommands {
         alias("import")
     )]
     Download(ShotsDownloadArgs),
-}
-
-#[derive(Debug, Parser)]
-pub struct KeyArgs {
-    pub author_id: String,
-}
-
-#[derive(Debug, Parser)]
-pub struct KeyExportArgs {
-    pub author_id: String,
-
-    /// Path to the exported key file.
-    #[arg(short, long, default_value = None)]
-    pub output: Option<PathBuf>,
 }
 
 #[derive(Debug, Parser)]

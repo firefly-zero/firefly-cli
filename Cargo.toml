@@ -45,11 +45,6 @@ libflate = "2.2.1"
 # Random device name generation
 # NOTE: Cannot be updated to 0.9.0+ until rsa is updated to 0.10.0+.
 rand = "0.8.5"
-# Signatures
-rsa = { version = "0.9.9", default-features = false, features = [
-    "std",
-    "sha2",
-] }
 rust-embed = { version = "8.9.0", default-features = false, features = [
     "debug-embed",
 ] }
