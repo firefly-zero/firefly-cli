@@ -1,17 +1,12 @@
 use crate::args::ImportArgs;
 use crate::crypto::hash_dir;
-use crate::file_names::{HASH, KEY, META, SIG, STATS};
+use crate::file_names::{HASH, META, STATS};
 use crate::vfs::init_vfs;
 use anyhow::{Context, Result, bail};
 use chrono::Datelike;
 use data_encoding::HEXLOWER;
 use firefly_types::{Encode, Meta, validate_id};
-use rsa::RsaPublicKey;
-use rsa::pkcs1::DecodeRsaPublicKey;
-use rsa::pkcs1v15::{Signature, VerifyingKey};
-use rsa::signature::hazmat::PrehashVerifier;
 use serde::Deserialize;
-use sha2::Sha256;
 use std::env::temp_dir;
 use std::fs::{self, File, create_dir_all};
 use std::io::Read;
@@ -138,7 +133,7 @@ fn reset_launcher_cache(vfs_path: &Path) -> anyhow::Result<()> {
     Ok(())
 }
 
-/// Verify SHA256 hash, public key, and signature.
+/// Verify SHA256 hash.
 fn verify(rom_path: &Path) -> anyhow::Result<()> {
     let hash_path = rom_path.join(HASH);
     let hash_expected: &[u8] = &fs::read(hash_path).context("read hash file")?;
@@ -148,19 +143,6 @@ fn verify(rom_path: &Path) -> anyhow::Result<()> {
         let act = HEXLOWER.encode(hash_actual);
         bail!("invalid hash:\n  expected: {exp}\n  got:      {act}");
     }
-
-    let key_path = rom_path.join(KEY);
-    let key_raw = fs::read(key_path).context("read key from ROM")?;
-    let public_key = RsaPublicKey::from_pkcs1_der(&key_raw).context("decode key")?;
-    let verifying_key = VerifyingKey::<Sha256>::new(public_key);
-
-    let sig_path = rom_path.join(SIG);
-    let sig_raw: &[u8] = &fs::read(sig_path).context("read signature")?;
-    let sig = Signature::try_from(sig_raw).context("bad signature")?;
-
-    verifying_key
-        .verify_prehash(hash_actual, &sig)
-        .context("verify signature")?;
     Ok(())
 }
 
