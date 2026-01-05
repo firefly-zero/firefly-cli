@@ -90,6 +90,7 @@ pub fn cmd_build(vfs: PathBuf, args: &BuildArgs) -> anyhow::Result<()> {
     let palettes = parse_palettes(config.palettes.as_ref()).context("parse palettes")?;
     let old_sizes = collect_sizes(&config.rom_path);
 
+    // Write ROM files.
     let meta = write_meta(&config).context("write metadata file")?;
     build_bin(&config, args).context("build binary")?;
     remove_old_files(&config.rom_path).context("remove old files")?;
@@ -101,13 +102,22 @@ pub fn cmd_build(vfs: PathBuf, args: &BuildArgs) -> anyhow::Result<()> {
     }
     write_badges(&config).context("write badges")?;
     write_boards(&config).context("write boards")?;
-    write_installed(&config).context("write app-name")?;
     create_rom_stats(&config).context("create default stats file")?;
+
+    // Create default app data.
     create_data_dir(&meta, &config.vfs_path).context("create app data directory")?;
     write_stats(&meta, &config.vfs_path).context("write stats")?;
+
+    // Sign ROM.
     write_key(&config).context("write key")?;
     write_hash(&config.rom_path).context("write hash")?;
     write_sig(&config).context("sign ROM")?;
+
+    // Update system files.
+    reset_launcher_cache(&config.vfs_path).context("reset launcher cache")?;
+    write_installed(&config).context("write app-name")?;
+
+    // Show build report.
     let new_sizes = collect_sizes(&config.rom_path);
     check_sizes(&new_sizes)?;
     print_sizes(&old_sizes, &new_sizes);
@@ -144,6 +154,19 @@ fn write_meta(config: &Config) -> anyhow::Result<firefly_types::Meta<'_>> {
     let output_path = config.rom_path.join(META);
     fs::write(output_path, encoded).context("write file")?;
     Ok(meta)
+}
+
+fn reset_launcher_cache(vfs_path: &Path) -> anyhow::Result<()> {
+    let cache_path = vfs_path
+        .join("data")
+        .join("sys")
+        .join("launcher")
+        .join("etc")
+        .join("metas");
+    if cache_path.exists() {
+        std::fs::remove_file(cache_path)?;
+    }
+    Ok(())
 }
 
 /// Write the latest installed app name into internal DB.
