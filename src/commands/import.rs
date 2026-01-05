@@ -5,7 +5,7 @@ use crate::vfs::init_vfs;
 use anyhow::{Context, Result, bail};
 use chrono::Datelike;
 use data_encoding::HEXLOWER;
-use firefly_types::{Encode, Meta};
+use firefly_types::{Encode, Meta, validate_id};
 use rsa::RsaPublicKey;
 use rsa::pkcs1::DecodeRsaPublicKey;
 use rsa::pkcs1v15::{Signature, VerifyingKey};
@@ -61,6 +61,15 @@ fn fetch_archive(path: &str) -> Result<PathBuf> {
     // App ID is given. Fetch download URL from the catalog.
     #[expect(clippy::case_sensitive_file_extension_comparisons)]
     if !path.ends_with(".zip") {
+        let Some((author_id, app_id)) = path.split_once('.') else {
+            bail!("app ID must contain dot");
+        };
+        if let Err(err) = validate_id(author_id) {
+            bail!("invalid author ID: {err}");
+        }
+        if let Err(err) = validate_id(app_id) {
+            bail!("invalid app ID: {err}");
+        }
         let url = format!("https://catalog.fireflyzero.com/{path}.json");
         let resp = ureq::get(&url).call().context("send HTTP request")?;
         let mut body = resp.into_body().into_reader();
