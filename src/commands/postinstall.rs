@@ -1,15 +1,33 @@
 use anyhow::{Result, bail};
-use std::path::{Path, PathBuf};
+use std::{
+    io::Write,
+    path::{Path, PathBuf},
+};
 
 pub fn cmd_postinstall() -> Result<()> {
-    let Some(path) = find_writable_path() else {
-        bail!("cannot write writable dir in PATH")
-    };
-    move_self_to(&path)?;
+    let path = move_self()?;
     create_alias(&path)?;
     Ok(())
 }
 
+/// Move the currently running executable into $PATH.
+fn move_self() -> Result<PathBuf> {
+    if let Some(path) = find_writable_path() {
+        move_self_to(&path)?;
+        return Ok(path);
+    }
+    if let Some(home) = std::env::home_dir() {
+        let path = home.join(".local").join("bin");
+        if is_writable(&path) {
+            move_self_to(&path)?;
+            add_path(&path)?;
+            return Ok(path);
+        }
+    }
+    bail!("cannot write writable dir in $PATH")
+}
+
+/// Move the currently running executable into the given path.
 fn move_self_to(new_path: &Path) -> Result<()> {
     let Some(old_path) = std::env::args().next() else {
         bail!("cannot access process args");
@@ -20,6 +38,7 @@ fn move_self_to(new_path: &Path) -> Result<()> {
     Ok(())
 }
 
+/// Create `ff` shortcut for `firefly_cli`.
 fn create_alias(dir_path: &Path) -> Result<()> {
     #[cfg(unix)]
     create_alias_unix(dir_path)?;
@@ -61,6 +80,7 @@ fn find_writable_path() -> Option<PathBuf> {
     None
 }
 
+/// Check if the current user can create files in the given directory.
 fn is_writable(path: &Path) -> bool {
     let Ok(meta) = std::fs::metadata(path) else {
         return false;
@@ -97,4 +117,29 @@ fn parse_paths(raw: &str) -> Vec<PathBuf> {
         paths.push(PathBuf::from(path));
     }
     paths
+}
+
+/// Add the given directory into `$PATH`.
+fn add_path(path: &Path) -> Result<()> {
+    let Some(home) = std::env::home_dir() else {
+        bail!("home dir not found");
+    };
+    let zshrc = home.join(".zshrc");
+    if zshrc.exists() {
+        return add_path_to(&zshrc, path);
+    }
+    let bashhrc = home.join(".bashhrc");
+    if bashhrc.exists() {
+        return add_path_to(&bashhrc, path);
+    }
+    bail!("cannot find .zshrc or .bashrc")
+}
+
+fn add_path_to(profile: &Path, path: &Path) -> Result<()> {
+    let mut file = std::fs::OpenOptions::new().append(true).open(profile)?;
+    let path_bin = path.as_os_str().as_encoded_bytes();
+    file.write_all(b"\n\nexport PATH=\"$PATH:")?;
+    file.write_all(path_bin)?;
+    file.write_all(b"\"\n")?;
+    Ok(())
 }
