@@ -11,6 +11,7 @@ mod logs;
 mod monitor;
 mod name;
 mod new;
+mod postinstall;
 mod repl;
 mod runtime;
 mod shots;
