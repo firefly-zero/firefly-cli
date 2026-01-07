@@ -6,6 +6,7 @@ use std::path::PathBuf;
 pub fn run_command(vfs: PathBuf, command: &Commands) -> anyhow::Result<()> {
     use Commands::*;
     match command {
+        Postinstall => cmd_postinstall(),
         Build(args) => cmd_build(vfs, args),
         Export(args) => cmd_export(&vfs, args),
         Import(args) => cmd_import(&vfs, args),
