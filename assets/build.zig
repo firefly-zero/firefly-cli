@@ -2,11 +2,11 @@ const std = @import("std");
 
 pub fn build(b: *std.Build) void {
     const target_query: std.Target.Query = .{
-        .cpu_arch = std.Target.Cpu.Arch.wasm32,
-        .os_tag = std.Target.Os.Tag.freestanding,
+        .cpu_arch = .wasm32,
+        .os_tag = .freestanding,
     };
     const target = b.resolveTargetQuery(target_query);
-    const optimize = std.builtin.OptimizeMode.ReleaseSmall;
+    const optimize: std.builtin.OptimizeMode = .ReleaseSmall;
     const exe = b.addExecutable(.{
         .name = "main",
         .root_module = b.createModule(.{
