@@ -1,9 +1,11 @@
 use crate::args::EmulatorArgs;
 use crate::langs::check_output;
 use anyhow::{Context, Result, bail};
+use flate2::read::GzDecoder;
 use std::fs::File;
 use std::path::Path;
 use std::process::Command;
+use tar::Archive;
 
 pub fn cmd_emulator(vfs: &Path, args: &EmulatorArgs) -> Result<()> {
     let executed_dev = run_dev(args)?;
@@ -75,10 +77,10 @@ fn run_bin(args: &EmulatorArgs) -> Result<bool> {
 
 fn run_embedded(vfs: &Path, args: &EmulatorArgs) -> Result<()> {
     // TODO(@orsinium): always use the global vfs.
-    let bin_path = vfs.join("firefly_emulator");
+    let bin_path = vfs.join("firefly-emulator");
     if !bin_path.exists() {
         println!("⏳️ downloading emulator...");
-        download_emulator(&bin_path)?;
+        download_emulator(&bin_path).context("download emulator")?;
     }
     println!("⌛ running...");
     let output = Command::new(bin_path).args(&args.args).output()?;
@@ -87,16 +89,27 @@ fn run_embedded(vfs: &Path, args: &EmulatorArgs) -> Result<()> {
 }
 
 fn download_emulator(bin_path: &Path) -> Result<()> {
+    // Send HTTP request.
     let url = get_release_url().context("get latest release URL")?;
-    let resp = ureq::get(url).call().context("send HTTP request")?;
-    let mut file = File::create(bin_path).context("create binary file in vFS")?;
-    let mut body = resp.into_body().into_reader();
-    std::io::copy(&mut body, &mut file).context("write response into a file")?;
+    let resp = ureq::get(&url).call().context("send HTTP request")?;
+    let body = resp.into_body().into_reader();
 
+    // Extract archive.
+    if url.ends_with(".tar.gz") || url.ends_with(".tgz") {
+        let tar = GzDecoder::new(body);
+        let mut archive = Archive::new(tar);
+        let vfs = bin_path.parent().unwrap();
+        archive.unpack(vfs).context("extract binary")?;
+    } else {
+        bail!("unsupported archive format")
+    }
+
+    // chmod.
     #[cfg(unix)]
     {
         use std::os::unix::fs::PermissionsExt;
-        let mut perm = file.metadata()?.permissions();
+        let file = File::open(bin_path).context("open file")?;
+        let mut perm = file.metadata().context("read file meta")?.permissions();
         perm.set_mode(0o700);
         std::fs::set_permissions(bin_path, perm).context("set permissions")?;
     }

@@ -36,6 +36,8 @@ data-encoding = "2.9.0"
 directories = "6.0.0"
 # Serialize app config into meta file in the ROM
 firefly-types = { version = "0.7.1" }
+# Read gz archives (to install emulator).
+flate2 = "1.1.5"
 # Decode wav files
 hound = "3.5.1"
 # Parse PNG images
@@ -58,6 +60,8 @@ serde_json = "1.0.149"
 serialport = "4.8.1"
 # Calculate file checksum
 sha2 = "0.10.9"
+# Read gz archives (to install emulator).
+tar = "0.4.44"
 # Deserialize firefly.toml
 toml = "0.9.8"
 # Download remote files (`url` field in `firefly.toml`)
