@@ -5,8 +5,9 @@ use std::{
 };
 
 pub fn cmd_postinstall() -> Result<()> {
-    let path = move_self()?;
-    create_alias(&path)?;
+    let path = move_self().context("move binary")?;
+    delete_alias().context("delete old alias")?;
+    create_alias(&path).context("create alias")?;
     Ok(())
 }
 
@@ -50,6 +51,17 @@ fn create_alias(dir_path: &Path) -> Result<()> {
     Ok(())
 }
 
+fn delete_alias() -> Result<()> {
+    let paths = load_paths();
+    for path in &paths {
+        let bin_path = path.join("ff");
+        if bin_path.is_file() {
+            std::fs::remove_file(bin_path)?;
+        }
+    }
+    Ok(())
+}
+
 #[cfg(unix)]
 fn create_alias_unix(dir_path: &Path) -> Result<()> {
     let old_path = dir_path.join("firefly_cli");
@@ -61,6 +73,14 @@ fn create_alias_unix(dir_path: &Path) -> Result<()> {
 /// Find a path in `$PATH` in which the current user can create files.
 fn find_writable_path() -> Option<PathBuf> {
     let paths = load_paths();
+
+    // Find a path that already has the old firefly_cli binary.
+    for path in &paths {
+        let bin_path = path.join("firefly_cli");
+        if bin_path.is_file() {
+            return Some(path.clone());
+        }
+    }
 
     // Prefer writable paths in the user home directory.
     if let Some(home) = std::env::home_dir() {
