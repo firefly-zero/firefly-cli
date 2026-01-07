@@ -1,7 +1,9 @@
 use crate::args::EmulatorArgs;
 use crate::langs::check_output;
 use anyhow::{Context, Result, bail};
-use std::{fs::File, path::Path, process::Command};
+use std::fs::File;
+use std::path::Path;
+use std::process::Command;
 
 pub fn cmd_emulator(vfs: &Path, args: &EmulatorArgs) -> Result<()> {
     let executed_dev = run_dev(args)?;
@@ -90,6 +92,15 @@ fn download_emulator(bin_path: &Path) -> Result<()> {
     let mut file = File::create(bin_path).context("create binary file in vFS")?;
     let mut body = resp.into_body().into_reader();
     std::io::copy(&mut body, &mut file).context("write response into a file")?;
+
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        let mut perm = file.metadata()?.permissions();
+        perm.set_mode(0o700);
+        std::fs::set_permissions(bin_path, perm).context("set permissions")?;
+    }
+
     Ok(())
 }
 
@@ -104,7 +115,9 @@ fn get_release_url() -> Result<String> {
 
 fn get_latest_version() -> Result<String> {
     let url = "https://github.com/firefly-zero/firefly-emulator-bin/releases/latest";
-    let resp = ureq::get(url).call()?;
+    let req = ureq::get(url);
+    let req = req.config().max_redirects(0).build();
+    let resp = req.call()?;
     if resp.status() != 302 {
         bail!("unexpected status code: {}", resp.status());
     }
@@ -112,16 +125,17 @@ fn get_latest_version() -> Result<String> {
         bail!("no redirect Location found in response");
     };
     let loc = loc.to_str()?;
-    Ok(loc.to_owned())
+    let version = loc.split('/').next_back().unwrap();
+    Ok(version.to_owned())
 }
 
 const fn get_suffix() -> &'static str {
     #[cfg(target_os = "windows")]
-    return "-x86_64-pc-windows-msvc.tgz";
+    return "x86_64-pc-windows-msvc.tgz";
     #[cfg(target_os = "macos")]
-    return "-aarch64-apple-darwin.tgz";
+    return "aarch64-apple-darwin.tgz";
     #[cfg(target_os = "linux")]
-    return "-x86_64-unknown-linux-gnu.tgz";
+    return "x86_64-unknown-linux-gnu.tgz";
 }
 
 fn binary_exists(bin: &str) -> bool {
