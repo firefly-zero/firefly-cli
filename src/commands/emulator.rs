@@ -15,7 +15,7 @@ pub fn cmd_emulator(vfs: &Path, args: &EmulatorArgs) -> Result<()> {
 
     // TODO(@orsinium): always use the global vfs.
     let bin_path = vfs.join(BINARY_NAME);
-    if !bin_path.exists() {
+    if args.update || !bin_path.exists() {
         println!("⏳️ downloading emulator...");
         download_emulator(&bin_path).context("download emulator")?;
     }
