@@ -23,7 +23,7 @@ anyhow = "1.0.100"
 # Get current date and time
 chrono = { version = "0.4.42", default-features = false, features = ["clock"] }
 # Framework for parsing CLI args
-clap = { version = "4.5.53", features = ["derive"] }
+clap = { version = "4.5.54", features = ["derive"] }
 # Detect message boundaries in serial port output from device
 cobs = "0.5.0"
 # Generate PNG images (sign chunks)
@@ -35,7 +35,7 @@ data-encoding = "2.9.0"
 # Find the best place to sotre the VFS
 directories = "6.0.0"
 # Serialize app config into meta file in the ROM
-firefly-types = { version = "0.7.0" }
+firefly-types = { version = "0.7.1" }
 # Decode wav files
 hound = "3.5.1"
 # Parse PNG images
@@ -44,7 +44,7 @@ image = { version = "0.25.6", default-features = false, features = ["png"] }
 libflate = "2.2.1"
 # Random device name generation
 # NOTE: Cannot be updated to 0.9.0+ until rsa is updated to 0.10.0+.
-rand = "0.8.5"
+rand = "0.9.2"
 rust-embed = { version = "8.9.0", default-features = false, features = [
     "debug-embed",
 ] }
@@ -53,7 +53,7 @@ rustyline = "17.0.2"
 # Deserialize firefly.toml (required by `toml`)
 serde = { version = "1.0.219", features = ["serde_derive", "derive"] }
 # Deserialize JSON API responses from the firefly catalog
-serde_json = "1.0.148"
+serde_json = "1.0.149"
 # Communicating with running device
 serialport = "4.8.1"
 # Calculate file checksum
@@ -63,8 +63,8 @@ toml = "0.9.8"
 # Download remote files (`url` field in `firefly.toml`)
 ureq = "3.1.4"
 # Build together post-processed wasm binaries
-wasm-encoder = "0.243.0"
+wasm-encoder = "0.244.0"
 # Parse wasm binaries for post-processing (removing custom sections)
-wasmparser = "0.243.0"
+wasmparser = "0.244.0"
 # Work with zip archives (distribution format for ROMs)
 zip = { version = "7.0.0", default-features = false, features = ["zstd"] }

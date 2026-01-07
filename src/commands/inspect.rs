@@ -133,11 +133,14 @@ fn inspect_wasm(bin_path: &Path) -> anyhow::Result<WasmStats> {
             stats.validation_errors.push(err);
         }
         match payload {
-            ImportSection(imports) => {
-                for import in imports {
-                    let import = import?;
-                    let name = (import.module.to_owned(), import.name.to_owned());
-                    stats.imports.push(name);
+            ImportSection(import_sections) => {
+                for imports in import_sections {
+                    let imports = imports?;
+                    for import in imports {
+                        let (_, import) = import?;
+                        let name = (import.module.to_owned(), import.name.to_owned());
+                        stats.imports.push(name);
+                    }
                 }
             }
             GlobalSection(globals) => {

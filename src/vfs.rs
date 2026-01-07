@@ -1,8 +1,8 @@
 use anyhow::Context;
 use directories::ProjectDirs;
 use firefly_types::Encode;
-use rand::seq::SliceRandom;
-use rand::{Rng, thread_rng};
+use rand::Rng;
+use rand::seq::IndexedRandom;
 use std::collections::HashMap;
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -70,7 +70,7 @@ fn generate_name() -> String {
 
 /// Select a random line from the given text.
 fn get_random_line(adjs: &str) -> &str {
-    let mut rng = thread_rng();
+    let mut rng = rand::rng();
     debug_assert!(adjs.ends_with('\n'));
     let adjs = &adjs[..(adjs.len() - 1)];
     let adjs: Vec<_> = adjs.split_whitespace().collect();
@@ -81,7 +81,7 @@ fn get_random_line(adjs: &str) -> &str {
 ///
 /// It replaces with 50% chance every character than can be made leet.
 fn leetify(s: &str) -> String {
-    let mut rng = thread_rng();
+    let mut rng = rand::rng();
     let mut replaces = HashMap::new();
     replaces.insert('l', '1');
     replaces.insert('e', '3');
@@ -92,7 +92,7 @@ fn leetify(s: &str) -> String {
     replaces.insert('o', '0');
     let mut res = String::new();
     for c in s.chars() {
-        if rng.gen_bool(0.5) {
+        if rng.random_bool(0.5) {
             res.push(c);
             continue;
         }
@@ -130,8 +130,8 @@ mod tests {
 
     #[test]
     fn test_get_vfs_path() {
-        let mut rng = rand::thread_rng();
-        let n = rng.gen_range(0..100_000);
+        let mut rng = rand::rng();
+        let n = rng.random_range(0..100_000);
         let root = std::env::temp_dir().join(format!("test_get_vfs_path-{n}"));
         std::fs::create_dir_all(&root).unwrap();
         let expected = root.join(".firefly");

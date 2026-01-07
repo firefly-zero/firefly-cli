@@ -456,8 +456,8 @@ fn print_sizes(old_sizes: &HashMap<OsString, u64>, new_sizes: &HashMap<OsString,
 }
 
 fn show_tip() {
-    let mut rng = rand::thread_rng();
-    let i = rng.gen_range(0..TIPS.len());
+    let mut rng = rand::rng();
+    let i = rng.random_range(0..TIPS.len());
     println!("💡 tip: {}.", TIPS[i]);
 }
 
