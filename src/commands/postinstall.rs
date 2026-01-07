@@ -1,4 +1,4 @@
-use anyhow::{Result, bail};
+use anyhow::{Context, Result, bail};
 use std::{
     io::Write,
     path::{Path, PathBuf},
@@ -33,8 +33,11 @@ fn move_self_to(new_path: &Path) -> Result<()> {
         bail!("cannot access process args");
     };
     let old_path = PathBuf::from(old_path);
+    if !old_path.exists() {
+        bail!("the binary is execute not by its path");
+    }
     let new_path = new_path.join("firefly_cli");
-    std::fs::rename(old_path, new_path)?;
+    std::fs::rename(old_path, new_path).context("move binary")?;
     Ok(())
 }
 

@@ -16,6 +16,9 @@ pub struct Cli {
 
 #[derive(Subcommand)]
 pub enum Commands {
+    #[clap(hide = true)]
+    Postinstall,
+
     /// Build the project and install it locally (into VFS).
     Build(BuildArgs),
 
