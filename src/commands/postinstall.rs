@@ -146,3 +146,25 @@ fn add_path_to(profile: &Path, path: &Path) -> Result<()> {
     file.write_all(b"\"\n")?;
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_parse_paths() {
+        let got = parse_paths("/a/b:~/c/:d");
+        let exp = vec![
+            PathBuf::from("/a/b"),
+            PathBuf::from("~/c/"),
+            PathBuf::from("d"),
+        ];
+        assert_eq!(got, exp);
+    }
+
+    #[test]
+    fn test_is_writable() {
+        let path = PathBuf::from(".");
+        assert!(is_writable(&path));
+    }
+}
