@@ -45,6 +45,7 @@ jobs:
         job:
           # https://github.com/actions/runner-images
           # Linux
+          - { target: aarch64-unknown-linux-musl, os: ubuntu-24.04 }
           - { target: arm-unknown-linux-musleabihf, os: ubuntu-24.04 }
           - { target: x86_64-unknown-linux-musl, os: ubuntu-24.04 }
           - { target: i686-unknown-linux-musl, os: ubuntu-24.04 }
@@ -52,9 +53,9 @@ jobs:
           - { target: aarch64-apple-darwin, os: macos-15 }
           - { target: x86_64-apple-darwin, os: macos-15-intel }
           # Windows
-          - { target: i686-pc-windows-msvc, os: windows-2022 }
-          - { target: x86_64-pc-windows-gnu, os: windows-2022 }
-          - { target: x86_64-pc-windows-msvc, os: windows-2022 }
+          - { target: aarch64-pc-windows-msvc, os: windows-11-arm }
+          - { target: x86_64-pc-windows-msvc, os: windows-2025 }
+          - { target: i686-pc-windows-msvc, os: windows-2025 }
     env:
       BUILD_CMD: cargo
     steps:
