@@ -4,10 +4,18 @@ use std::{
     path::{Path, PathBuf},
 };
 
-pub fn cmd_postinstall() -> Result<()> {
+pub fn cmd_postinstall(vfs: &Path) -> Result<()> {
     let path = move_self().context("move binary")?;
     delete_alias().context("delete old alias")?;
     create_alias(&path).context("create alias")?;
+
+    // While CLI is released (and so is supposed to be updated)
+    // more often than emulator, most people update CLI only when
+    // we announce "the big release" which includes a new emulator.
+    // So, it's safe to assume that when we update CLI,
+    // emulator also needs to be updated (most of the time).
+    remove_emulator(vfs);
+
     Ok(())
 }
 
@@ -171,6 +179,13 @@ fn add_path_to(profile: &Path, path: &Path) -> Result<()> {
     file.write_all(path_bin)?;
     file.write_all(b"\"\n")?;
     Ok(())
+}
+
+fn remove_emulator(vfs: &Path) {
+    let path = vfs.join("firefly-emulator");
+    _ = std::fs::remove_file(path);
+    let path = vfs.join("firefly-emulator.exe");
+    _ = std::fs::remove_file(path);
 }
 
 #[cfg(test)]
