@@ -38,7 +38,13 @@ fn move_self_to(new_path: &Path) -> Result<()> {
         bail!("the binary is execute not by its path");
     }
     let new_path = new_path.join("firefly_cli");
-    std::fs::rename(old_path, new_path).context("move binary")?;
+
+    let res = std::fs::rename(&old_path, &new_path);
+    // Rename fails if src and dst on different mount points.
+    if res.is_err() {
+        std::fs::copy(&old_path, &new_path).context("copy binary")?;
+        _ = std::fs::remove_file(&old_path);
+    }
     Ok(())
 }
 
