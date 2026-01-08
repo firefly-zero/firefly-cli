@@ -4,7 +4,6 @@ use crate::file_names::{HASH, META, STATS};
 use crate::vfs::init_vfs;
 use anyhow::{Context, Result, bail};
 use chrono::Datelike;
-use data_encoding::HEXLOWER;
 use firefly_types::{Encode, Meta, validate_id};
 use serde::Deserialize;
 use std::env::temp_dir;
@@ -171,11 +170,20 @@ fn verify_hash(rom_path: &Path) -> anyhow::Result<()> {
     let hash_expected: &[u8] = &fs::read(hash_path).context("read hash file")?;
     let hash_actual: &[u8] = &hash_dir(rom_path).context("calculate hash")?[..];
     if hash_actual != hash_expected {
-        let exp = HEXLOWER.encode(hash_expected);
-        let act = HEXLOWER.encode(hash_actual);
+        let exp = to_hex(hash_expected);
+        let act = to_hex(hash_actual);
         bail!("expected: {exp}, got: {act}");
     }
     Ok(())
+}
+
+fn to_hex(raw: &[u8]) -> String {
+    use std::fmt::Write;
+    let mut res = String::new();
+    for byte in raw {
+        _ = write!(res, "{byte:x}");
+    }
+    res
 }
 
 /// Create data dir and empty subdirs for the app.

@@ -12,7 +12,6 @@ use crate::vfs::init_vfs;
 use anyhow::{Context, bail};
 use chrono::Datelike;
 use crossterm::style::Stylize;
-use data_encoding::HEXLOWER;
 use firefly_types::Encode;
 use rand::Rng;
 use sha2::{Digest, Sha256};
@@ -267,13 +266,22 @@ fn download_file(input_path: &Path, file_config: &FileConfig) -> anyhow::Result<
     if let Some(expected_hash) = &file_config.sha256 {
         let mut hasher = Sha256::new();
         hasher.update(&bytes);
-        let actual_hash = HEXLOWER.encode(&hasher.finalize());
+        let actual_hash = to_hex(&hasher.finalize());
         if actual_hash != *expected_hash {
             bail!("sha256 hash mismatch: {actual_hash} != {expected_hash}");
         }
     }
     fs::write(input_path, bytes).context("write file")?;
     Ok(())
+}
+
+fn to_hex(raw: &[u8]) -> String {
+    use std::fmt::Write;
+    let mut res = String::new();
+    for byte in raw {
+        _ = write!(res, "{byte:x}");
+    }
+    res
 }
 
 fn write_badges(config: &Config) -> anyhow::Result<()> {
