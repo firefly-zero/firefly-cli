@@ -4,9 +4,18 @@ use std::{
     path::{Path, PathBuf},
 };
 
-pub fn cmd_postinstall() -> Result<()> {
-    let path = move_self()?;
-    create_alias(&path)?;
+pub fn cmd_postinstall(vfs: &Path) -> Result<()> {
+    let path = move_self().context("move binary")?;
+    delete_alias().context("delete old alias")?;
+    create_alias(&path).context("create alias")?;
+
+    // While CLI is released (and so is supposed to be updated)
+    // more often than emulator, most people update CLI only when
+    // we announce "the big release" which includes a new emulator.
+    // So, it's safe to assume that when we update CLI,
+    // emulator also needs to be updated (most of the time).
+    remove_emulator(vfs);
+
     Ok(())
 }
 
@@ -37,7 +46,13 @@ fn move_self_to(new_path: &Path) -> Result<()> {
         bail!("the binary is execute not by its path");
     }
     let new_path = new_path.join("firefly_cli");
-    std::fs::rename(old_path, new_path).context("move binary")?;
+
+    let res = std::fs::rename(&old_path, &new_path);
+    // Rename fails if src and dst on different mount points.
+    if res.is_err() {
+        std::fs::copy(&old_path, &new_path).context("copy binary")?;
+        _ = std::fs::remove_file(&old_path);
+    }
     Ok(())
 }
 
@@ -47,6 +62,17 @@ fn create_alias(dir_path: &Path) -> Result<()> {
     create_alias_unix(dir_path)?;
     #[cfg(not(unix))]
     println!("⚠️  The `ff` alias can be created only on UNIX systems.");
+    Ok(())
+}
+
+fn delete_alias() -> Result<()> {
+    let paths = load_paths();
+    for path in &paths {
+        let bin_path = path.join("ff");
+        if bin_path.is_file() {
+            std::fs::remove_file(bin_path)?;
+        }
+    }
     Ok(())
 }
 
@@ -61,6 +87,14 @@ fn create_alias_unix(dir_path: &Path) -> Result<()> {
 /// Find a path in `$PATH` in which the current user can create files.
 fn find_writable_path() -> Option<PathBuf> {
     let paths = load_paths();
+
+    // Find a path that already has the old firefly_cli binary.
+    for path in &paths {
+        let bin_path = path.join("firefly_cli");
+        if bin_path.is_file() {
+            return Some(path.clone());
+        }
+    }
 
     // Prefer writable paths in the user home directory.
     if let Some(home) = std::env::home_dir() {
@@ -145,6 +179,13 @@ fn add_path_to(profile: &Path, path: &Path) -> Result<()> {
     file.write_all(path_bin)?;
     file.write_all(b"\"\n")?;
     Ok(())
+}
+
+fn remove_emulator(vfs: &Path) {
+    let path = vfs.join("firefly-emulator");
+    _ = std::fs::remove_file(path);
+    let path = vfs.join("firefly-emulator.exe");
+    _ = std::fs::remove_file(path);
 }
 
 #[cfg(test)]

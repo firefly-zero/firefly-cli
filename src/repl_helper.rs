@@ -16,13 +16,36 @@ impl Helper {
         let mut hints = Vec::new();
         let cmds = [
             // commands
-            "build", "export", "import", "vfs", "cheat", "monitor", "catalog",
-            //
+            "build",
+            "export",
+            "import",
+            "new",
+            "emulator",
+            "test",
+            "badges",
+            "boards",
+            "vfs",
+            "runtime",
+            "inspect",
+            "shots",
+            "name",
+            "catalog",
             // subcommands
-            "new", "add", "pub", "priv", "rm", "list", "show",
-            //
+            "cheat",
+            "monitor",
+            "logs",
+            "screenshot",
+            "launch",
+            "restart",
+            "exit",
+            "id",
             // aliases
-            "install", "generate", "remove", "app", "author", "ls",
+            "install",
+            "generate",
+            "remove",
+            "app",
+            "author",
+            "ls",
         ];
         for cmd in cmds {
             let h = CommandHint(cmd.to_string());

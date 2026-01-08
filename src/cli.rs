@@ -6,13 +6,13 @@ use std::path::PathBuf;
 pub fn run_command(vfs: PathBuf, command: &Commands) -> anyhow::Result<()> {
     use Commands::*;
     match command {
-        Postinstall => cmd_postinstall(),
+        Postinstall => cmd_postinstall(&vfs),
         Build(args) => cmd_build(vfs, args),
         Export(args) => cmd_export(&vfs, args),
         Import(args) => cmd_import(&vfs, args),
         New(args) => cmd_new(args),
         Test(args) => cmd_test(args),
-        Emulator(args) => cmd_emulator(args),
+        Emulator(args) => cmd_emulator(&vfs, args),
         Badges(args) => cmd_badges(&vfs, args),
         Boards(args) => cmd_boards(&vfs, args),
         Inspect(args) => cmd_inspect(&vfs, args),

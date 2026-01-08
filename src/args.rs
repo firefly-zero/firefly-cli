@@ -216,6 +216,10 @@ pub struct NewArgs {
 
 #[derive(Debug, Parser)]
 pub struct EmulatorArgs {
+    /// Download the latest emulator release.
+    #[arg(long, default_value_t = false)]
+    pub update: bool,
+
     /// Arguments to pass into the emulator.
     pub args: Vec<String>,
 }
