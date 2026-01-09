@@ -1,6 +1,6 @@
 [package]
 name = "firefly_cli"
-version = "0.15.5"
+version = "0.15.6"
 rust-version = "1.91.0"
 edition = "2024"
 authors = ["Firefly Zero team"]
