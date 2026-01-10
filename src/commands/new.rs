@@ -143,9 +143,27 @@ fn new_zig(name: &str) -> Result<()> {
     c.copy_asset(&["src", "main.zig"], "main.zig")?;
     let fingerprint = format!("0xbf28cd64{:x}", rand::random::<u32>());
     c.replace(&["build.zig.zon"], "0xffffffffffffffff", &fingerprint)?;
-    let url = "https://github.com/firefly-zero/firefly-zig/archive/refs/tags/0.2.1.tar.gz";
-    c.run(&["zig", "fetch", "--save=firefly", url])?;
+    let repo_url = "https://github.com/firefly-zero/firefly-zig";
+    let version = get_latest_zig_sdk_version().context("get Zig SDK version")?;
+    let url = format!("{repo_url}/archive/refs/tags/{version}.tar.gz");
+    c.run(&["zig", "fetch", "--save=firefly", &url])?;
     Ok(())
+}
+
+fn get_latest_zig_sdk_version() -> Result<String> {
+    let url = "https://github.com/firefly-zero/firefly-zig/releases/latest";
+    let req = ureq::get(url);
+    let req = req.config().max_redirects(0).build();
+    let resp = req.call()?;
+    if resp.status() != 302 {
+        bail!("unexpected status code: {}", resp.status());
+    }
+    let Some(loc) = resp.headers().get("Location") else {
+        bail!("no redirect Location found in response");
+    };
+    let loc = loc.to_str()?;
+    let version = loc.split('/').next_back().unwrap();
+    Ok(version.to_owned())
 }
 
 /// Create a new Go project.
