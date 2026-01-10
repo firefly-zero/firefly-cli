@@ -37,7 +37,6 @@ pub fn convert_wav(input_path: &Path, output_path: &Path) -> Result<()> {
                 let sample = sample?;
                 write_i8(&mut out, sample)?;
             }
-            todo!()
         }
         (SampleFormat::Int, 16) => {
             let samples = reader.samples::<i16>();
