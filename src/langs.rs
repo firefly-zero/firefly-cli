@@ -382,13 +382,24 @@ fn build_moon(config: &Config) -> anyhow::Result<()> {
         .context("run moon build")?;
     check_output(&output)?;
 
-    let from_dir = config
+    let new_from_dir = config
         .root_path
-        .join("target")
+        .join("_build")
         .join("wasm")
         .join("release")
         .join("build");
-    let from_path = find_wasm(&from_dir)?;
+    let from_path = if let Ok(from_path) = find_wasm(&new_from_dir) {
+        from_path
+    } else {
+        let old_from_dir = config
+            .root_path
+            .join("target")
+            .join("wasm")
+            .join("release")
+            .join("build");
+        find_wasm(&old_from_dir)?
+    };
+
     let out_path = config.rom_path.join(BIN);
     std::fs::copy(&from_path, out_path).context("copy wasm binary")?;
     std::fs::remove_file(from_path).context("remove wasm file")?;
