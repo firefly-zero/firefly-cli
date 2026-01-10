@@ -41,9 +41,7 @@ pub fn build_bin(config: &Config, args: &BuildArgs) -> anyhow::Result<()> {
     if !args.no_strip {
         strip_custom(&bin_path)?;
     }
-    // TODO(@orsinium): Moon binaries cannot be parsed by wasm-opt, figure out why.
-    //     [parse exception: block cannot pop from outside (at 0:7745)]
-    if !args.no_opt && !matches!(lang, Lang::Moon) {
+    if !args.no_opt {
         optimize(&bin_path).context("optimize wasm binary")?;
     }
     Ok(())
