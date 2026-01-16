@@ -14,6 +14,7 @@ pub fn convert_image(in_path: &Path, out_path: &Path, sys_pal: &Palette) -> Resu
     }
     let mut img_pal = make_palette(&img, sys_pal).context("detect colors used in the image")?;
     let mut out = File::create(out_path).context("create output path")?;
+    // The magic number. "2"=image, "1"=v1.
     write_u8(&mut out, 0x21)?;
     let n_colors = img_pal.len();
     if n_colors <= 2 {
@@ -101,42 +102,47 @@ fn make_palette(img: &RgbaImage, sys_pal: &Palette) -> Result<Vec<Color>> {
 }
 
 /// Add empty colors at the end of the palette to match the BPP size.
+///
+/// If the given image palette is fully contained within the system palette
+/// (after being cut to the expected swaps size), place the colors in the
+/// image palette in the same positions as they are in the system palette.
+/// This will make it possible to read such images without worrying about
+/// applying color swaps.
 fn extend_palette(img_pal: &mut Vec<Color>, sys_pal: &Palette, size: usize) {
     if img_pal.len() > size {
         return;
     }
-    // If the given image palette is fully contained within the system palette,
-    // place the colors in the image palette in the same positions as they are
-    // in the system palette. This will make it possible to read such images
-    // without worrying about applying color swaps.
-    if size == sys_pal.len() && is_subpalette(img_pal, sys_pal) {
-        let has_transp = img_pal.iter().any(Option::is_none);
-        if !has_transp {
-            img_pal.copy_from_slice(sys_pal);
-            return;
-        }
 
-        let mut new_pal: Vec<Color> = Vec::new();
-        let mut found_transp = false;
-        for c in sys_pal {
-            if found_transp || img_pal.contains(c) {
-                new_pal.push(*c);
-            } else {
-                new_pal.push(None);
-                found_transp = true;
-            }
-        }
-        img_pal.copy_from_slice(&new_pal[..]);
+    let sys_pal_prefix = &sys_pal[..size];
+    if !is_subpalette(img_pal, sys_pal_prefix) {
+        img_pal.extend_from_slice(&sys_pal[img_pal.len()..size]);
         return;
     }
-    let n = size - img_pal.len();
-    for _ in 0..n {
-        img_pal.push(sys_pal[0]);
+
+    // No transparency? Just use the system palette.
+    let has_transp = img_pal.iter().any(Option::is_none);
+    if !has_transp {
+        img_pal.clear();
+        img_pal.extend(sys_pal_prefix);
+        return;
     }
+
+    // Has transparency? Then copy the system palette and poke one hole in it.
+    let mut new_pal: Vec<Color> = Vec::new();
+    let mut found_transp = false;
+    for c in sys_pal_prefix {
+        if found_transp || img_pal.contains(c) {
+            new_pal.push(*c);
+        } else {
+            new_pal.push(None);
+            found_transp = true;
+        }
+    }
+    img_pal.copy_from_slice(&new_pal[..]);
 }
 
 /// Check if the image palette is fully contained within the given system palette.
-fn is_subpalette(img_pal: &Vec<Color>, sys_pal: &Palette) -> bool {
+fn is_subpalette(img_pal: &[Color], sys_pal: &[Color]) -> bool {
     for c in img_pal {
         if c.is_some() && !sys_pal.contains(c) {
             return false;
@@ -230,5 +236,45 @@ mod tests {
         assert_eq!(pick_transparent(&[c0, None, c1], pal).unwrap(), 2);
         assert_eq!(pick_transparent(&[c1, c0, None], pal).unwrap(), 2);
         assert_eq!(pick_transparent(&[c0, c1, c2, c3, None], pal).unwrap(), 4);
+    }
+
+    #[test]
+    fn test_extend_palette() {
+        let pal = SWEETIE16;
+        let c0 = pal[0];
+        let c1 = pal[1];
+        let c2 = pal[2];
+        let c3 = pal[3];
+        let c4 = pal[4];
+
+        // Already the palette prefix, do nothing.
+        let mut img_pal = vec![c0, c1];
+        extend_palette(&mut img_pal, pal, 2);
+        assert_eq!(img_pal, vec![c0, c1]);
+
+        // A prefix but in a wrong order. Fix the order.
+        let mut img_pal = vec![c1, c0];
+        extend_palette(&mut img_pal, pal, 2);
+        assert_eq!(img_pal, vec![c0, c1]);
+
+        // Not a prefix and already full. Keep the given palette.
+        let mut img_pal = vec![c2, c1];
+        extend_palette(&mut img_pal, pal, 2);
+        assert_eq!(img_pal, vec![c2, c1]);
+
+        // A prefix but too short. Fill the rest.
+        let mut img_pal = vec![c0, c1];
+        extend_palette(&mut img_pal, pal, 4);
+        assert_eq!(img_pal, vec![c0, c1, c2, c3]);
+
+        // Within the palette prefix.
+        let mut img_pal = vec![c2, c1];
+        extend_palette(&mut img_pal, pal, 4);
+        assert_eq!(img_pal, vec![c0, c1, c2, c3]);
+
+        // Not a prefix but too short. Don't touch the given, fill the rest.
+        let mut img_pal = vec![c4, c2];
+        extend_palette(&mut img_pal, pal, 4);
+        assert_eq!(img_pal, vec![c4, c2, c2, c3]);
     }
 }
