@@ -1,10 +1,11 @@
 use crate::args::*;
 use crate::commands::*;
+use crate::env::Env;
 use std::fmt::Display;
-use std::path::PathBuf;
 
-pub fn run_command(vfs: PathBuf, command: &Commands) -> anyhow::Result<()> {
+pub fn run_command<E: Env>(env: &mut E, command: &Commands) -> anyhow::Result<()> {
     use Commands::*;
+    let vfs = env.vfs_path();
     match command {
         Postinstall => cmd_postinstall(&vfs),
         Build(args) => cmd_build(vfs, args),
@@ -16,7 +17,7 @@ pub fn run_command(vfs: PathBuf, command: &Commands) -> anyhow::Result<()> {
         Badges(args) => cmd_badges(&vfs, args),
         Boards(args) => cmd_boards(&vfs, args),
         Inspect(args) => cmd_inspect(&vfs, args),
-        Repl(args) => cmd_repl(&vfs, args),
+        Repl(args) => cmd_repl(env, args),
         Shots(ShotsCommands::Download(args)) => cmd_shots_download(&vfs, args),
         Catalog(command) => match command {
             CatalogCommands::List(args) => cmd_catalog_list(args),
@@ -37,7 +38,7 @@ pub fn run_command(vfs: PathBuf, command: &Commands) -> anyhow::Result<()> {
             RuntimeCommands::Monitor => cmd_monitor(root_args),
             RuntimeCommands::Logs => cmd_logs(root_args),
         },
-        Vfs => cmd_vfs(),
+        Vfs => cmd_vfs(env),
     }
 }
 
