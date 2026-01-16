@@ -63,14 +63,14 @@ fn get_release_url() -> Result<String> {
     const SUFFIX: &str = "x86_64-unknown-linux-gnu.tgz";
 
     let version = get_latest_version()?;
-    let repo = "https://github.com/firefly-zero/firefly-emulator-bin";
+    let repo = "https://github.com/firefly-zero/firefly-emulator";
     Ok(format!(
         "{repo}/releases/latest/download/firefly-emulator-v{version}-{SUFFIX}"
     ))
 }
 
 fn get_latest_version() -> Result<String> {
-    let url = "https://github.com/firefly-zero/firefly-emulator-bin/releases/latest";
+    let url = "https://github.com/firefly-zero/firefly-emulator/releases/latest";
     let req = ureq::get(url);
     let req = req.config().max_redirects(0).build();
     let resp = req.call()?;
