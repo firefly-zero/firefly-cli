@@ -138,7 +138,8 @@ fn extend_palette(img_pal: &mut Vec<Color>, sys_pal: &Palette, size: usize) {
             found_transp = true;
         }
     }
-    img_pal.copy_from_slice(&new_pal[..]);
+    img_pal.clear();
+    img_pal.extend(new_pal);
 }
 
 /// Check if the image palette is fully contained within the given system palette.
