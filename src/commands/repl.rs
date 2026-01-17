@@ -1,5 +1,6 @@
 use crate::args::{Cli, ReplArgs};
 use crate::cli::{Error, run_command};
+use crate::env::Env;
 use crate::repl_helper::Helper;
 use anyhow::Result;
 use clap::Parser;
@@ -7,10 +8,9 @@ use crossterm::style::Stylize;
 use rustyline::Editor;
 use rustyline::error::ReadlineError;
 use rustyline::history::FileHistory;
-use std::path::Path;
 
 #[expect(clippy::unnecessary_wraps)]
-pub fn cmd_repl(vfs: &Path, _args: &ReplArgs) -> Result<()> {
+pub fn cmd_repl<E: Env>(env: &mut E, _args: &ReplArgs) -> Result<()> {
     let mut rl: Editor<Helper, FileHistory> = Editor::new().unwrap();
     rl.set_helper(Some(Helper::new()));
     // if rl.load_history(".history.txt").is_err() {
@@ -33,7 +33,7 @@ pub fn cmd_repl(vfs: &Path, _args: &ReplArgs) -> Result<()> {
                     }
                 };
                 _ = rl.add_history_entry(&input);
-                let res = run_command(vfs.to_owned(), &cli.command);
+                let res = run_command(env, &cli.command);
                 if let Err(err) = res {
                     eprintln!("{} {}", "💥 Error:".red(), Error(err));
                     was_ok = false;

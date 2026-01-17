@@ -21,21 +21,22 @@ mod cli;
 mod commands;
 mod config;
 mod crypto;
+mod env;
 mod file_names;
 mod fs;
 mod images;
 mod langs;
 mod net;
+mod palettes;
 mod repl_helper;
+#[cfg(test)]
+mod test_helpers;
 mod vfs;
 mod wasm;
 
-mod palettes;
-#[cfg(test)]
-mod test_helpers;
-
 use crate::args::Cli;
 use crate::cli::{Error, run_command};
+use crate::env::StdEnv;
 use crate::vfs::get_vfs_path;
 use clap::Parser;
 use crossterm::style::Stylize;
@@ -46,7 +47,8 @@ fn main() {
         Some(vfs) => vfs,
         None => get_vfs_path(),
     };
-    let res = run_command(vfs, &cli.command);
+    let mut env = StdEnv::new(vfs);
+    let res = run_command(&mut env, &cli.command);
     if let Err(err) = res {
         eprintln!("{} {}", "💥 Error:".red(), Error(err));
         std::process::exit(1);
