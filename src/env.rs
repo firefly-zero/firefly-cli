@@ -7,6 +7,7 @@ pub enum MsgKind {
     Progress2,
     Warning,
     Success,
+    Plain,
 }
 
 impl MsgKind {
@@ -17,6 +18,7 @@ impl MsgKind {
             Self::Progress2 => "⌛",
             Self::Warning => "⚠️",
             Self::Success => "✅",
+            Self::Plain => "",
         }
     }
 }
@@ -28,26 +30,21 @@ pub trait Env {
 
 pub struct StdEnv {
     pub vfs: PathBuf,
-    had_msg: bool,
 }
 
 impl StdEnv {
     pub const fn new(vfs: PathBuf) -> Self {
-        Self {
-            vfs,
-            had_msg: false,
-        }
+        Self { vfs }
     }
 }
 
 impl Env for StdEnv {
     fn emit_msg(&mut self, kind: MsgKind, msg: &str) {
-        if kind == MsgKind::Success && !self.had_msg {
+        if kind == MsgKind::Plain {
             println!("{msg}");
-            self.had_msg = true;
+        } else {
+            println!("{}  {msg}", kind.emoji());
         }
-        println!("{}  {msg}", kind.emoji());
-        self.had_msg = true;
     }
 
     fn vfs_path(&mut self) -> PathBuf {

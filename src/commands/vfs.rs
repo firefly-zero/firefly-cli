@@ -4,7 +4,7 @@ use crate::env::{Env, MsgKind};
 pub fn cmd_vfs<E: Env>(env: &mut E) -> anyhow::Result<()> {
     let path = env.vfs_path();
     let path = path.to_str().unwrap();
-    env.emit_msg(MsgKind::Success, path);
+    env.emit_msg(MsgKind::Plain, path);
     Ok(())
 }
 
