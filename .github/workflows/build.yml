@@ -14,7 +14,12 @@ env:
   MSRV_FEATURES: --no-default-features --features minimal-application,bugreport,build-assets
 
 permissions:
+  # Required to upload binaries to GitHub releases
   contents: write
+  # Required for signing (sigstore)
+  attestations: write
+  # Required for using GitHub IdP (when signing)
+  id-token: write
 
 # https://github.com/sharkdp/bat/blob/master/.github/workflows/CICD.yml
 jobs:
@@ -152,6 +157,14 @@ jobs:
           unset IS_RELEASE
           if [[ $GITHUB_REF =~ ^refs/tags/v?[0-9].* ]]; then IS_RELEASE='true' ; fi
           echo "IS_RELEASE=${IS_RELEASE}" >> $GITHUB_OUTPUT
+
+      - name: Attest release artifacts
+        uses: actions/attest-build-provenance@v3
+        if: steps.is-release.outputs.IS_RELEASE
+        with:
+          subject-path: |
+            ${{ steps.bin.outputs.BIN_PATH }}
+            ${{ steps.package.outputs.PKG_PATH }}
 
       - name: Publish archives and packages
         uses: softprops/action-gh-release@v1
