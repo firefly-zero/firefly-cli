@@ -240,8 +240,13 @@ struct ImageStats {
     bpp: u8,
     width: u16,
     height: u16,
-    swaps: Vec<Option<u8>>,
+    swaps: Vec<Swap>,
     pixels: usize,
+}
+
+struct Swap {
+    color: Option<u8>,
+    uses: u32,
 }
 
 fn inspect_images(rom_path: &Path) -> anyhow::Result<Vec<ImageStats>> {
@@ -274,7 +279,7 @@ fn inspect_image(path: &Path) -> Option<ImageStats> {
         _ => 8,
     };
     let max_colors = match bpp {
-        1 => 1,
+        1 => 2,
         2 => 4,
         _ => 16,
     };
@@ -290,8 +295,19 @@ fn inspect_image(path: &Path) -> Option<ImageStats> {
     let pixels = image_bytes.len() * ppb;
     #[expect(clippy::cast_possible_truncation)]
     let height = pixels as u16 / width;
+
     let swaps = parse_swaps(transp, swaps);
-    let swaps = swaps[..max_colors].to_vec();
+    let mut swaps: Vec<_> = swaps
+        .map(|color| Swap { color, uses: 0 })
+        .into_iter()
+        .collect();
+    for byte in image_bytes {
+        let c1 = usize::from(byte & 0xF);
+        let c2 = usize::from((byte >> 4) & 0xF);
+        swaps[c1].uses += 1;
+        swaps[c2].uses += 1;
+    }
+    swaps.truncate(max_colors);
 
     let name = path.file_name()?;
     let name: String = name.to_str()?.to_string();
@@ -454,12 +470,19 @@ fn print_image_stats(stats: ImageStats) {
     println!("    {}: {}", "pixels".cyan(), stats.pixels);
     println!("    {}", "colors".cyan());
     for (i, swap) in stats.swaps.into_iter().enumerate() {
-        if let Some(swap) = swap {
-            let name = get_color_name(swap);
-            let swap = swap + 1;
-            println!("      {i:>2} -> {swap:>2}  {name}");
+        let usage: String = if swap.uses == 0 {
+            "unused".blue().to_string()
+        } else if swap.uses < 10 {
+            format!("{:>6}", swap.uses).yellow().to_string()
         } else {
-            println!("      {i:>2} ->  0  transparent");
+            format!("{:>6}", swap.uses)
+        };
+        if let Some(color) = swap.color {
+            let name = get_color_name(color);
+            let color = color + 1;
+            println!("      {i:>2} -> {color:>2}  {name} {usage}");
+        } else {
+            println!("      {i:>2} ->  0  transparent          {usage}");
         }
     }
 }
