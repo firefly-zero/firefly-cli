@@ -398,6 +398,8 @@ fn print_meta(meta: &Meta<'_>) {
 fn print_sizes(sizes: HashMap<OsString, u64>) {
     println!("{}", "files".blue());
     let width = sizes.keys().map(|n| n.len()).max().unwrap_or_default();
+    let mut sizes: Vec<_> = sizes.into_iter().collect();
+    sizes.sort();
     for (name, size) in sizes {
         let name = name.to_str().unwrap_or("???");
         let size = format_size(size);
