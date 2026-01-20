@@ -301,11 +301,18 @@ fn inspect_image(path: &Path) -> Option<ImageStats> {
         .map(|color| Swap { color, uses: 0 })
         .into_iter()
         .collect();
+    let mask = match bpp {
+        1 => 0b_0001,
+        2 => 0b_0011,
+        _ => 0b_1111,
+    };
     for byte in image_bytes {
-        let c1 = usize::from(byte & 0xF);
-        let c2 = usize::from((byte >> 4) & 0xF);
-        swaps[c1].uses += 1;
-        swaps[c2].uses += 1;
+        let mut byte = *byte;
+        for _ in 0..ppb {
+            let c = usize::from(byte & mask);
+            swaps[c].uses += 1;
+            byte >>= bpp;
+        }
     }
     swaps.truncate(max_colors);
 
