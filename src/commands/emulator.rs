@@ -27,7 +27,7 @@ pub fn cmd_emulator(vfs: &Path, args: &EmulatorArgs) -> Result<()> {
 
 fn download_emulator(bin_path: &Path) -> Result<()> {
     // Send HTTP request.
-    let url = get_release_url().context("get latest release URL")?;
+    let url = get_release_url();
     let resp = ureq::get(&url).call().context("send HTTP request")?;
     let body = resp.into_body().into_reader();
 
@@ -54,7 +54,7 @@ fn download_emulator(bin_path: &Path) -> Result<()> {
     Ok(())
 }
 
-fn get_release_url() -> Result<String> {
+fn get_release_url() -> String {
     #[cfg(target_os = "windows")]
     const SUFFIX: &str = "x86_64-pc-windows-msvc.tgz";
     #[cfg(target_os = "macos")]
@@ -62,25 +62,6 @@ fn get_release_url() -> Result<String> {
     #[cfg(target_os = "linux")]
     const SUFFIX: &str = "x86_64-unknown-linux-gnu.tgz";
 
-    let version = get_latest_version()?;
     let repo = "https://github.com/firefly-zero/firefly-emulator";
-    Ok(format!(
-        "{repo}/releases/latest/download/firefly-emulator-v{version}-{SUFFIX}"
-    ))
-}
-
-fn get_latest_version() -> Result<String> {
-    let url = "https://github.com/firefly-zero/firefly-emulator/releases/latest";
-    let req = ureq::get(url);
-    let req = req.config().max_redirects(0).build();
-    let resp = req.call()?;
-    if resp.status() != 302 {
-        bail!("unexpected status code: {}", resp.status());
-    }
-    let Some(loc) = resp.headers().get("Location") else {
-        bail!("no redirect Location found in response");
-    };
-    let loc = loc.to_str()?;
-    let version = loc.split('/').next_back().unwrap();
-    Ok(version.to_owned())
+    format!("{repo}/releases/latest/download/firefly-emulator-{SUFFIX}")
 }
