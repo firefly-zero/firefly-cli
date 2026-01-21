@@ -516,7 +516,7 @@ dependencies = [
 
 [[package]]
 name = "firefly_cli"
-version = "0.15.7"
+version = "0.15.8"
 dependencies = [
  "anyhow",
  "chrono",
