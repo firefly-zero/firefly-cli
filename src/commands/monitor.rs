@@ -296,11 +296,18 @@ fn render_log(log: &str) -> anyhow::Result<()> {
 }
 
 fn format_ns(ns: u32) -> String {
-    if ns > 10_000_000 {
-        return format!("{:>4} ms", ns / 1_000_000);
+    const NS: u32 = 1;
+    const US: u32 = 1000 * NS;
+    const MS: u32 = 1000 * US;
+
+    if ns == u32::MAX {
+        return "4+ s".to_string();
     }
-    if ns > 10_000 {
-        return format!("{:>4} μs", ns / 1_000);
+    if ns > 10 * MS {
+        return format!("{:>4} ms", ns / MS);
+    }
+    if ns > 10 * US {
+        return format!("{:>4} μs", ns / US);
     }
     format!("{ns:>4} ns")
 }
