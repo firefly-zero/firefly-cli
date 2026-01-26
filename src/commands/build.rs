@@ -342,8 +342,8 @@ fn write_boards(config: &Config) -> anyhow::Result<()> {
         };
         let board = firefly_types::Board {
             position: board.position.unwrap_or(id),
-            min: board.max.unwrap_or(i16::MIN),
-            max: board.min.unwrap_or(i16::MAX),
+            min: board.min.unwrap_or(i16::MIN),
+            max: board.max.unwrap_or(i16::MAX),
             time: board.time,
             decimals: board.decimals,
             name: &board.name,
