@@ -22,11 +22,6 @@ pub fn run_command(vfs: PathBuf, command: &Commands) -> anyhow::Result<()> {
             CatalogCommands::List(args) => cmd_catalog_list(args),
             CatalogCommands::Show(args) => cmd_catalog_show(args),
         },
-        Name(command) => match command {
-            NameCommands::Get => cmd_name_get(&vfs),
-            NameCommands::Set(args) => cmd_name_set(&vfs, args),
-            NameCommands::Generate => cmd_name_generate(&vfs),
-        },
         Runtime(root_args) => match &root_args.command {
             RuntimeCommands::Launch(args) => cmd_launch(root_args, args),
             RuntimeCommands::Restart => cmd_restart(root_args),

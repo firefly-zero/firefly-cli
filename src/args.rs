@@ -72,28 +72,9 @@ pub enum Commands {
     #[clap(alias("shot"), alias("screenshot"), alias("screenshots"))]
     Shots(ShotsCommands),
 
-    /// Set, get, and generate device name.
-    #[command(subcommand)]
-    Name(NameCommands),
-
     /// Interact with catalog.fireflyzero.com.
     #[command(subcommand)]
     Catalog(CatalogCommands),
-}
-
-#[derive(Subcommand, Debug)]
-pub enum NameCommands {
-    /// Show the current device name.
-    #[clap(alias("show"), alias("echo"))]
-    Get,
-
-    /// Set a new device name.
-    #[clap(alias("change"))]
-    Set(NameSetArgs),
-
-    /// Set a new device name.
-    #[clap(alias("gen"), alias("new"))]
-    Generate,
 }
 
 #[derive(Subcommand, Debug)]
