@@ -217,11 +217,7 @@ pub(super) fn write_stats(meta: &Meta<'_>, vfs_path: &Path) -> anyhow::Result<()
 fn copy_stats(default_path: &Path, stats_path: &Path) -> anyhow::Result<()> {
     let today = chrono::Local::now().date_naive();
     #[expect(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
-    let today = (
-        today.year() as u16,
-        today.month0() as u8,
-        today.day0() as u8,
-    );
+    let today = (today.year() as u16, today.month() as u8, today.day() as u8);
     let default = if default_path.exists() {
         let raw = fs::read(default_path).context("read default stats file")?;
         firefly_types::Stats::decode(&raw)?
@@ -265,11 +261,7 @@ fn update_stats(default_path: &Path, stats_path: &Path) -> anyhow::Result<()> {
 
     let today = chrono::Local::now().date_naive();
     #[expect(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
-    let today = (
-        today.year() as u16,
-        today.month0() as u8,
-        today.day0() as u8,
-    );
+    let today = (today.year() as u16, today.month() as u8, today.day() as u8);
     // The current date might be behind the current date on the device,
     // and it might be reflected in the dates recorded in the stats.
     // If that happens, try to stay closer to the device time.
