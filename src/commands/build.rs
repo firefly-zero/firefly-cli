@@ -21,6 +21,7 @@ use std::ffi::OsString;
 use std::fs;
 use std::io::Write;
 use std::path::{Path, PathBuf};
+use std::time::SystemTime;
 
 static TIPS: &[&str] = &[
     "keep an eye on the binary size: bigger binary often means slower code",
@@ -145,13 +146,36 @@ fn write_meta(config: &Config) -> anyhow::Result<firefly_types::Meta<'_>> {
         author_name: &config.author_name,
         launcher: config.launcher,
         sudo: config.sudo,
-        version: config.version.unwrap_or(0),
+        version: get_app_version(config),
     };
     let encoded = meta.encode_vec().context("serialize")?;
     fs::create_dir_all(&config.rom_path)?;
     let output_path = config.rom_path.join(META);
     fs::write(output_path, encoded).context("write file")?;
     Ok(meta)
+}
+
+/// Get or generate the app version.
+///
+/// If the app version is not provided explicitly in firefly.toml,
+/// we use the build time encoded as the number of minutes since FOSDEM 2026.
+#[expect(clippy::cast_possible_truncation)]
+fn get_app_version(config: &Config) -> u32 {
+    /// The date of FOSDEM 2026: 2026-02-01 (Sun) 11:00:00 CET.
+    ///
+    /// A semi-arbitrary number to substract from UNIX timestamp
+    /// when generating app version to avoid Y2038 problem.
+    const FIREFLY_EPOCH: u64 = 1_769_940_000;
+
+    if let Some(version) = config.version {
+        return version;
+    }
+    let timestamp = SystemTime::now()
+        .duration_since(SystemTime::UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_secs();
+    let version = (timestamp - FIREFLY_EPOCH) / 60;
+    version as u32
 }
 
 fn reset_launcher_cache(vfs_path: &Path) -> anyhow::Result<()> {
