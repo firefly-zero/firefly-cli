@@ -374,6 +374,7 @@ gordon
 grace
 gracie
 grady
+gram
 greenie
 greta
 gretel
@@ -472,6 +473,7 @@ judy
 julius
 june
 kali
+kalle
 kallie
 kane
 karma
@@ -642,9 +644,11 @@ nutmeg
 oakley
 obie
 odie
+oli
 olive
 oliver
 olivia
+olle
 ollie
 onie
 onyx
@@ -770,6 +774,7 @@ rolex
 rollie
 roman
 romeo
+ron
 rosa
 roscoe
 rosebud
@@ -811,6 +816,7 @@ sarge
 sasha
 sassie
 sassy
+sat
 sawyer
 schultz
 scoobie
