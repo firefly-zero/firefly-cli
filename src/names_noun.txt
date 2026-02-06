@@ -97,7 +97,6 @@ bishop
 bits
 bitsy
 bizzy
-blackie
 blanche
 blast
 blaze
@@ -125,7 +124,6 @@ boris
 bosco
 bosley
 boss
-boy
 bozley
 bradley
 brady
@@ -139,7 +137,6 @@ brit
 brodie
 brook
 brooke
-brownie
 bruiser
 bruno
 brutus
@@ -198,11 +195,8 @@ chester
 chevy
 chewie
 chewy
-chic
-chico
 chief
 chili
-china
 chip
 chipper
 chippy
@@ -301,7 +295,6 @@ dusty
 dutches
 dylan
 earl
-ebony
 echo
 eddie
 eddy
@@ -386,17 +379,13 @@ greta
 gretel
 gretta
 griffen
-gringo
 grizzly
 gromit
 grover
 gucci
-guido
 gunner
 gunther
 gus
-guy
-gypsy
 hailey
 haley
 hallie
@@ -431,7 +420,6 @@ huey
 hugh
 hugo
 hunter
-india
 indy
 iris
 itsy
@@ -549,7 +537,6 @@ lucas
 lucifer
 lucky
 mac
-macho
 mack
 magic
 major
@@ -852,9 +839,7 @@ silver
 simba
 simon
 simone
-sissy
 skeeter
-skinny
 skip
 skipper
 skippy
@@ -876,7 +861,6 @@ sonny
 sophia
 sophie
 sox
-spanky
 sparkle
 sparky
 speed
@@ -963,7 +947,6 @@ topaz
 tori
 toto
 tracker
-tramp
 trapper
 travis
 trigger
@@ -1007,7 +990,6 @@ wesley
 westie
 whiskey
 whispy
-whitie
 whiz
 wiggles
 wilber
