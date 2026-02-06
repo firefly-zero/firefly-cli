@@ -32,13 +32,12 @@ pub fn init_vfs(path: &Path) -> anyhow::Result<()> {
     fs::create_dir_all(path.join("sys").join("priv")).context("create sys/priv directory")?;
     fs::create_dir_all(path.join("data")).context("create data directory")?;
     let settings_path = path.join("sys").join("config");
-    if !settings_path.exists() {
+    println!("{}", is_valid_settings(&settings_path));
+    if !is_valid_settings(&settings_path) {
         let mut settings = firefly_types::Settings {
-            xp: 0,
-            badges: 0,
-            lang: [b'e', b'n'],
-            name: generate_valid_name(),
             timezone: detect_tz(),
+            name: generate_valid_name(),
+            ..Default::default()
         };
         if !settings.timezone.contains('/') {
             settings.timezone = "Europe/Amsterdam".to_string();
@@ -48,6 +47,17 @@ pub fn init_vfs(path: &Path) -> anyhow::Result<()> {
     }
 
     Ok(())
+}
+
+fn is_valid_settings(path: &Path) -> bool {
+    if !path.exists() {
+        return false;
+    }
+    let Ok(data) = std::fs::read(path) else {
+        return false;
+    };
+    let res = firefly_types::Settings::decode(&data);
+    res.is_ok()
 }
 
 /// Generate a random valid device name.
