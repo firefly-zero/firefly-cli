@@ -38,11 +38,12 @@ pub fn build_bin(config: &Config, args: &BuildArgs) -> anyhow::Result<()> {
     if !bin_path.is_file() {
         bail!("the build command haven't produced a binary file");
     }
-    if !args.no_strip {
+    let strip = !args.no_strip;
+    if strip {
         strip_custom(&bin_path)?;
     }
     if !args.no_opt {
-        optimize(&bin_path).context("optimize wasm binary")?;
+        optimize(&bin_path, strip).context("optimize wasm binary")?;
     }
     Ok(())
 }
