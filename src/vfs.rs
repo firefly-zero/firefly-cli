@@ -34,6 +34,7 @@ pub fn init_vfs(path: &Path) -> anyhow::Result<()> {
     let settings_path = path.join("sys").join("config");
     println!("{}", is_valid_settings(&settings_path));
     if !is_valid_settings(&settings_path) {
+        // TODO(@orsinium): detect country code.
         let mut settings = firefly_types::Settings {
             timezone: detect_tz(),
             name: generate_valid_name(),
