@@ -2,7 +2,7 @@ use anyhow::{Context, Result, bail};
 use image::Rgb;
 use std::collections::HashMap;
 
-pub type Color = Option<Rgb<u8>>;
+pub type Color = Rgb<u8>;
 pub type Palette = [Color; 16];
 pub type Palettes = HashMap<String, Palette>;
 type RawPalette = HashMap<String, u32>;
@@ -12,110 +12,113 @@ type RawPalette = HashMap<String, u32>;
 /// <https://lospec.com/palette-list/sweetie-16>
 /// <https://github.com/nesbox/TIC-80/wiki/Palette>
 pub static SWEETIE16: &Palette = &[
-    Some(Rgb([0x1a, 0x1c, 0x2c])), // #1a1c2c: black
-    Some(Rgb([0x5d, 0x27, 0x5d])), // #5d275d: purple
-    Some(Rgb([0xb1, 0x3e, 0x53])), // #b13e53: red
-    Some(Rgb([0xef, 0x7d, 0x57])), // #ef7d57: orange
-    Some(Rgb([0xff, 0xcd, 0x75])), // #ffcd75: yellow
-    Some(Rgb([0xa7, 0xf0, 0x70])), // #a7f070: light green
-    Some(Rgb([0x38, 0xb7, 0x64])), // #38b764: green
-    Some(Rgb([0x25, 0x71, 0x79])), // #257179: dark green
-    Some(Rgb([0x29, 0x36, 0x6f])), // #29366f: dark blue
-    Some(Rgb([0x3b, 0x5d, 0xc9])), // #3b5dc9: blue
-    Some(Rgb([0x41, 0xa6, 0xf6])), // #41a6f6: light blue
-    Some(Rgb([0x73, 0xef, 0xf7])), // #73eff7: cyan
-    Some(Rgb([0xf4, 0xf4, 0xf4])), // #f4f4f4: white
-    Some(Rgb([0x94, 0xb0, 0xc2])), // #94b0c2: light gray
-    Some(Rgb([0x56, 0x6c, 0x86])), // #566c86: gray
-    Some(Rgb([0x33, 0x3c, 0x57])), // #333c57: dark gray
+    Rgb([0x1a, 0x1c, 0x2c]), // #1a1c2c: black
+    Rgb([0x5d, 0x27, 0x5d]), // #5d275d: purple
+    Rgb([0xb1, 0x3e, 0x53]), // #b13e53: red
+    Rgb([0xef, 0x7d, 0x57]), // #ef7d57: orange
+    Rgb([0xff, 0xcd, 0x75]), // #ffcd75: yellow
+    Rgb([0xa7, 0xf0, 0x70]), // #a7f070: light green
+    Rgb([0x38, 0xb7, 0x64]), // #38b764: green
+    Rgb([0x25, 0x71, 0x79]), // #257179: dark green
+    Rgb([0x29, 0x36, 0x6f]), // #29366f: dark blue
+    Rgb([0x3b, 0x5d, 0xc9]), // #3b5dc9: blue
+    Rgb([0x41, 0xa6, 0xf6]), // #41a6f6: light blue
+    Rgb([0x73, 0xef, 0xf7]), // #73eff7: cyan
+    Rgb([0xf4, 0xf4, 0xf4]), // #f4f4f4: white
+    Rgb([0x94, 0xb0, 0xc2]), // #94b0c2: light gray
+    Rgb([0x56, 0x6c, 0x86]), // #566c86: gray
+    Rgb([0x33, 0x3c, 0x57]), // #333c57: dark gray
 ];
 
 /// The PICO-8 color palette.
 ///
 /// <https://nerdyteachers.com/PICO-8/Guide/PALETTES>
 static PICO8: &Palette = &[
-    Some(Rgb([0x00, 0x00, 0x00])), // #000000: black
-    Some(Rgb([0x1D, 0x2B, 0x53])), // #1D2B53: dark blue
-    Some(Rgb([0x7E, 0x25, 0x53])), // #7E2553: dark purple
-    Some(Rgb([0x00, 0x87, 0x51])), // #008751: dark green
-    Some(Rgb([0xAB, 0x52, 0x36])), // #AB5236: brown
-    Some(Rgb([0x5F, 0x57, 0x4F])), // #5F574F: dark gray
-    Some(Rgb([0xC2, 0xC3, 0xC7])), // #C2C3C7: light gray
-    Some(Rgb([0xFF, 0xF1, 0xE8])), // #FFF1E8: white
-    Some(Rgb([0xFF, 0x00, 0x4D])), // #FF004D: red
-    Some(Rgb([0xFF, 0xA3, 0x00])), // #FFA300: orange
-    Some(Rgb([0xFF, 0xEC, 0x27])), // #FFEC27: yellow
-    Some(Rgb([0x00, 0xE4, 0x36])), // #00E436: green
-    Some(Rgb([0x29, 0xAD, 0xFF])), // #29ADFF: blue
-    Some(Rgb([0x83, 0x76, 0x9C])), // #83769C: indigo
-    Some(Rgb([0xFF, 0x77, 0xA8])), // #FF77A8: pink
-    Some(Rgb([0xFF, 0xCC, 0xAA])), // #FFCCAA: peach
+    Rgb([0x00, 0x00, 0x00]), // #000000: black
+    Rgb([0x1D, 0x2B, 0x53]), // #1D2B53: dark blue
+    Rgb([0x7E, 0x25, 0x53]), // #7E2553: dark purple
+    Rgb([0x00, 0x87, 0x51]), // #008751: dark green
+    Rgb([0xAB, 0x52, 0x36]), // #AB5236: brown
+    Rgb([0x5F, 0x57, 0x4F]), // #5F574F: dark gray
+    Rgb([0xC2, 0xC3, 0xC7]), // #C2C3C7: light gray
+    Rgb([0xFF, 0xF1, 0xE8]), // #FFF1E8: white
+    Rgb([0xFF, 0x00, 0x4D]), // #FF004D: red
+    Rgb([0xFF, 0xA3, 0x00]), // #FFA300: orange
+    Rgb([0xFF, 0xEC, 0x27]), // #FFEC27: yellow
+    Rgb([0x00, 0xE4, 0x36]), // #00E436: green
+    Rgb([0x29, 0xAD, 0xFF]), // #29ADFF: blue
+    Rgb([0x83, 0x76, 0x9C]), // #83769C: indigo
+    Rgb([0xFF, 0x77, 0xA8]), // #FF77A8: pink
+    Rgb([0xFF, 0xCC, 0xAA]), // #FFCCAA: peach
 ];
 
 /// SLSO8 color palette.
 ///
 /// <https://lospec.com/palette-list/slso8>
 static SLSO8: &Palette = &[
-    Some(Rgb([0x0d, 0x2b, 0x45])), // #0d2b45
-    Some(Rgb([0x20, 0x3c, 0x56])), // #203c56
-    Some(Rgb([0x54, 0x4e, 0x68])), // #544e68
-    Some(Rgb([0x8d, 0x69, 0x7a])), // #8d697a
-    Some(Rgb([0xd0, 0x81, 0x59])), // #d08159
-    Some(Rgb([0xff, 0xaa, 0x5e])), // #ffaa5e
-    Some(Rgb([0xff, 0xd4, 0xa3])), // #ffd4a3
-    Some(Rgb([0xff, 0xec, 0xd6])), // #ffecd6
-    None,
-    None,
-    None,
-    None,
-    None,
-    None,
-    None,
-    None,
+    Rgb([0x0d, 0x2b, 0x45]), // #0d2b45
+    Rgb([0x20, 0x3c, 0x56]), // #203c56
+    Rgb([0x54, 0x4e, 0x68]), // #544e68
+    Rgb([0x8d, 0x69, 0x7a]), // #8d697a
+    Rgb([0xd0, 0x81, 0x59]), // #d08159
+    Rgb([0xff, 0xaa, 0x5e]), // #ffaa5e
+    Rgb([0xff, 0xd4, 0xa3]), // #ffd4a3
+    Rgb([0xff, 0xec, 0xd6]), // #ffecd6
+    // unused
+    Rgb([0xff, 0xec, 0xd6]),
+    Rgb([0xff, 0xec, 0xd6]),
+    Rgb([0xff, 0xec, 0xd6]),
+    Rgb([0xff, 0xec, 0xd6]),
+    Rgb([0xff, 0xec, 0xd6]),
+    Rgb([0xff, 0xec, 0xd6]),
+    Rgb([0xff, 0xec, 0xd6]),
+    Rgb([0xff, 0xec, 0xd6]),
 ];
 
 /// The Kirokaze Gameboy color palette.
 ///
 /// <https://lospec.com/palette-list/kirokaze-gameboy>
 static GAMEBOY: &Palette = &[
-    Some(Rgb([0x33, 0x2c, 0x50])), // #332c50: purple
-    Some(Rgb([0x46, 0x87, 0x8f])), // #46878f: blue
-    Some(Rgb([0x94, 0xe3, 0x44])), // #94e344: green
-    Some(Rgb([0xe2, 0xf3, 0xe4])), // #e2f3e4: white
-    None,
-    None,
-    None,
-    None,
-    None,
-    None,
-    None,
-    None,
-    None,
-    None,
-    None,
-    None,
+    Rgb([0x33, 0x2c, 0x50]), // #332c50: purple
+    Rgb([0x46, 0x87, 0x8f]), // #46878f: blue
+    Rgb([0x94, 0xe3, 0x44]), // #94e344: green
+    Rgb([0xe2, 0xf3, 0xe4]), // #e2f3e4: white
+    // unused
+    Rgb([0xe2, 0xf3, 0xe4]),
+    Rgb([0xe2, 0xf3, 0xe4]),
+    Rgb([0xe2, 0xf3, 0xe4]),
+    Rgb([0xe2, 0xf3, 0xe4]),
+    Rgb([0xe2, 0xf3, 0xe4]),
+    Rgb([0xe2, 0xf3, 0xe4]),
+    Rgb([0xe2, 0xf3, 0xe4]),
+    Rgb([0xe2, 0xf3, 0xe4]),
+    Rgb([0xe2, 0xf3, 0xe4]),
+    Rgb([0xe2, 0xf3, 0xe4]),
+    Rgb([0xe2, 0xf3, 0xe4]),
+    Rgb([0xe2, 0xf3, 0xe4]),
 ];
 
 /// WASM-4 color palette.
 ///
 /// <https://wasm4.org/docs/guides/basic-drawing>
 static WASM4: &Palette = &[
-    Some(Rgb([0xE0, 0xF8, 0xCF])), // #E0F8CF: white
-    Some(Rgb([0x86, 0xC0, 0x6C])), // #86C06C: light green
-    Some(Rgb([0x30, 0x68, 0x50])), // #306850: dark green
-    Some(Rgb([0x07, 0x18, 0x21])), // #071821: black
-    None,
-    None,
-    None,
-    None,
-    None,
-    None,
-    None,
-    None,
-    None,
-    None,
-    None,
-    None,
+    Rgb([0xE0, 0xF8, 0xCF]), // #E0F8CF: white
+    Rgb([0x86, 0xC0, 0x6C]), // #86C06C: light green
+    Rgb([0x30, 0x68, 0x50]), // #306850: dark green
+    Rgb([0x07, 0x18, 0x21]), // #071821: black
+    // unused
+    Rgb([0x07, 0x18, 0x21]),
+    Rgb([0x07, 0x18, 0x21]),
+    Rgb([0x07, 0x18, 0x21]),
+    Rgb([0x07, 0x18, 0x21]),
+    Rgb([0x07, 0x18, 0x21]),
+    Rgb([0x07, 0x18, 0x21]),
+    Rgb([0x07, 0x18, 0x21]),
+    Rgb([0x07, 0x18, 0x21]),
+    Rgb([0x07, 0x18, 0x21]),
+    Rgb([0x07, 0x18, 0x21]),
+    Rgb([0x07, 0x18, 0x21]),
+    Rgb([0x07, 0x18, 0x21]),
 ];
 
 pub fn parse_palettes(raws: Option<&HashMap<String, RawPalette>>) -> Result<Palettes> {
@@ -143,15 +146,15 @@ fn parse_palette(raw: &RawPalette) -> Result<Palette> {
     }
     let len = u16::try_from(len).unwrap();
 
-    let mut palette: Palette = Palette::default();
+    let mut palette = Vec::new();
     for id in 1u16..=len {
         let Some(raw_color) = raw.get(&id.to_string()) else {
             bail!("color IDs must be consecutive but ID {id} is missing");
         };
         let color = parse_color(*raw_color)?;
-        let idx = usize::from(id - 1);
-        palette[idx] = color;
+        palette.push(color);
     }
+    let palette: Palette = palette.try_into().unwrap();
     Ok(palette)
 }
 
@@ -163,7 +166,7 @@ fn parse_color(raw: u32) -> Result<Color> {
     let r = (raw >> 16) as u8;
     let g = (raw >> 8) as u8;
     let b = raw as u8;
-    Ok(Some(Rgb([r, g, b])))
+    Ok(Rgb([r, g, b]))
 }
 
 pub fn get_palette<'a>(name: Option<&str>, palettes: &'a Palettes) -> Result<&'a Palette> {
@@ -204,9 +207,9 @@ mod tests {
         let res = parse_palettes(Some(&ps)).unwrap();
         assert_eq!(res.len(), 1);
         let exp: Palette = [
-            Some(Rgb([0xff, 0x00, 0x00])),
-            Some(Rgb([0x00, 0xff, 0x00])),
-            Some(Rgb([0x00, 0x00, 0xff])),
+            Rgb([0xff, 0x00, 0x00]),
+            Rgb([0x00, 0xff, 0x00]),
+            Rgb([0x00, 0x00, 0xff]),
             None,
             None,
             None,
