@@ -240,6 +240,7 @@ struct ImageStats {
     width: u16,
     height: u16,
     uses: Vec<u32>,
+    n_colors: u32,
     pixels: usize,
 }
 
@@ -284,6 +285,13 @@ fn inspect_image(path: &Path) -> Option<ImageStats> {
         }
     }
 
+    let mut n_colors = 0;
+    for uses in &uses {
+        if *uses != 0 {
+            n_colors += 1;
+        }
+    }
+
     let name = path.file_name()?;
     let name: String = name.to_str()?.to_string();
     Some(ImageStats {
@@ -291,6 +299,7 @@ fn inspect_image(path: &Path) -> Option<ImageStats> {
         width,
         height,
         uses,
+        n_colors,
         pixels,
     })
 }
@@ -446,21 +455,17 @@ fn print_image_stats(stats: ImageStats) {
     println!("    {}:  {}", "width".cyan(), stats.width);
     println!("    {}: {}", "height".cyan(), stats.height);
     println!("    {}: {}", "pixels".cyan(), stats.pixels);
+    println!("    {}: {}", "colors".cyan(), stats.n_colors);
 
-    let mut n_colors = 0;
-    for uses in &stats.uses {
-        if *uses != 0 {
-            n_colors += 1;
-        }
-    }
-    println!("    {}: {n_colors}", "colors".cyan());
-
+    let max_uses = stats.uses.iter().max().copied().unwrap_or_default();
     for (uses, i) in stats.uses.into_iter().zip(1u8..) {
         if uses == 0 {
             continue;
         }
-        let usage = if uses < 10 {
+        let usage = if uses == max_uses {
             format!("{uses:>6}").yellow().to_string()
+        } else if uses < 10 {
+            format!("{uses:>6}").green().to_string()
         } else {
             format!("{uses:>6}")
         };
