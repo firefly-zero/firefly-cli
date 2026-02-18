@@ -9,8 +9,8 @@ pub fn convert_image(in_path: &Path, out_path: &Path, sys_pal: &Palette) -> Resu
     let file = image::ImageReader::open(in_path).context("open image file")?;
     let img = file.decode().context("decode image")?;
     let img = img.to_rgba8();
-    if img.width() % 8 != 0 {
-        bail!("image width must be divisible by 8");
+    if img.width() % 2 != 0 {
+        bail!("image width must be divisible by 2");
     }
     let transp = find_unused_color(&img, sys_pal).context("detect colors used in the image")?;
     let out = File::create(out_path).context("create output path")?;
