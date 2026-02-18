@@ -109,12 +109,19 @@ fn convert_color(c: Rgba<u8>) -> Option<Color> {
 /// Pick the color to be used to represent transparency
 fn pick_transparent(img_pal: &[Color], sys_pal: &Palette) -> Result<u8> {
     assert!(img_pal.len() <= sys_pal.len());
+    assert!(sys_pal.len() <= 16);
     for (color, i) in sys_pal.iter().zip(0u8..) {
         if !img_pal.contains(color) {
             return Ok(i);
         }
     }
-    bail!("cannot use all 16 colors with transparency, remove one color");
+    if sys_pal.len() == 16 {
+        bail!("cannot use all 16 colors with transparency, remove one color");
+    }
+    // If the system palette has less than 16 colors,
+    // any of the colors outside the palette
+    // can be used for transparency. We use 15.
+    Ok(0xf)
 }
 
 #[cfg(test)]
