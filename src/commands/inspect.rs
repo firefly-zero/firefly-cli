@@ -237,16 +237,10 @@ const fn get_section_name(payload: &Payload<'_>) -> &'static str {
 
 struct ImageStats {
     name: String,
-    bpp: u8,
     width: u16,
     height: u16,
-    swaps: Vec<Swap>,
+    uses: Vec<u32>,
     pixels: usize,
-}
-
-struct Swap {
-    color: Option<u8>,
-    uses: u32,
 }
 
 fn inspect_images(rom_path: &Path) -> anyhow::Result<Vec<ImageStats>> {
@@ -266,64 +260,41 @@ fn inspect_image(path: &Path) -> Option<ImageStats> {
     if image_bytes.len() < 8 {
         return None;
     }
-    if image_bytes[0] != 0x21 {
+    if image_bytes[0] != 0x22 {
         return None;
     }
-    let bpp = image_bytes[1];
-    let width = u16::from(image_bytes[2]) | (u16::from(image_bytes[3]) << 8);
-    let transp = image_bytes[4];
-    let image_bytes = &image_bytes[5..];
-    let swaps_len = match bpp {
-        1 => 1,
-        2 => 2,
-        _ => 8,
-    };
-    let max_colors = match bpp {
-        1 => 2,
-        2 => 4,
-        _ => 16,
-    };
-    let Some(swaps) = &image_bytes.get(..swaps_len) else {
-        return None;
-    };
-    let image_bytes = &image_bytes[swaps_len..];
-    let ppb = match bpp {
-        1 => 8,
-        2 => 4,
-        _ => 2,
-    };
-    let pixels = image_bytes.len() * ppb;
+    let width = u16::from(image_bytes[1]) | (u16::from(image_bytes[2]) << 8);
+    let transp = usize::from(image_bytes[3]);
+    let image_bytes = &image_bytes[4..];
+    let pixels = image_bytes.len() * 2;
     #[expect(clippy::cast_possible_truncation)]
     let height = pixels as u16 / width;
 
-    let swaps = parse_swaps(transp, swaps);
-    let mut swaps: Vec<_> = swaps
-        .map(|color| Swap { color, uses: 0 })
-        .into_iter()
-        .collect();
-    let mask = match bpp {
-        1 => 0b_0001,
-        2 => 0b_0011,
-        _ => 0b_1111,
-    };
+    let mut uses = vec![0; 16];
+    let mask = 0b_1111;
+    let mut max_colors = 0;
     for byte in image_bytes {
-        let mut byte = *byte;
-        for _ in 0..ppb {
-            let c = usize::from(byte & mask);
-            swaps[c].uses += 1;
-            byte >>= bpp;
+        let c = usize::from(byte & mask);
+        if c != transp {
+            uses[c] += 1;
+            max_colors = usize::max(max_colors, c);
+        }
+
+        let c = usize::from((byte >> 4) & mask);
+        if c != transp {
+            uses[c] += 1;
+            max_colors = usize::max(max_colors, c);
         }
     }
-    swaps.truncate(max_colors);
+    uses.truncate(max_colors + 1);
 
     let name = path.file_name()?;
     let name: String = name.to_str()?.to_string();
     Some(ImageStats {
         name,
-        bpp,
         width,
         height,
-        swaps,
+        uses,
         pixels,
     })
 }
@@ -476,26 +447,20 @@ fn print_images_stats(stats: Vec<ImageStats>) {
 
 fn print_image_stats(stats: ImageStats) {
     println!("  {}", stats.name.magenta());
-    println!("    {}:    {}", "bpp".cyan(), stats.bpp);
     println!("    {}:  {}", "width".cyan(), stats.width);
     println!("    {}: {}", "height".cyan(), stats.height);
     println!("    {}: {}", "pixels".cyan(), stats.pixels);
     println!("    {}", "colors".cyan());
-    for (i, swap) in stats.swaps.into_iter().enumerate() {
-        let usage: String = if swap.uses == 0 {
+    for (uses, i) in stats.uses.into_iter().zip(1u8..) {
+        let usage: String = if uses == 0 {
             "unused".blue().to_string()
-        } else if swap.uses < 10 {
-            format!("{:>6}", swap.uses).yellow().to_string()
+        } else if uses < 10 {
+            format!("{uses:>6}").yellow().to_string()
         } else {
-            format!("{:>6}", swap.uses)
+            format!("{uses:>6}")
         };
-        if let Some(color) = swap.color {
-            let name = get_color_name(color);
-            let color = color + 1;
-            println!("      {i:>2} -> {color:>2}  {name} {usage}");
-        } else {
-            println!("      {i:>2} ->  0  transparent          {usage}");
-        }
+        let name = get_color_name(i - 1);
+        println!("      {i:>2}  {name} {usage}");
     }
 }
 
@@ -522,52 +487,6 @@ fn print_audio_stats(stats: AudioStats) {
     println!("    {}: {}", "sample rate".cyan(), stats.sample_rate);
     println!("    {}:  {}", "compressed".cyan(), stats.adpcm);
     println!("    {}:    {:0.1}s", "duration".cyan(), stats.duration);
-}
-
-fn parse_swaps(transp: u8, swaps: &[u8]) -> [Option<u8>; 16] {
-    #[expect(clippy::get_first)]
-    [
-        // 0-4
-        parse_color_l(transp, swaps.get(0)),
-        parse_color_r(transp, swaps.get(0)),
-        parse_color_l(transp, swaps.get(1)),
-        parse_color_r(transp, swaps.get(1)),
-        // 4-8
-        parse_color_l(transp, swaps.get(2)),
-        parse_color_r(transp, swaps.get(2)),
-        parse_color_l(transp, swaps.get(3)),
-        parse_color_r(transp, swaps.get(3)),
-        // 8-12
-        parse_color_l(transp, swaps.get(4)),
-        parse_color_r(transp, swaps.get(4)),
-        parse_color_l(transp, swaps.get(5)),
-        parse_color_r(transp, swaps.get(5)),
-        // 12-16
-        parse_color_l(transp, swaps.get(6)),
-        parse_color_r(transp, swaps.get(6)),
-        parse_color_l(transp, swaps.get(7)),
-        parse_color_r(transp, swaps.get(7)),
-    ]
-}
-
-/// Parse the high bits of a byte as a color.
-fn parse_color_r(transp: u8, c: Option<&u8>) -> Option<u8> {
-    let c = c?;
-    let c = c & 0b1111;
-    if c == transp {
-        return None;
-    }
-    Some(c)
-}
-
-/// Parse the low bits of a byte as a color.
-fn parse_color_l(transp: u8, c: Option<&u8>) -> Option<u8> {
-    let c = c?;
-    let c = (c >> 4) & 0b1111;
-    if c == transp {
-        return None;
-    }
-    Some(c)
 }
 
 const fn get_color_name(swap: u8) -> &'static str {
