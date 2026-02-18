@@ -365,11 +365,14 @@ fn inspect_audio(path: &Path) -> Option<AudioStats> {
     let sample_rate = u16::from_le_bytes([audio_bytes[2], audio_bytes[3]]);
 
     let audio_bytes = &audio_bytes[4..];
+    let samples_per_second = u32::from(channels) * u32::from(sample_rate);
     #[expect(clippy::cast_precision_loss)]
-    let mut duration = audio_bytes.len() as f32 / f32::from(u16::from(channels) * sample_rate);
+    let mut duration = audio_bytes.len() as f64 / f64::from(samples_per_second);
     if is16 {
         duration /= 2.0;
     }
+    #[expect(clippy::cast_possible_truncation)]
+    let duration = duration as f32;
 
     let name = path.file_name()?;
     let name: String = name.to_str()?.to_string();
