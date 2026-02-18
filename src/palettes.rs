@@ -3,8 +3,8 @@ use image::Rgb;
 use std::collections::HashMap;
 
 pub type Color = Rgb<u8>;
-pub type Palette = [Color; 16];
-pub type Palettes = HashMap<String, Palette>;
+pub type Palette = [Color];
+pub type Palettes = HashMap<String, Vec<Color>>;
 type RawPalette = HashMap<String, u32>;
 
 /// The default color palette (SWEETIE-16).
@@ -64,15 +64,6 @@ static SLSO8: &Palette = &[
     Rgb([0xff, 0xaa, 0x5e]), // #ffaa5e
     Rgb([0xff, 0xd4, 0xa3]), // #ffd4a3
     Rgb([0xff, 0xec, 0xd6]), // #ffecd6
-    // unused
-    Rgb([0xff, 0xec, 0xd6]),
-    Rgb([0xff, 0xec, 0xd6]),
-    Rgb([0xff, 0xec, 0xd6]),
-    Rgb([0xff, 0xec, 0xd6]),
-    Rgb([0xff, 0xec, 0xd6]),
-    Rgb([0xff, 0xec, 0xd6]),
-    Rgb([0xff, 0xec, 0xd6]),
-    Rgb([0xff, 0xec, 0xd6]),
 ];
 
 /// The Kirokaze Gameboy color palette.
@@ -83,19 +74,6 @@ static GAMEBOY: &Palette = &[
     Rgb([0x46, 0x87, 0x8f]), // #46878f: blue
     Rgb([0x94, 0xe3, 0x44]), // #94e344: green
     Rgb([0xe2, 0xf3, 0xe4]), // #e2f3e4: white
-    // unused
-    Rgb([0xe2, 0xf3, 0xe4]),
-    Rgb([0xe2, 0xf3, 0xe4]),
-    Rgb([0xe2, 0xf3, 0xe4]),
-    Rgb([0xe2, 0xf3, 0xe4]),
-    Rgb([0xe2, 0xf3, 0xe4]),
-    Rgb([0xe2, 0xf3, 0xe4]),
-    Rgb([0xe2, 0xf3, 0xe4]),
-    Rgb([0xe2, 0xf3, 0xe4]),
-    Rgb([0xe2, 0xf3, 0xe4]),
-    Rgb([0xe2, 0xf3, 0xe4]),
-    Rgb([0xe2, 0xf3, 0xe4]),
-    Rgb([0xe2, 0xf3, 0xe4]),
 ];
 
 /// WASM-4 color palette.
@@ -106,19 +84,6 @@ static WASM4: &Palette = &[
     Rgb([0x86, 0xC0, 0x6C]), // #86C06C: light green
     Rgb([0x30, 0x68, 0x50]), // #306850: dark green
     Rgb([0x07, 0x18, 0x21]), // #071821: black
-    // unused
-    Rgb([0x07, 0x18, 0x21]),
-    Rgb([0x07, 0x18, 0x21]),
-    Rgb([0x07, 0x18, 0x21]),
-    Rgb([0x07, 0x18, 0x21]),
-    Rgb([0x07, 0x18, 0x21]),
-    Rgb([0x07, 0x18, 0x21]),
-    Rgb([0x07, 0x18, 0x21]),
-    Rgb([0x07, 0x18, 0x21]),
-    Rgb([0x07, 0x18, 0x21]),
-    Rgb([0x07, 0x18, 0x21]),
-    Rgb([0x07, 0x18, 0x21]),
-    Rgb([0x07, 0x18, 0x21]),
 ];
 
 pub fn parse_palettes(raws: Option<&HashMap<String, RawPalette>>) -> Result<Palettes> {
@@ -133,7 +98,7 @@ pub fn parse_palettes(raws: Option<&HashMap<String, RawPalette>>) -> Result<Pale
     Ok(palettes)
 }
 
-fn parse_palette(raw: &RawPalette) -> Result<Palette> {
+fn parse_palette(raw: &RawPalette) -> Result<Vec<Color>> {
     let len = raw.len();
     if len > 16 {
         bail!("too many colors")
@@ -154,7 +119,6 @@ fn parse_palette(raw: &RawPalette) -> Result<Palette> {
         let color = parse_color(*raw_color)?;
         palette.push(color);
     }
-    let palette: Palette = palette.try_into().unwrap();
     Ok(palette)
 }
 
@@ -206,23 +170,10 @@ mod tests {
         ps.insert("rgb".to_string(), p);
         let res = parse_palettes(Some(&ps)).unwrap();
         assert_eq!(res.len(), 1);
-        let exp: Palette = [
+        let exp: &Palette = &[
             Rgb([0xff, 0x00, 0x00]),
             Rgb([0x00, 0xff, 0x00]),
             Rgb([0x00, 0x00, 0xff]),
-            None,
-            None,
-            None,
-            None,
-            None,
-            None,
-            None,
-            None,
-            None,
-            None,
-            None,
-            None,
-            None,
         ];
         assert_eq!(*res.get("rgb").unwrap(), exp);
     }
@@ -230,7 +181,7 @@ mod tests {
     #[test]
     fn test_get_palette() {
         let mut p = Palettes::new();
-        p.insert("sup".to_string(), *SWEETIE16);
+        p.insert("sup".to_string(), Vec::from(SWEETIE16));
         assert_eq!(get_palette(None, &p).unwrap(), SWEETIE16);
         assert_eq!(get_palette(Some("sup"), &p).unwrap(), SWEETIE16);
         assert_eq!(get_palette(Some("sweetie16"), &p).unwrap(), SWEETIE16);
