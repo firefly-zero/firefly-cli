@@ -206,7 +206,14 @@ fn build_rust_inner(config: &Config, example: bool) -> anyhow::Result<()> {
     let mut cmd = cmd.args(cmd_args).current_dir(in_path);
     let cargo_config = config.root_path.join(".cargo").join("config.toml");
     if !cargo_config.exists() {
-        cmd = cmd.env("RUSTFLAGS", "-Clink-arg=-zstack-size=4096");
+        // https://doc.rust-lang.org/reference/attributes/codegen.html#wasm32-or-wasm64
+        // https://github.com/wasmi-labs/wasmi/?tab=readme-ov-file#webassembly-features
+        //
+        // TODO: Enable `+relaxed-simd` when it works.
+        //      At the moment of writing, it causes runtime error for Blutti:
+        //      > unexpected SIMD opcode: 0xfd (at offset 0x9f).
+        let flags = "-Clink-arg=-zstack-size=4096 -Ctarget-feature=+extended-const,+tail-call";
+        cmd = cmd.env("RUSTFLAGS", flags);
     }
     let output = cmd.output().context("run cargo build")?;
     check_output(&output)?;
