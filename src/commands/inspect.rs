@@ -272,21 +272,17 @@ fn inspect_image(path: &Path) -> Option<ImageStats> {
 
     let mut uses = vec![0; 16];
     let mask = 0b_1111;
-    let mut max_colors = 0;
     for byte in image_bytes {
         let c = usize::from(byte & mask);
         if c != transp {
             uses[c] += 1;
-            max_colors = usize::max(max_colors, c);
         }
 
         let c = usize::from((byte >> 4) & mask);
         if c != transp {
             uses[c] += 1;
-            max_colors = usize::max(max_colors, c);
         }
     }
-    uses.truncate(max_colors + 1);
 
     let name = path.file_name()?;
     let name: String = name.to_str()?.to_string();
@@ -450,11 +446,20 @@ fn print_image_stats(stats: ImageStats) {
     println!("    {}:  {}", "width".cyan(), stats.width);
     println!("    {}: {}", "height".cyan(), stats.height);
     println!("    {}: {}", "pixels".cyan(), stats.pixels);
-    println!("    {}", "colors".cyan());
+
+    let mut n_colors = 0;
+    for uses in &stats.uses {
+        if *uses != 0 {
+            n_colors += 1;
+        }
+    }
+    println!("    {}: {n_colors}", "colors".cyan());
+
     for (uses, i) in stats.uses.into_iter().zip(1u8..) {
-        let usage: String = if uses == 0 {
-            "unused".blue().to_string()
-        } else if uses < 10 {
+        if uses == 0 {
+            continue;
+        }
+        let usage = if uses < 10 {
             format!("{uses:>6}").yellow().to_string()
         } else {
             format!("{uses:>6}")
