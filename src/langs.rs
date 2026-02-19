@@ -375,7 +375,7 @@ fn build_zig(config: &Config) -> anyhow::Result<()> {
 // Build Moon project.
 fn build_moon(config: &Config) -> anyhow::Result<()> {
     check_installed("Moon", "moon", "version")?;
-    let mut cmd_args = vec!["build", "--target", "wasm"];
+    let mut cmd_args = vec!["build", "--target", "wasm", "--release"];
     if let Some(additional_args) = &config.compile_args {
         for arg in additional_args {
             cmd_args.push(arg.as_str());
