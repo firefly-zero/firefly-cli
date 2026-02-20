@@ -32,7 +32,6 @@ pub fn init_vfs(path: &Path) -> anyhow::Result<()> {
     fs::create_dir_all(path.join("sys").join("priv")).context("create sys/priv directory")?;
     fs::create_dir_all(path.join("data")).context("create data directory")?;
     let settings_path = path.join("sys").join("config");
-    println!("{}", is_valid_settings(&settings_path));
     if !is_valid_settings(&settings_path) {
         // TODO(@orsinium): detect country code.
         let mut settings = firefly_types::Settings {
