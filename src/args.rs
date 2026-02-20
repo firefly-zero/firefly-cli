@@ -17,7 +17,7 @@ pub struct Cli {
 #[derive(Subcommand)]
 pub enum Commands {
     #[clap(hide = true)]
-    Postinstall,
+    Postinstall(PostinstallArgs),
 
     /// Build the project and install it locally (into VFS).
     Build(BuildArgs),
@@ -108,6 +108,21 @@ pub struct NameSetArgs {
 
 #[derive(Debug, Parser)]
 pub struct TestArgs {}
+
+#[derive(Debug, Parser, Default)]
+pub struct PostinstallArgs {
+    /// Directory where to save the binary.
+    #[arg(short, long, default_value = None)]
+    pub path: Option<PathBuf>,
+
+    /// Don't update emulator.
+    #[arg(long, default_value_t = false)]
+    pub keep_emulator: bool,
+
+    /// Don't create "ff" alias.
+    #[arg(long, default_value_t = false)]
+    pub no_alias: bool,
+}
 
 #[derive(Debug, Parser, Default)]
 pub struct BuildArgs {

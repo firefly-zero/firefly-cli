@@ -1,27 +1,34 @@
+use crate::args::PostinstallArgs;
 use anyhow::{Context, Result, bail};
 use std::{
     io::Write,
     path::{Path, PathBuf},
 };
 
-pub fn cmd_postinstall(vfs: &Path) -> Result<()> {
-    let path = move_self().context("move binary")?;
-    delete_alias().context("delete old alias")?;
-    create_alias(&path).context("create alias")?;
+pub fn cmd_postinstall(vfs: &Path, args: &PostinstallArgs) -> Result<()> {
+    let path = move_self(args.path.clone()).context("move binary")?;
 
-    // While CLI is released (and so is supposed to be updated)
-    // more often than emulator, most people update CLI only when
-    // we announce "the big release" which includes a new emulator.
-    // So, it's safe to assume that when we update CLI,
-    // emulator also needs to be updated (most of the time).
-    remove_emulator(vfs);
+    if !args.no_alias {
+        delete_alias().context("delete old alias")?;
+        create_alias(&path).context("create alias")?;
+    }
+
+    if !args.keep_emulator {
+        // While CLI is released (and so is supposed to be updated)
+        // more often than emulator, most people update CLI only when
+        // we announce "the big release" which includes a new emulator.
+        // So, it's safe to assume that when we update CLI,
+        // emulator also needs to be updated (most of the time).
+        remove_emulator(vfs);
+    }
 
     Ok(())
 }
 
 /// Move the currently running executable into $PATH.
-fn move_self() -> Result<PathBuf> {
-    if let Some(path) = find_writable_path() {
+fn move_self(path: Option<PathBuf>) -> Result<PathBuf> {
+    let path = path.or_else(find_writable_path);
+    if let Some(path) = path {
         move_self_to(&path)?;
         return Ok(path);
     }
