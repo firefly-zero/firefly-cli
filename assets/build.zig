@@ -18,6 +18,7 @@ pub fn build(b: *std.Build) void {
     });
     exe.entry = .disabled;
     exe.rdynamic = true;
+    exe.stack_size = 4096;
     const firefly_package = b.dependency("firefly", .{});
     const firefly_module = firefly_package.module("firefly");
     exe.root_module.addImport("firefly", firefly_module);
