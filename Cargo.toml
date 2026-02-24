@@ -60,7 +60,7 @@ sha2 = "0.10.9"
 # Read gz archives (to install emulator).
 tar = "0.4.44"
 # Deserialize firefly.toml
-toml = "0.9.8"
+toml = "1.0.3+spec-1.1.0"
 # Download remote files (`url` field in `firefly.toml`)
 ureq = "3.2.0"
 # Build together post-processed wasm binaries
