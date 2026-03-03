@@ -43,7 +43,6 @@ static TIPS: &[&str] = &[
     "create `.firefly` dir in the project root to store VFS in there",
     "you can customize TinyGo build with a custom target.json in the project root",
     "make sure to test your app with multiplayer",
-    "images using 4 or fewer colors are twice smaller",
     "when debugging an app, call `set_seed` in `boot` to make the randomness predictable",
     "use Stash instead of files to make the app state accessible in multiplayer",
     // covering CLI subcommands
