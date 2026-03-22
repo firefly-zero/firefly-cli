@@ -25,7 +25,7 @@ chrono = { version = "0.4.42", default-features = false, features = ["clock"] }
 # Framework for parsing CLI args
 clap = { version = "4.5.60", features = ["derive"] }
 # Detect message boundaries in serial port output from device
-cobs = "0.5.0"
+cobs = "0.5.1"
 # Generate PNG images (sign chunks)
 crc32fast = "1.5.0"
 # TUI for the "monitor" command, colored terminal output
@@ -54,18 +54,18 @@ serde = { version = "1.0.219", features = ["serde_derive", "derive"] }
 # Deserialize JSON API responses from the firefly catalog
 serde_json = "1.0.149"
 # Communicating with running device
-serialport = "4.8.1"
+serialport = "4.9.0"
 # Calculate file checksum
 sha2 = "0.10.9"
 # Read gz archives (to install emulator).
-tar = "0.4.44"
+tar = "0.4.45"
 # Deserialize firefly.toml
-toml = "1.0.3+spec-1.1.0"
+toml = "1.0.7"
 # Download remote files (`url` field in `firefly.toml`)
-ureq = "3.2.0"
+ureq = "3.3.0"
 # Build together post-processed wasm binaries
 wasm-encoder = "0.245.1"
 # Parse wasm binaries for post-processing (removing custom sections)
 wasmparser = "0.245.1"
 # Work with zip archives (distribution format for ROMs)
-zip = { version = "8.1.0", default-features = false, features = ["zstd"] }
+zip = { version = "8.3.1", default-features = false, features = ["zstd"] }
