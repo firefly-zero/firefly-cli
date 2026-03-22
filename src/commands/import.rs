@@ -205,49 +205,56 @@ pub(super) fn write_stats(meta: &Meta<'_>, vfs_path: &Path) -> anyhow::Result<()
     let data_path = vfs_path.join("data").join(meta.author_id).join(meta.app_id);
     let stats_path = data_path.join("stats");
     let rom_path = vfs_path.join("roms").join(meta.author_id).join(meta.app_id);
+
+    // Read the default stats from ROM.
+    // The default stats define runtime info for boards and badges.
     let default_path = rom_path.join(STATS);
     if !default_path.exists() {
         bail!("the app ROM doesn't have the _stats file");
     }
-    if stats_path.exists() {
-        update_stats(&default_path, &stats_path)?;
-    } else {
-        copy_stats(&default_path, &stats_path)?;
-    }
-    Ok(())
-}
+    let raw = fs::read(default_path).context("read default stats file")?;
+    let default = firefly_types::Stats::decode(&raw)?;
 
-fn copy_stats(default_path: &Path, stats_path: &Path) -> anyhow::Result<()> {
     let today = chrono::Local::now().date_naive();
     #[expect(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
     let today = (today.year() as u16, today.month() as u8, today.day() as u8);
-    let raw = fs::read(default_path).context("read default stats file")?;
-    let default = firefly_types::Stats::decode(&raw)?;
-    let stats = firefly_types::Stats {
-        minutes: [0; 4],
-        longest_play: [0; 4],
-        launches: [0; 4],
-        installed_on: today,
-        updated_on: today,
-        launched_on: (0, 0, 0),
-        xp: 0,
-        badges: default.badges,
-        scores: default.scores,
+
+    let stats = if stats_path.exists() {
+        update_stats(&default, &stats_path, today)?
+    } else {
+        // If the app stats in the data dir don't exist (typically when it's
+        // the first installation of the app), set the stats to the defaults.
+        // We could just use "default" for this purpose but that would let
+        // the ROM to override the defaults it shouldn't be able to.
+        firefly_types::Stats {
+            minutes: [0; 4],
+            longest_play: [0; 4],
+            launches: [0; 4],
+            installed_on: today,
+            updated_on: today,
+            launched_on: (0, 0, 0),
+            xp: 0,
+            badges: default.badges,
+            scores: default.scores,
+        }
     };
     let raw = stats.encode_vec().context("encode stats")?;
     fs::write(stats_path, raw).context("write stats file")?;
     Ok(())
 }
 
-fn update_stats(default_path: &Path, stats_path: &Path) -> anyhow::Result<()> {
+/// Update the stats in the app data dir with the default stats from the app ROM.
+///
+/// The goal of the update is to preserve existing scores and badges progress
+/// while adding new badges and boards.
+fn update_stats(
+    default: &firefly_types::Stats,
+    stats_path: &Path,
+    today: (u16, u8, u8),
+) -> anyhow::Result<firefly_types::Stats> {
     let raw = fs::read(stats_path).context("read stats file")?;
     let old_stats = firefly_types::Stats::decode(&raw).context("parse old stats")?;
-    let raw = fs::read(default_path).context("read default stats file")?;
-    let default = firefly_types::Stats::decode(&raw)?;
 
-    let today = chrono::Local::now().date_naive();
-    #[expect(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
-    let today = (today.year() as u16, today.month() as u8, today.day() as u8);
     // The current date might be behind the current date on the device,
     // and it might be reflected in the dates recorded in the stats.
     // If that happens, try to stay closer to the device time.
@@ -296,9 +303,7 @@ fn update_stats(default_path: &Path, stats_path: &Path) -> anyhow::Result<()> {
         badges: badges.into_boxed_slice(),
         scores: scores.into_boxed_slice(),
     };
-    let raw = new_stats.encode_vec().context("encode updated stats")?;
-    fs::write(stats_path, raw).context("write updated stats file")?;
-    Ok(())
+    Ok(new_stats)
 }
 
 #[cfg(test)]
