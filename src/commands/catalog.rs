@@ -89,7 +89,7 @@ pub fn show_app(args: &CatalogShowArgs) -> Result<()> {
 }
 
 pub fn show_author(args: &CatalogShowArgs) -> Result<()> {
-    let url = format!("{BASE_URL}{}.json", args.id);
+    let url = format!("{BASE_URL}@{}.json", args.id);
     let resp = ureq::get(&url).call().context("send request")?;
     let mut body = resp.into_body().into_reader();
     let aut: Author = serde_json::from_reader(&mut body).context("parse JSON")?;
