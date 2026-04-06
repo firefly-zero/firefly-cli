@@ -7,6 +7,7 @@ use crate::file_names::*;
 use crate::fs::{collect_sizes, format_size};
 use crate::images::convert_image;
 use crate::langs::build_bin;
+use crate::manuals::convert_manual;
 use crate::palettes::{Palettes, get_palette, parse_palettes};
 use crate::vfs::init_vfs;
 use anyhow::{Context, bail};
@@ -247,10 +248,16 @@ fn convert_file(
     // and should be resolved relative to the project root.
     let in_path = &config.root_path.join(&file_config.path);
     download_file(in_path, file_config).context("download file")?;
+
     if file_config.copy {
         fs::copy(in_path, &out_path)?;
         return Ok(());
     }
+    if name == MANUAL {
+        convert_manual(in_path, &out_path).context("convert manual")?;
+        return Ok(());
+    }
+
     let Some(extension) = in_path.extension() else {
         let file_name = in_path.to_str().unwrap().to_string();
         bail!("cannot detect extension for {file_name}");
@@ -258,6 +265,7 @@ fn convert_file(
     let Some(extension) = extension.to_str() else {
         bail!("cannot convert file extension to string");
     };
+
     // TODO(@orsinium): fail if palette is set for a non-image file.
     match extension {
         "png" => {

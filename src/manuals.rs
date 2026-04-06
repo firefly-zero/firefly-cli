@@ -1,6 +1,50 @@
+use std::path::Path;
+
 use anyhow::{Context, Result, bail};
-use firefly_types::manuals::*;
+use firefly_types::{Encode, manuals::*};
 use markdown::mdast;
+
+pub fn convert_manual(in_path: &Path, out_path: &Path) -> Result<()> {
+    let manual = parse_manual(in_path).context("parse")?;
+    let raw = manual.encode_vec().context("serialize")?;
+    std::fs::write(out_path, &raw).context("write")?;
+    Ok(())
+}
+
+/// Read and parse manual from the given path.
+fn parse_manual(path: &Path) -> Result<Manual> {
+    let mut manual = Manual { pages: Vec::new() };
+
+    // A single-page manual can be a single file.
+    if path.is_file() {
+        let content = std::fs::read_to_string(path).context("read manual file")?;
+        let page = parse_page(&content).context("parse manual page")?;
+        manual.pages.push(page);
+        return Ok(manual);
+    }
+
+    let dir = std::fs::read_dir(path).context("open manual dir")?;
+    let mut paths = Vec::new();
+    for entry in dir {
+        let entry = entry.context("access manual file")?;
+        let path = entry.path();
+        let Some(ext) = path.extension() else {
+            bail!("the file name has no extension");
+        };
+        if ext != "md" {
+            bail!("invalid file extension")
+        }
+        paths.push(path);
+    }
+    paths.sort();
+
+    for path in paths {
+        let content = std::fs::read_to_string(path).context("read manual file")?;
+        let page = parse_page(&content).context("parse manual page")?;
+        manual.pages.push(page);
+    }
+    Ok(manual)
+}
 
 fn parse_page(content: &str) -> Result<Page> {
     let options = markdown::ParseOptions::default();

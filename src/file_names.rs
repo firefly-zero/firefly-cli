@@ -19,3 +19,6 @@ pub const BOARDS: &str = "_boards";
 /// when installing a new app or after cleaning the app data,
 /// or to update the existing stats file when the app is updated.
 pub const STATS: &str = "_stats";
+
+/// Game manual.
+pub const MANUAL: &str = "_manual";
