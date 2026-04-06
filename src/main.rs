@@ -25,14 +25,14 @@ mod file_names;
 mod fs;
 mod images;
 mod langs;
+mod manuals;
 mod net;
-mod repl_helper;
-mod vfs;
-mod wasm;
-
 mod palettes;
+mod repl_helper;
 #[cfg(test)]
 mod test_helpers;
+mod vfs;
+mod wasm;
 
 use crate::args::Cli;
 use crate::cli::{Error, run_command};

@@ -42,6 +42,8 @@ hound = "3.5.1"
 image = { version = "0.25.10", default-features = false, features = ["png"] }
 # Generate PNG images (compress frame)
 libflate = "2.2.1"
+# Parse manuals
+markdown = "1.0.0"
 # Random device name generation
 rand = "0.9.2"
 rust-embed = { version = "8.9.0", default-features = false, features = [
@@ -69,3 +71,6 @@ wasm-encoder = "0.246.2"
 wasmparser = "0.246.2"
 # Work with zip archives (distribution format for ROMs)
 zip = { version = "8.5.0", default-features = false, features = ["zstd"] }
+
+[patch.crates-io]
+firefly-types = { path = "../firefly-types" }
