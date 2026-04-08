@@ -59,13 +59,14 @@ fn parse_page(content: &str) -> Result<Page> {
     let mdast::Node::Root(root) = ast else {
         bail!("invalid root node")
     };
+    let mut ordered = false;
     for node in root.children {
-        parse_block(&mut page, node)?;
+        parse_block(&mut page, &mut ordered, node)?;
     }
     Ok(page)
 }
 
-fn parse_block(page: &mut Page, node: mdast::Node) -> Result<()> {
+fn parse_block(page: &mut Page, ordered: &mut bool, node: mdast::Node) -> Result<()> {
     match node {
         mdast::Node::Blockquote(node) => {
             let nodes = parse_paragraph(&node.children).context("blockquote")?;
@@ -87,13 +88,15 @@ fn parse_block(page: &mut Page, node: mdast::Node) -> Result<()> {
             page.content.push(block);
         }
         mdast::Node::List(node) => {
-            if !node.ordered {
-                bail!("unordered list is not supported yet");
-            }
+            *ordered = node.ordered;
         }
         mdast::Node::ListItem(node) => {
             let nodes = parse_paragraph(&node.children).context("list item")?;
-            let block = Block::Oli(nodes);
+            let block = if *ordered {
+                Block::Oli(nodes)
+            } else {
+                Block::Uli(nodes)
+            };
             page.content.push(block);
         }
         mdast::Node::Paragraph(node) => {
@@ -109,6 +112,10 @@ fn parse_block(page: &mut Page, node: mdast::Node) -> Result<()> {
 fn parse_paragraph(nodes: &[mdast::Node]) -> Result<Paragraph> {
     let mut paragraph = Paragraph::new();
     for node in nodes {
+        let mut node = node;
+        if let mdast::Node::Paragraph(n) = node {
+            node = &n.children[0];
+        }
         let inline = parse_inline(node)?;
         paragraph.push(inline);
     }
