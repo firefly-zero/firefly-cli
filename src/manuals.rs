@@ -101,6 +101,21 @@ fn parse_block(page: &mut Page, node: mdast::Node) -> Result<()> {
             }
         }
         mdast::Node::Paragraph(node) => {
+            if node.children.len() == 1 {
+                let subnode = &node.children[0];
+                match subnode {
+                    mdast::Node::Link(link) => {
+                        if !link.url.starts_with("https://") {
+                            bail!("only external links are supported yet");
+                        }
+                        let block = Block::Qr(link.url.clone());
+                        page.content.push(block);
+                        return Ok(());
+                    }
+                    mdast::Node::Image(_) => bail!("images are not supported yet"),
+                    _ => {}
+                }
+            }
             let nodes = parse_paragraph(&node.children).context("paragraph")?;
             let block = Block::P(nodes);
             page.content.push(block);
