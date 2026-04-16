@@ -382,6 +382,14 @@ fn build_zig(config: &Config) -> anyhow::Result<()> {
 // Build Odin project.
 fn build_odin(config: &Config) -> anyhow::Result<()> {
     check_installed("Odin", "odin", "version")?;
+
+    // Find wasi-sdk and add it into $PATH.
+    let wasi_sdk = find_wasi_sdk()?;
+    let wasi_sdk_bin = wasi_sdk.join("bin");
+    let wasi_sdk_bin = path_to_utf8(&wasi_sdk_bin)?;
+    let path = std::env::var("PATH").unwrap_or_default();
+    let path = format!("{path}:{wasi_sdk_bin}");
+
     let mut cmd_args = vec![
         "build",
         ".",
@@ -396,6 +404,7 @@ fn build_odin(config: &Config) -> anyhow::Result<()> {
     let output = Command::new("odin")
         .args(cmd_args)
         .current_dir(&config.root_path)
+        .env("PATH", path)
         .output()
         .context("run odin build")?;
     check_output(&output)?;
