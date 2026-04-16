@@ -154,9 +154,12 @@ fn new_zig(name: &str) -> Result<()> {
 
 /// Create a new Odin project.
 fn new_odin(name: &str) -> Result<()> {
+    const URL: &str =
+        "https://github.com/firefly-zero/firefly-odin/raw/refs/heads/main/firefly/firefly.odin";
     let mut c = Commander::default();
     c.cd(name)?;
-    // ...
+    c.wget(&["vendor", "firefly", "firefly.odin"], URL)?;
+    c.copy_asset(&["main.odin"], "main.odin")?;
     Ok(())
 }
 
