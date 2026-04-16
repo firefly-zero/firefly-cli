@@ -107,7 +107,7 @@ fn parse_lang(lang: &str) -> Result<Lang> {
         "go" | "golang" | "tinygo" => Lang::Go,
         "lua" => Lang::Lua,
         "moon" | "moonbit" | "mbt" => Lang::Moon,
-        "odin" => Lang::Odin,
+        "odin" | "abadidea" => Lang::Odin,
         "python" | "py" => Lang::Python,
         "rust" | "rs" => Lang::Rust,
         "ts" | "typescript" | "js" | "javascript" => Lang::TS,
