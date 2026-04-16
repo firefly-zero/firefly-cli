@@ -21,18 +21,19 @@ pub fn build_bin(config: &Config, args: &BuildArgs) -> anyhow::Result<()> {
         None => detect_lang(&config.root_path)?,
     };
     match lang {
-        Lang::Go => build_go(config),
-        Lang::Rust => build_rust(config),
-        Lang::Zig => build_zig(config),
         Lang::AS => build_as(config),
-        Lang::TS => build_ts(config),
-        Lang::C => build_c(config),
-        Lang::Cpp => build_cpp(config),
-        Lang::Python => build_python(config),
-        Lang::Lua => build_lua(config),
         Lang::Bitsy => build_bitsy(config),
         Lang::Bulb => build_bulb(config),
+        Lang::C => build_c(config),
+        Lang::Cpp => build_cpp(config),
+        Lang::Go => build_go(config),
+        Lang::Lua => build_lua(config),
         Lang::Moon => build_moon(config),
+        Lang::Odin => build_odin(config),
+        Lang::Python => build_python(config),
+        Lang::Rust => build_rust(config),
+        Lang::TS => build_ts(config),
+        Lang::Zig => build_zig(config),
     }?;
     let bin_path = config.rom_path.join(BIN);
     if !bin_path.is_file() {
@@ -65,6 +66,9 @@ fn detect_lang(root: &Path) -> anyhow::Result<Lang> {
     if root.join("build.zig.zon").exists() {
         return Ok(Lang::Zig);
     }
+    if root.join("ols.json").exists() {
+        return Ok(Lang::Odin);
+    }
     if root.join("asconfig.json").exists() {
         return Ok(Lang::AS);
     }
@@ -91,6 +95,9 @@ fn detect_lang(root: &Path) -> anyhow::Result<Lang> {
     }
     if root.join("main.cpp").exists() {
         return Ok(Lang::Cpp);
+    }
+    if root.join("main.odin").exists() {
+        return Ok(Lang::Odin);
     }
     if root.join("main.lua").exists() {
         return Ok(Lang::Lua);
@@ -366,6 +373,34 @@ fn build_zig(config: &Config) -> anyhow::Result<()> {
 
     let from_dir = config.root_path.join("zig-out").join("bin");
     let from_path = find_wasm(&from_dir)?;
+    let out_path = config.rom_path.join(BIN);
+    std::fs::copy(&from_path, out_path).context("copy wasm binary")?;
+    std::fs::remove_file(from_path).context("remove wasm file")?;
+    Ok(())
+}
+
+// Build Odin project.
+fn build_odin(config: &Config) -> anyhow::Result<()> {
+    check_installed("Odin", "odin", "version")?;
+    let mut cmd_args = vec![
+        "build",
+        ".",
+        "-target:freestanding_wasm32",
+        "-out:firefly.wasm",
+    ];
+    if let Some(additional_args) = &config.compile_args {
+        for arg in additional_args {
+            cmd_args.push(arg.as_str());
+        }
+    }
+    let output = Command::new("odin")
+        .args(cmd_args)
+        .current_dir(&config.root_path)
+        .output()
+        .context("run odin build")?;
+    check_output(&output)?;
+
+    let from_path = config.root_path.join("firefly.wasm");
     let out_path = config.rom_path.join(BIN);
     std::fs::copy(&from_path, out_path).context("copy wasm binary")?;
     std::fs::remove_file(from_path).context("remove wasm file")?;

@@ -22,17 +22,18 @@ pub fn cmd_new(args: &NewArgs) -> Result<()> {
     }
     let lang = parse_lang(&args.lang)?;
     match lang {
-        Lang::Go => new_go(&args.name).context("new Go project")?,
-        Lang::Rust => new_rust(&args.name).context("new Rust project")?,
-        Lang::Zig => new_zig(&args.name).context("new Zig project")?,
         Lang::AS | Lang::TS => new_as(&args.name).context("new AssemblyScript project")?,
-        Lang::C => new_c(&args.name).context("new C project")?,
-        Lang::Cpp => new_cpp(&args.name).context("new C++ project")?,
-        Lang::Python => bail!("Python is not supported yet"),
-        Lang::Lua => new_lua(&args.name).context("new Lua project")?,
-        Lang::Moon => new_moon(&args.name).context("new Moon project")?,
         Lang::Bitsy => new_bitsy(&args.name).context("new Bitsy project")?,
         Lang::Bulb => new_bulb(&args.name).context("new Bulb project")?,
+        Lang::C => new_c(&args.name).context("new C project")?,
+        Lang::Cpp => new_cpp(&args.name).context("new C++ project")?,
+        Lang::Go => new_go(&args.name).context("new Go project")?,
+        Lang::Lua => new_lua(&args.name).context("new Lua project")?,
+        Lang::Moon => new_moon(&args.name).context("new Moon project")?,
+        Lang::Odin => new_odin(&args.name).context("new Odin project")?,
+        Lang::Python => bail!("Python is not supported yet"),
+        Lang::Rust => new_rust(&args.name).context("new Rust project")?,
+        Lang::Zig => new_zig(&args.name).context("new Zig project")?,
     }
     write_config(lang, &args.name)?;
     init_git(&args.name)?;
@@ -98,18 +99,19 @@ fn init_git(name: &str) -> Result<()> {
 /// Convert `--lang` CLI flag into [`Lang`].
 fn parse_lang(lang: &str) -> Result<Lang> {
     let result = match lang.to_lowercase().as_str() {
-        "c" => Lang::C,
-        "go" | "golang" | "tinygo" => Lang::Go,
-        "rust" | "rs" => Lang::Rust,
-        "zig" => Lang::Zig,
         "as" | "assemblyscript" => Lang::AS,
-        "ts" | "typescript" | "js" | "javascript" => Lang::TS,
-        "cpp" | "c++" => Lang::Cpp,
-        "python" | "py" => Lang::Python,
-        "moon" | "moonbit" | "mbt" => Lang::Moon,
-        "lua" => Lang::Lua,
         "bitsy" => Lang::Bitsy,
         "bulb" | "bulbscript" | "bulb-script" => Lang::Bulb,
+        "c" => Lang::C,
+        "cpp" | "c++" => Lang::Cpp,
+        "go" | "golang" | "tinygo" => Lang::Go,
+        "lua" => Lang::Lua,
+        "moon" | "moonbit" | "mbt" => Lang::Moon,
+        "odin" => Lang::Odin,
+        "python" | "py" => Lang::Python,
+        "rust" | "rs" => Lang::Rust,
+        "ts" | "typescript" | "js" | "javascript" => Lang::TS,
+        "zig" => Lang::Zig,
         _ => bail!("unsupported language: {lang}"),
     };
     Ok(result)
@@ -147,6 +149,14 @@ fn new_zig(name: &str) -> Result<()> {
     let version = get_latest_zig_sdk_version().context("get Zig SDK version")?;
     let url = format!("{repo_url}/archive/refs/tags/{version}.tar.gz");
     c.run(&["zig", "fetch", "--save=firefly", &url])?;
+    Ok(())
+}
+
+/// Create a new Odin project.
+fn new_odin(name: &str) -> Result<()> {
+    let mut c = Commander::default();
+    c.cd(name)?;
+    // ...
     Ok(())
 }
 
