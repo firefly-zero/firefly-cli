@@ -23,7 +23,7 @@ anyhow = "1.0.101"
 # Get current date and time
 chrono = { version = "0.4.42", default-features = false, features = ["clock"] }
 # Framework for parsing CLI args
-clap = { version = "4.6.0", features = ["derive"] }
+clap = { version = "4.6.1", features = ["derive"] }
 # Detect message boundaries in serial port output from device
 cobs = "0.5.1"
 # Generate PNG images (sign chunks)
@@ -41,7 +41,7 @@ hound = "3.5.1"
 # Parse PNG images
 image = { version = "0.25.10", default-features = false, features = ["png"] }
 # Generate PNG images (compress frame)
-libflate = "2.2.1"
+libflate = "2.3.0"
 # Parse manuals
 markdown = "1.0.0"
 # Random device name generation
@@ -50,7 +50,7 @@ rust-embed = { version = "8.9.0", default-features = false, features = [
     "debug-embed",
 ] }
 # REPL
-rustyline = "17.0.2"
+rustyline = "18.0.0"
 # Deserialize firefly.toml (required by `toml`)
 serde = { version = "1.0.219", features = ["serde_derive", "derive"] }
 # Deserialize JSON API responses from the firefly catalog
@@ -66,8 +66,8 @@ toml = "1.1.2"
 # Download remote files (`url` field in `firefly.toml`)
 ureq = "3.3.0"
 # Build together post-processed wasm binaries
-wasm-encoder = "0.246.2"
+wasm-encoder = "0.247.0"
 # Parse wasm binaries for post-processing (removing custom sections)
-wasmparser = "0.246.2"
+wasmparser = "0.247.0"
 # Work with zip archives (distribution format for ROMs)
-zip = { version = "8.5.0", default-features = false, features = ["zstd"] }
+zip = { version = "8.5.1", default-features = false, features = ["zstd"] }
