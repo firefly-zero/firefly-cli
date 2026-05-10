@@ -60,7 +60,7 @@ pub fn convert_wav(input_path: &Path, output_path: &Path) -> Result<()> {
             } else {
                 "i"
             };
-            bail!("unsupported sample format: {letter}{bits}",);
+            bail!("unsupported sample format: {letter}{bits}");
         }
     }
     Ok(())

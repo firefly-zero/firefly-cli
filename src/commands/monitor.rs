@@ -114,10 +114,8 @@ fn parse_stats(stats: &mut Stats, resp: serial::Response) {
                 RenderLine | Cheat | Boot => {}
             }
         }
-        CPU(cpu) => {
-            if cpu.total_ns > 0 {
-                stats.cpu = Some(cpu);
-            }
+        CPU(cpu) if cpu.total_ns > 0 => {
+            stats.cpu = Some(cpu);
         }
         Memory(mem) => {
             stats.mem = Some(mem);
@@ -301,7 +299,7 @@ fn format_ns(ns: u32) -> String {
     const MS: u32 = 1000 * US;
 
     if ns == u32::MAX {
-        return "4+ s".to_string();
+        return "   4+ s".to_string();
     }
     if ns > 10 * MS {
         return format!("{:>4} ms", ns / MS);
