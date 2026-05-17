@@ -1,6 +1,7 @@
 use crate::args::RuntimeArgs;
 use crate::net::{Stream, connect, is_timeout};
 use anyhow::{Context, Result};
+use crossterm::style::Stylize;
 use crossterm::{cursor, event, execute, style, terminal};
 use firefly_types::serial;
 use std::io;
@@ -181,6 +182,12 @@ fn render_cpu(cpu: &serial::CPU) -> anyhow::Result<()> {
         return Ok(());
     }
     let idle = cpu.total_ns.saturating_sub(cpu.busy_ns);
+    let lag = format_ns(cpu.lag_ns);
+    let lag = if cpu.lag_ns == 0 {
+        lag.red()
+    } else {
+        lag.reset()
+    };
     execute!(
         io::stdout(),
         cursor::MoveTo(X, Y),
@@ -189,7 +196,7 @@ fn render_cpu(cpu: &serial::CPU) -> anyhow::Result<()> {
         cursor::MoveTo(X, Y + 1),
         style::Print("│ lag"),
         cursor::MoveTo(X + COL1, Y + 1),
-        style::Print(&format_ns(cpu.lag_ns)),
+        style::Print(&lag),
         cursor::MoveTo(X + COL2, Y + 1),
         style::Print(&format_ratio(cpu.lag_ns, cpu.total_ns)),
         cursor::MoveTo(X, Y + 2),
