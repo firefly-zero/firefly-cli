@@ -77,7 +77,8 @@ pub fn optimize(bin_path: &Path, strip: bool) -> anyhow::Result<()> {
 
     // https://github.com/wasmi-labs/wasmi/?tab=readme-ov-file#webassembly-features
     let mut args = vec![
-        "-Oz",
+        "-Os",
+        "--dae-optimizing",
         "--disable-exception-handling",
         "--disable-gc",
         "--disable-typed-function-references",
@@ -92,6 +93,7 @@ pub fn optimize(bin_path: &Path, strip: bool) -> anyhow::Result<()> {
         "--enable-sign-ext",
         "--enable-simd",
         "--enable-tail-call",
+        "--inlining-optimizing",
     ];
     if strip {
         args.push("--strip-debug");

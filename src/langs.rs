@@ -313,7 +313,7 @@ fn build_cpp_inner(config: &Config, bin_name: &str, fname: &str) -> anyhow::Resu
         path_to_utf8(&out_path)?,
         "-mexec-model=reactor",
         "-Wl,--stack-first,--no-entry,--strip-all,--gc-sections,--lto-O3",
-        "-Oz",
+        "-Os",
         path_to_utf8(in_path)?,
     ];
     if let Some(additional_args) = &config.compile_args {
