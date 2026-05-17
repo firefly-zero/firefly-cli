@@ -33,7 +33,7 @@ T 🔑
 IMAGE key
 A
 SAY You found a key!
-ADD key 1
+SET key 1
 PLACE ⚪️
 
 
