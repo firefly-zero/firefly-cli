@@ -183,7 +183,7 @@ fn render_cpu(cpu: &serial::CPU) -> anyhow::Result<()> {
     }
     let idle = cpu.total_ns.saturating_sub(cpu.busy_ns);
     let lag = format_ns(cpu.lag_ns);
-    let lag = if cpu.lag_ns == 0 {
+    let lag = if cpu.lag_ns > 0 {
         lag.red()
     } else {
         lag.reset()
