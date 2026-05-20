@@ -1,6 +1,6 @@
 use crate::args::NewArgs;
 use crate::config::Lang;
-use crate::langs::{check_installed, check_output};
+use crate::langs::{check_installed, run_cmd};
 use anyhow::{Context, Ok, Result, bail};
 use rust_embed::Embed;
 use std::io::Write;
@@ -289,8 +289,7 @@ impl<'a> Commander<'a> {
         if let Some(path) = self.root {
             cmd = cmd.current_dir(path);
         }
-        let output = cmd.output().context(format!("run {bin}"))?;
-        check_output(&output).context(format!("run {bin}"))?;
+        run_cmd(cmd).context(format!("run {bin}"))?;
         Ok(())
     }
 

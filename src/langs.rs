@@ -7,7 +7,7 @@ use std::env::temp_dir;
 use std::fs::File;
 use std::io::Write;
 use std::path::{Path, PathBuf};
-use std::process::{Command, ExitStatus, Output};
+use std::process::{Command, ExitStatus};
 
 pub fn build_bin(config: &Config, args: &BuildArgs) -> anyhow::Result<()> {
     // Don't build the binary if it will be copied directly in "files".
@@ -145,12 +145,8 @@ fn build_go(config: &Config) -> anyhow::Result<()> {
             cmd_args.push(arg.as_str());
         }
     }
-    let output = Command::new("tinygo")
-        .args(cmd_args)
-        .current_dir(in_path)
-        .output()
-        .context("run tinygo build")?;
-    check_output(&output)
+    run_cmd(Command::new("tinygo").args(cmd_args).current_dir(in_path))?;
+    Ok(())
 }
 
 /// Get the path to target.json in the project root or create a temporary one.
@@ -222,8 +218,8 @@ fn build_rust_inner(config: &Config, example: bool) -> anyhow::Result<()> {
         let flags = "-Clink-arg=-zstack-size=4096 -Ctarget-feature=+extended-const,+tail-call";
         cmd = cmd.env("RUSTFLAGS", flags);
     }
-    let output = cmd.output().context("run cargo build")?;
-    check_output(&output)?;
+    run_cmd(cmd)?;
+
     let cargo_out_path = find_rust_result(&config.root_path)?;
     let out_path = config.rom_path.join(BIN);
     std::fs::copy(cargo_out_path, out_path)?;
@@ -324,12 +320,11 @@ fn build_cpp_inner(config: &Config, bin_name: &str, fname: &str) -> anyhow::Resu
         cmd_args.push("-Wl,-zstack-size=14752,--initial-memory=65536,--max-memory=65536");
     }
     let clang_path = wasi_sdk.join("bin").join(bin_name);
-    let output = Command::new(path_to_utf8(&clang_path)?)
-        .args(cmd_args)
-        .current_dir(&config.root_path)
-        .output()
-        .context("run clang++")?;
-    check_output(&output)?;
+    run_cmd(
+        Command::new(path_to_utf8(&clang_path)?)
+            .args(cmd_args)
+            .current_dir(&config.root_path),
+    )?;
     Ok(())
 }
 
@@ -364,12 +359,11 @@ fn build_zig(config: &Config) -> anyhow::Result<()> {
             cmd_args.push(arg.as_str());
         }
     }
-    let output = Command::new("zig")
-        .args(cmd_args)
-        .current_dir(&config.root_path)
-        .output()
-        .context("run zig build")?;
-    check_output(&output)?;
+    run_cmd(
+        Command::new("zig")
+            .args(cmd_args)
+            .current_dir(&config.root_path),
+    )?;
 
     let from_dir = config.root_path.join("zig-out").join("bin");
     let from_path = find_wasm(&from_dir)?;
@@ -401,13 +395,12 @@ fn build_odin(config: &Config) -> anyhow::Result<()> {
             cmd_args.push(arg.as_str());
         }
     }
-    let output = Command::new("odin")
-        .args(cmd_args)
-        .current_dir(&config.root_path)
-        .env("PATH", path)
-        .output()
-        .context("run odin build")?;
-    check_output(&output)?;
+    run_cmd(
+        Command::new("odin")
+            .args(cmd_args)
+            .current_dir(&config.root_path)
+            .env("PATH", path),
+    )?;
 
     let from_path = config.root_path.join("firefly.wasm");
     let out_path = config.rom_path.join(BIN);
@@ -425,12 +418,11 @@ fn build_moon(config: &Config) -> anyhow::Result<()> {
             cmd_args.push(arg.as_str());
         }
     }
-    let output = Command::new("moon")
-        .args(cmd_args)
-        .current_dir(&config.root_path)
-        .output()
-        .context("run moon build")?;
-    check_output(&output)?;
+    run_cmd(
+        Command::new("moon")
+            .args(cmd_args)
+            .current_dir(&config.root_path),
+    )?;
 
     let new_from_dir = config
         .root_path
@@ -506,12 +498,11 @@ fn build_as(config: &Config) -> anyhow::Result<()> {
         cmd_args.push("--optimize");
         cmd_args.push("--noAssert");
     }
-    let output = Command::new("npx")
-        .args(cmd_args)
-        .current_dir(&config.root_path)
-        .output()
-        .context("run asc assembly")?;
-    check_output(&output)?;
+    run_cmd(
+        Command::new("npx")
+            .args(cmd_args)
+            .current_dir(&config.root_path),
+    )?;
 
     let from_path = config.root_path.join("main.wasm");
     let out_path = config.rom_path.join(BIN);
@@ -560,7 +551,8 @@ pub fn path_to_utf8(path: &Path) -> anyhow::Result<&str> {
     }
 }
 
-pub fn check_output(output: &Output) -> anyhow::Result<()> {
+pub fn run_cmd(cmd: &mut Command) -> anyhow::Result<()> {
+    let output = cmd.output()?;
     std::io::stdout().write_all(&output.stdout)?;
     std::io::stderr().write_all(&output.stderr)?;
     check_exit_status(output.status)

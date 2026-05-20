@@ -1,4 +1,4 @@
-use crate::{args::TestArgs, langs::check_output};
+use crate::{args::TestArgs, langs::run_cmd};
 use anyhow::{Context, Ok, Result, bail};
 use std::{path::Path, process::Command};
 
@@ -13,8 +13,7 @@ pub fn cmd_test(_args: &TestArgs) -> Result<()> {
         println!("⏳️ creating venv...");
         let mut cmd = Command::new("python3");
         let cmd = cmd.args(["-m", "venv", ".venv"]);
-        let output = cmd.output().context("create venv")?;
-        check_output(&output).context("create venv")?;
+        run_cmd(cmd).context("create venv")?;
     }
 
     // Ensure pytest and firefly-test are installed.
@@ -23,8 +22,7 @@ pub fn cmd_test(_args: &TestArgs) -> Result<()> {
         let pip_path = bin_path.join("pip");
         let mut cmd = Command::new(&pip_path);
         let cmd = cmd.args(["install", "pytest", "firefly-test"]);
-        let output = cmd.output().context("install firefly-test")?;
-        check_output(&output).context("install firefly-test")?;
+        run_cmd(cmd).context("install firefly-test")?;
     }
 
     // Run pytest
