@@ -20,9 +20,52 @@ pub fn cmd_emulator(vfs: &Path, args: &EmulatorArgs) -> Result<()> {
         download_emulator(&bin_path).context("download emulator")?;
     }
     println!("⌛ running...");
-    let exit_status = Command::new(bin_path).args(&args.args).status()?;
+    let exit_status = Command::new(bin_path).args(format_args(args)).status()?;
     check_exit_status(exit_status).context("run emulator")?;
     Ok(())
+}
+
+fn format_args(args: &EmulatorArgs) -> Vec<&str> {
+    let mut res = Vec::new();
+    if args.update {
+        res.push("--update");
+    }
+    if args.fullscreen {
+        res.push("--fullscreen");
+    }
+    if args.no_keyboard {
+        res.push("--no_keyboard");
+    }
+
+    if let Some(val) = &args.scale {
+        res.push("--scale");
+        res.push(val);
+    }
+    if let Some(val) = &args.id {
+        res.push("--id");
+        res.push(val);
+    }
+    if let Some(val) = &args.tcp_ip {
+        res.push("--tcp_ip");
+        res.push(val);
+    }
+    if let Some(val) = &args.udp_ip {
+        res.push("--udp_ip");
+        res.push(val);
+    }
+    if let Some(val) = &args.peers {
+        res.push("--peers");
+        res.push(val);
+    }
+    if let Some(val) = &args.vfs {
+        res.push("--vfs");
+        res.push(val);
+    }
+    if let Some(val) = &args.wav {
+        res.push("--wav");
+        res.push(val);
+    }
+    res
 }
 
 fn download_emulator(bin_path: &Path) -> Result<()> {
