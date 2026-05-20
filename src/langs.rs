@@ -7,7 +7,7 @@ use std::env::temp_dir;
 use std::fs::File;
 use std::io::Write;
 use std::path::{Path, PathBuf};
-use std::process::{Command, ExitStatus};
+use std::process::Command;
 
 pub fn build_bin(config: &Config, args: &BuildArgs) -> anyhow::Result<()> {
     // Don't build the binary if it will be copied directly in "files".
@@ -552,15 +552,9 @@ pub fn path_to_utf8(path: &Path) -> anyhow::Result<&str> {
 }
 
 pub fn run_cmd(cmd: &mut Command) -> anyhow::Result<()> {
-    let output = cmd.output()?;
-    std::io::stdout().write_all(&output.stdout)?;
-    std::io::stderr().write_all(&output.stderr)?;
-    check_exit_status(output.status)
-}
-
-pub fn check_exit_status(output: ExitStatus) -> anyhow::Result<()> {
-    if !output.success() {
-        let code = output.code().unwrap_or(1);
+    let status = cmd.status()?;
+    if !status.success() {
+        let code = status.code().unwrap_or(1);
         bail!("subprocess exited with status code {code}");
     }
     Ok(())

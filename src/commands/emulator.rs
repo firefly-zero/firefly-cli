@@ -1,5 +1,5 @@
 use crate::args::EmulatorArgs;
-use crate::langs::check_exit_status;
+use crate::langs::run_cmd;
 use anyhow::{Context, Result, bail};
 use flate2::read::GzDecoder;
 use std::fs::File;
@@ -20,8 +20,7 @@ pub fn cmd_emulator(vfs: &Path, args: &EmulatorArgs) -> Result<()> {
         download_emulator(&bin_path).context("download emulator")?;
     }
     println!("⌛ running...");
-    let exit_status = Command::new(bin_path).args(format_args(args)).status()?;
-    check_exit_status(exit_status).context("run emulator")?;
+    run_cmd(Command::new(bin_path).args(format_args(args))).context("run emulator")?;
     Ok(())
 }
 
