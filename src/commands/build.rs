@@ -286,23 +286,37 @@ fn convert_file(
 
 /// If file doesn't exist, download it from `url` and validate `sha256`.
 fn download_file(input_path: &Path, file_config: &FileConfig) -> anyhow::Result<()> {
+    // If file exists, check that it matches the hash.
     if input_path.exists() {
+        if let Some(expected_hash) = &file_config.sha256
+            && let Ok(bytes) = fs::read(input_path)
+        {
+            validate_hash(&bytes, expected_hash)?;
+        }
         return Ok(());
     }
+
+    // If no file exists, download the file and check the hash.
     let Some(url) = &file_config.url else {
         bail!("file does not exist and no url specified");
     };
     let resp = ureq::get(url).call().context("send request")?;
     let bytes = resp.into_body().read_to_vec().context("read response")?;
     if let Some(expected_hash) = &file_config.sha256 {
-        let mut hasher = Sha256::new();
-        hasher.update(&bytes);
-        let actual_hash = to_hex(&hasher.finalize());
-        if actual_hash != *expected_hash {
-            bail!("sha256 hash mismatch: {actual_hash} != {expected_hash}");
-        }
+        validate_hash(&bytes, expected_hash)?;
     }
+    // It's important to save file only if the hash is valid.
     fs::write(input_path, bytes).context("write file")?;
+    Ok(())
+}
+
+fn validate_hash(bytes: &[u8], expected_hash: &str) -> anyhow::Result<()> {
+    let mut hasher = Sha256::new();
+    hasher.update(bytes);
+    let actual_hash = to_hex(&hasher.finalize());
+    if actual_hash != *expected_hash {
+        bail!("sha256 hash mismatch: {actual_hash} != {expected_hash}");
+    }
     Ok(())
 }
 
