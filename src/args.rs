@@ -19,6 +19,9 @@ pub enum Commands {
     #[clap(hide = true)]
     Postinstall(PostinstallArgs),
 
+    /// Build the project, run it in emulator, and export the ROM.
+    Run(BuildArgs),
+
     /// Build the project and install it locally (into VFS).
     Build(BuildArgs),
 
@@ -130,10 +133,6 @@ pub struct BuildArgs {
     #[arg(default_value = ".")]
     pub root: PathBuf,
 
-    /// Path to the directory where to store roms
-    #[arg(short, long, default_value = None)]
-    pub roms: Option<PathBuf>,
-
     /// Path to the firefly config.
     #[arg(short, long, default_value = None)]
     pub config: Option<PathBuf>,
@@ -210,7 +209,7 @@ pub struct NewArgs {
     pub lang: String,
 }
 
-#[derive(Debug, Parser)]
+#[derive(Debug, Parser, Default)]
 pub struct EmulatorArgs {
     /// Download the latest emulator release.
     #[arg(long, default_value_t = false)]
