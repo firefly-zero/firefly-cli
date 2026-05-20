@@ -19,6 +19,9 @@ pub enum Commands {
     #[clap(hide = true)]
     Postinstall(PostinstallArgs),
 
+    /// Build the project, run it in emulator, and export the ROM.
+    Run(BuildArgs),
+
     /// Build the project and install it locally (into VFS).
     Build(BuildArgs),
 
@@ -130,10 +133,6 @@ pub struct BuildArgs {
     #[arg(default_value = ".")]
     pub root: PathBuf,
 
-    /// Path to the directory where to store roms
-    #[arg(short, long, default_value = None)]
-    pub roms: Option<PathBuf>,
-
     /// Path to the firefly config.
     #[arg(short, long, default_value = None)]
     pub config: Option<PathBuf>,
@@ -210,14 +209,58 @@ pub struct NewArgs {
     pub lang: String,
 }
 
-#[derive(Debug, Parser)]
+#[derive(Debug, Parser, Default)]
 pub struct EmulatorArgs {
     /// Download the latest emulator release.
     #[arg(long, default_value_t = false)]
     pub update: bool,
 
-    /// Arguments to pass into the emulator.
-    pub args: Vec<String>,
+    /// The scale for the window and each pixel.
+    ///
+    /// Must be a power of 2: 1, 2, 4, 8, 16, or 32.
+    #[arg(long, default_value = None)]
+    pub scale: Option<String>,
+
+    /// Run the emulator in borderless mode and scale to fit the screen.
+    ///
+    /// If specified, "--scale" has no effect.
+    #[arg(long, default_value_t = false)]
+    pub fullscreen: bool,
+
+    /// The full ID of the app to run.
+    ///
+    /// If not specified, will start launcher (if installed) or the latest installed app.
+    #[arg(long, default_value = None)]
+    pub id: Option<String>,
+
+    /// The TCP IP address where to listen for serial events.
+    #[arg(long, default_value = None)]
+    pub tcp_ip: Option<String>,
+
+    /// The UDP IP address where to listen for netplay events.
+    #[arg(long, default_value = None)]
+    pub udp_ip: Option<String>,
+
+    /// The UDP IP addresses where to send netplay advertisements.
+    #[arg(long, default_value = None)]
+    pub peers: Option<String>,
+
+    /// Path to the virtual FS to use.
+    ///
+    /// By default, the global one (~/.local/share/firefly) is used.
+    #[arg(long, default_value = None)]
+    pub vfs: Option<String>,
+
+    /// If provided, the path where to save the audio output (as a WAV file).
+    #[arg(long, default_value = None)]
+    pub wav: Option<String>,
+
+    /// Disable reading input from keyboard.
+    ///
+    /// Useful if you have troubles with keyboard (like a stuck key)
+    /// and just want to use gamepad as input.
+    #[arg(long, default_value_t = false)]
+    pub no_keyboard: bool,
 }
 
 #[derive(Debug, Parser)]

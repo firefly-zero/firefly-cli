@@ -17,6 +17,7 @@ pub fn run_command(vfs: PathBuf, command: &Commands) -> anyhow::Result<()> {
         Boards(args) => cmd_boards(&vfs, args),
         Inspect(args) => cmd_inspect(&vfs, args),
         Repl(args) => cmd_repl(&vfs, args),
+        Run(args) => cmd_run(&vfs, args),
         Shots(ShotsCommands::Download(args)) => cmd_shots_download(&vfs, args),
         Catalog(command) => match command {
             CatalogCommands::List(args) => cmd_catalog_list(args),
