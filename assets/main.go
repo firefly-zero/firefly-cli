@@ -19,9 +19,9 @@ func update() {
 func render() {
 	firefly.ClearScreen(firefly.ColorWhite)
 	firefly.DrawTriangle(
-		firefly.Point{X: 60, Y: 10},
-		firefly.Point{X: 40, Y: 40},
-		firefly.Point{X: 80, Y: 40},
+		firefly.P(60, 10),
+		firefly.P(40, 40),
+		firefly.P(80, 40),
 		firefly.Style{
 			FillColor:   firefly.ColorDarkBlue,
 			StrokeColor: firefly.ColorBlue,
