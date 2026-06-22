@@ -90,6 +90,9 @@ fn detect_lang(root: &Path) -> anyhow::Result<Lang> {
     if root.join("moon.mod.json").exists() {
         return Ok(Lang::Moon);
     }
+    if root.join("moon.mod").exists() {
+        return Ok(Lang::Moon);
+    }
     if root.join("main.c").exists() {
         return Ok(Lang::C);
     }
