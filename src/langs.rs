@@ -427,28 +427,68 @@ fn build_moon(config: &Config) -> anyhow::Result<()> {
             .current_dir(&config.root_path),
     )?;
 
-    let new_from_dir = config
-        .root_path
-        .join("_build")
-        .join("wasm")
-        .join("release")
-        .join("build");
-    let from_path = if let Ok(from_path) = find_wasm(&new_from_dir) {
-        from_path
-    } else {
-        let old_from_dir = config
-            .root_path
-            .join("target")
-            .join("wasm")
-            .join("release")
-            .join("build");
-        find_wasm(&old_from_dir)?
-    };
-
+    let from_path = find_moon_wasm(&config.root_path)?;
     let out_path = config.rom_path.join(BIN);
     std::fs::copy(&from_path, out_path).context("copy wasm binary")?;
     std::fs::remove_file(from_path).context("remove wasm file")?;
     Ok(())
+}
+
+/// Find wasm binary produced by `moon build`.
+fn find_moon_wasm(root: &Path) -> anyhow::Result<PathBuf> {
+    // v1.22 workspace path
+    if let Some(pkg_name) = get_moon_pkg_name(root) {
+        let bin_path = root
+            .join("_build")
+            .join("wasm")
+            .join("release")
+            .join("build")
+            .join(&pkg_name)
+            .join(format!("{pkg_name}.wasm"));
+        if bin_path.exists() {
+            return Ok(bin_path);
+        }
+    }
+
+    // v1.20 "_build" path
+    let dir_path = root
+        .join("_build")
+        .join("wasm")
+        .join("release")
+        .join("build");
+    if let Ok(from_path) = find_wasm(&dir_path) {
+        return Ok(from_path);
+    }
+
+    // v1.18 "target" path
+    let dir_path = root
+        .join("target")
+        .join("wasm")
+        .join("release")
+        .join("build");
+    if let Ok(from_path) = find_wasm(&dir_path) {
+        return Ok(from_path);
+    }
+
+    bail!("cannot find wasm binary")
+}
+
+/// Get the name of the moon package at the given path.
+fn get_moon_pkg_name(root: &Path) -> Option<String> {
+    let path = root.join("moon.mod");
+    if !path.exists() {
+        return None;
+    }
+    let raw = std::fs::read_to_string(path).ok()?;
+    for line in raw.lines() {
+        // It's ok to have formatting-sensitive matching
+        // since moon consistently formats moon.mod files.
+        if let Some(name) = line.strip_prefix(r#"name = ""#) {
+            let name = name.strip_suffix('"').unwrap_or(name);
+            return Some(name.to_string());
+        }
+    }
+    None
 }
 
 // Build Lua project.
