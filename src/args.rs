@@ -61,6 +61,11 @@ pub enum Commands {
     /// Show the full path to the virtual filesystem.
     Vfs,
 
+    /// Access device config.
+    #[command(subcommand)]
+    #[clap(alias("conf"), alias("settings"))]
+    Config(ConfigCommands),
+
     /// Control a running device or emulator.
     Runtime(RuntimeArgs),
 
@@ -316,6 +321,20 @@ pub struct RuntimeArgs {
 
     #[command(subcommand)]
     pub command: RuntimeCommands,
+}
+
+#[derive(Debug, Parser)]
+pub enum ConfigCommands {
+    /// Get config as JSON.
+    #[clap(alias("list"), alias("dump"), alias("export"), alias("json"))]
+    Get(ConfigGetArgs),
+}
+
+#[derive(Debug, Parser)]
+pub struct ConfigGetArgs {
+    /// Option name to get.
+    #[arg(long, default_value = None)]
+    pub key: Option<String>,
 }
 
 #[derive(Debug, Parser)]
