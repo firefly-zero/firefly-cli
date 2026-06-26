@@ -333,7 +333,7 @@ pub enum ConfigCommands {
 #[derive(Debug, Parser)]
 pub struct ConfigGetArgs {
     /// Option name to get.
-    #[arg(long, default_value = None)]
+    #[arg(default_value = None)]
     pub key: Option<String>,
 }
 

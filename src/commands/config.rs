@@ -3,7 +3,7 @@ use anyhow::{Context, Result, bail};
 use firefly_types::Encode;
 use std::path::Path;
 
-pub fn cmd_config_get(vfs: &Path, _args: &ConfigGetArgs) -> Result<()> {
+pub fn cmd_config_get(vfs: &Path, args: &ConfigGetArgs) -> Result<()> {
     if !vfs.exists() {
         bail!("vfs is not created yet")
     }
@@ -13,6 +13,32 @@ pub fn cmd_config_get(vfs: &Path, _args: &ConfigGetArgs) -> Result<()> {
     }
     let raw = std::fs::read(settings_path).context("read settings")?;
     let s = firefly_types::Settings::decode(&raw).context("parse settings")?;
+
+    if let Some(key) = &args.key {
+        match key.as_str() {
+            "xp" => println!("{}", s.xp),
+            "badges" => println!("{}", s.badges),
+            "country" => println!("{}", p(&s.country)),
+            "lang" => println!("{}", p(&s.lang)),
+            "name" => println!("{}", s.name),
+            "timezone" => println!("{}", s.timezone),
+            "auto_lock" => println!("{}", s.auto_lock),
+            "font_size" => println!("{}", s.font_size),
+            "headphones_volume" => println!("{}", s.headphones_volume),
+            "leds_brightness" => println!("{}", s.leds_brightness),
+            "screen_brightness" => println!("{}", s.screen_brightness),
+            "speakers_volume" => println!("{}", s.speakers_volume),
+            "contrast" => println!("{}", s.contrast),
+            "easter_eggs" => println!("{}", s.easter_eggs),
+            "gamepad_mode" => println!("{}", s.gamepad_mode),
+            "reduce_flashing" => println!("{}", s.reduce_flashing),
+            "rotate_screen" => println!("{}", s.rotate_screen),
+            "telemetry" => println!("{}", s.telemetry),
+            _ => bail!("unsupported key"),
+        }
+        return Ok(());
+    }
+
     println!("{{");
     println!(r#"  "xp":       {},"#, s.xp);
     println!(r#"  "badges":   {},"#, s.badges);
@@ -22,12 +48,12 @@ pub fn cmd_config_get(vfs: &Path, _args: &ConfigGetArgs) -> Result<()> {
     println!(r#"  "timezone": "{}","#, s.timezone);
 
     println!();
-    println!(r#"  "auto_lock":         {},"#, s.auto_lock);
-    println!(r#"  "font_size":         {},"#, s.font_size);
-    println!(r#"  "headphones_volume": {},"#, s.headphones_volume);
-    println!(r#"  "leds_brightness":   {},"#, s.leds_brightness);
-    println!(r#"  "screen_brightness": {},"#, s.screen_brightness);
-    println!(r#"  "speakers_volume":   {},"#, s.speakers_volume);
+    println!(r#"  "auto_lock":         {:>3},"#, s.auto_lock);
+    println!(r#"  "font_size":         {:>3},"#, s.font_size);
+    println!(r#"  "headphones_volume": {:>3},"#, s.headphones_volume);
+    println!(r#"  "leds_brightness":   {:>3},"#, s.leds_brightness);
+    println!(r#"  "screen_brightness": {:>3},"#, s.screen_brightness);
+    println!(r#"  "speakers_volume":   {:>3},"#, s.speakers_volume);
 
     println!();
     println!(r#"  "contrast":        {},"#, s.contrast);
