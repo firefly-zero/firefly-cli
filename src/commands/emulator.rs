@@ -100,13 +100,20 @@ fn download_emulator(bin_path: &Path) -> Result<()> {
 }
 
 fn get_release_url() -> String {
-    #[cfg(target_os = "windows")]
-    const SUFFIX: &str = "x86_64-pc-windows-msvc.tgz";
-    #[cfg(target_os = "macos")]
-    const SUFFIX: &str = "aarch64-apple-darwin.tgz";
-    #[cfg(target_os = "linux")]
-    const SUFFIX: &str = "x86_64-unknown-linux-gnu.tgz";
+    let (arch, abi) = cfg_select! {
+        target_arch = "x86_64" => ("x86_64", ""),
+        target_arch = "x86" => ("i686", ""),
+        target_arch = "aarch64" => ("aarch64", ""),
+        target_arch = "arm" => ("arm", "eabihf"),
+        _ => compile_error!("unsupported architecture"),
+    };
+    let os = cfg_select! {
+        target_os = "windows" => "windows-msvc",
+        target_os = "macos" => "apple-darwin",
+        target_os = "linux" => "unknown-linux-gnu",
+        _ => compile_error!("unsupported os"),
+    };
 
     let repo = "https://github.com/firefly-zero/firefly-emulator";
-    format!("{repo}/releases/latest/download/firefly-emulator-{SUFFIX}")
+    format!("{repo}/releases/latest/download/firefly-emulator-{arch}-{os}{abi}.tgz")
 }
