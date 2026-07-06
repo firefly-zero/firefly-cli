@@ -215,6 +215,7 @@ pub struct NewArgs {
 }
 
 #[derive(Debug, Parser, Default)]
+#[expect(clippy::struct_excessive_bools)]
 pub struct EmulatorArgs {
     /// Download the latest emulator release.
     #[arg(long, default_value_t = false)]
@@ -266,6 +267,10 @@ pub struct EmulatorArgs {
     /// and just want to use gamepad as input.
     #[arg(long, default_value_t = false)]
     pub no_keyboard: bool,
+
+    /// Don't play any audio.
+    #[arg(long, default_value_t = false)]
+    pub mute: bool,
 }
 
 #[derive(Debug, Parser)]
