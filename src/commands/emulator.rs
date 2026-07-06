@@ -35,6 +35,9 @@ fn format_args(args: &EmulatorArgs) -> Vec<&str> {
     if args.no_keyboard {
         res.push("--no_keyboard");
     }
+    if args.mute {
+        res.push("--mute");
+    }
 
     if let Some(val) = &args.scale {
         res.push("--scale");
