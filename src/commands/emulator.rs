@@ -1,6 +1,6 @@
 use crate::args::EmulatorArgs;
 use crate::langs::run_cmd;
-use anyhow::{Context, Result, bail};
+use anyhow::{Context, Result};
 use flate2::read::GzDecoder;
 use std::fs::File;
 use std::path::Path;
@@ -73,18 +73,17 @@ fn format_args(args: &EmulatorArgs) -> Vec<&str> {
 fn download_emulator(bin_path: &Path) -> Result<()> {
     // Send HTTP request.
     let url = get_release_url();
-    let resp = ureq::get(&url).call().context("send HTTP request")?;
+    let resp = ureq::get(&url)
+        .call()
+        .context("send HTTP request")
+        .context(url).context("check out https://github.com/firefly-zero/firefly-emulator/releases for supported targets")?;
     let body = resp.into_body().into_reader();
 
     // Extract archive.
-    if url.ends_with(".tar.gz") || url.ends_with(".tgz") {
-        let tar = GzDecoder::new(body);
-        let mut archive = Archive::new(tar);
-        let vfs = bin_path.parent().unwrap();
-        archive.unpack(vfs).context("extract binary")?;
-    } else {
-        bail!("unsupported archive format")
-    }
+    let tar = GzDecoder::new(body);
+    let mut archive = Archive::new(tar);
+    let vfs = bin_path.parent().unwrap();
+    archive.unpack(vfs).context("extract binary")?;
 
     // chmod.
     #[cfg(unix)]
