@@ -1,6 +1,6 @@
 use crate::args::EmulatorArgs;
 use crate::langs::run_cmd;
-use anyhow::{Context, Result, bail};
+use anyhow::{Context, Result};
 use flate2::read::GzDecoder;
 use std::fs::File;
 use std::path::Path;
@@ -73,18 +73,17 @@ fn format_args(args: &EmulatorArgs) -> Vec<&str> {
 fn download_emulator(bin_path: &Path) -> Result<()> {
     // Send HTTP request.
     let url = get_release_url();
-    let resp = ureq::get(&url).call().context("send HTTP request")?;
+    let resp = ureq::get(&url)
+        .call()
+        .context("send HTTP request")
+        .context(url).context("check out https://github.com/firefly-zero/firefly-emulator/releases for supported targets")?;
     let body = resp.into_body().into_reader();
 
     // Extract archive.
-    if url.ends_with(".tar.gz") || url.ends_with(".tgz") {
-        let tar = GzDecoder::new(body);
-        let mut archive = Archive::new(tar);
-        let vfs = bin_path.parent().unwrap();
-        archive.unpack(vfs).context("extract binary")?;
-    } else {
-        bail!("unsupported archive format")
-    }
+    let tar = GzDecoder::new(body);
+    let mut archive = Archive::new(tar);
+    let vfs = bin_path.parent().unwrap();
+    archive.unpack(vfs).context("extract binary")?;
 
     // chmod.
     #[cfg(unix)]
@@ -100,13 +99,20 @@ fn download_emulator(bin_path: &Path) -> Result<()> {
 }
 
 fn get_release_url() -> String {
-    #[cfg(target_os = "windows")]
-    const SUFFIX: &str = "x86_64-pc-windows-msvc.tgz";
-    #[cfg(target_os = "macos")]
-    const SUFFIX: &str = "aarch64-apple-darwin.tgz";
-    #[cfg(target_os = "linux")]
-    const SUFFIX: &str = "x86_64-unknown-linux-gnu.tgz";
+    let (arch, abi) = cfg_select! {
+        target_arch = "x86_64" => ("x86_64", ""),
+        target_arch = "x86" => ("i686", ""),
+        target_arch = "aarch64" => ("aarch64", ""),
+        target_arch = "arm" => ("arm", "eabihf"),
+        _ => compile_error!("unsupported architecture"),
+    };
+    let os = cfg_select! {
+        target_os = "windows" => "windows-msvc",
+        target_os = "macos" => "apple-darwin",
+        target_os = "linux" => "unknown-linux-gnu",
+        _ => compile_error!("unsupported os"),
+    };
 
     let repo = "https://github.com/firefly-zero/firefly-emulator";
-    format!("{repo}/releases/latest/download/firefly-emulator-{SUFFIX}")
+    format!("{repo}/releases/latest/download/firefly-emulator-{arch}-{os}{abi}.tgz")
 }
