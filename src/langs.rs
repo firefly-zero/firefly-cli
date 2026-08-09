@@ -392,6 +392,7 @@ fn build_odin(config: &Config) -> anyhow::Result<()> {
         ".",
         "-target:freestanding_wasm32",
         "-out:firefly.wasm",
+        "-source-code-locations:none",
     ];
     if let Some(additional_args) = &config.compile_args {
         for arg in additional_args {
