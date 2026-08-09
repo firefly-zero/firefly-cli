@@ -29,7 +29,7 @@ pub fn build_bin(config: &Config, args: &BuildArgs) -> anyhow::Result<()> {
         Lang::Go => build_go(config),
         Lang::Lua => build_lua(config),
         Lang::Moon => build_moon(config),
-        Lang::Odin => build_odin(config),
+        Lang::Odin => build_odin(config, args),
         Lang::Python => build_python(config),
         Lang::Rust => build_rust(config),
         Lang::TS => build_ts(config),
@@ -377,7 +377,7 @@ fn build_zig(config: &Config) -> anyhow::Result<()> {
 }
 
 // Build Odin project.
-fn build_odin(config: &Config) -> anyhow::Result<()> {
+fn build_odin(config: &Config, args: &BuildArgs) -> anyhow::Result<()> {
     check_installed("Odin", "odin", "version")?;
 
     // Find wasi-sdk and add it into $PATH.
@@ -393,8 +393,10 @@ fn build_odin(config: &Config) -> anyhow::Result<()> {
         "-target:freestanding_wasm32",
         "-out:firefly.wasm",
         "-source-code-locations:none",
-        "-disable-assert",
     ];
+    if !args.no_strip {
+        cmd_args.push("-disable-assert");
+    }
     if let Some(additional_args) = &config.compile_args {
         for arg in additional_args {
             cmd_args.push(arg.as_str());
