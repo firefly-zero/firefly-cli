@@ -1,7 +1,7 @@
 {
   "llvm-target": "wasm32-unknown-unknown",
   "cpu": "generic",
-  "features": "+mutable-globals,+nontrapping-fptoint,+sign-ext,+bulk-memory",
+  "features": "+mutable-globals,+nontrapping-fptoint,+sign-ext,+bulk-memory,+tail-call",
   "build-tags": ["tinygo.wasm", "wasm_unknown", "firefly", "fireflyzero", "firefly_zero"],
   "goos": "linux",
   "goarch": "arm",
