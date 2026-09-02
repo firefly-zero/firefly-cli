@@ -194,19 +194,11 @@ fn write_frame<W: Write>(mut w: W, data: &[u8]) -> Result<()> {
     let mut compressor = libflate::zlib::Encoder::new(inner).unwrap();
     for line in data.chunks(WIDTH as usize / 2) {
         compressor.write_all(&[0]).unwrap(); // filter type: no filter
-        compressor.write_all(&swap_pairs(line)).unwrap();
+        compressor.write_all(line).unwrap();
     }
     let compressed = compressor.finish().into_result().unwrap();
     write_chunk(&mut w, b"IDAT", &compressed)?;
     Ok(())
-}
-
-/// Each byte in the frame buffer contains 2 pixels. Swap these 2 pixels.
-///
-/// We need to do it because firefly uses little-endian for everything
-/// but PNG is big-endian.
-fn swap_pairs(frame: &[u8]) -> Vec<u8> {
-    frame.iter().map(|byte| byte.rotate_left(4)).collect()
 }
 
 /// Write a PNG chunk.
