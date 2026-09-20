@@ -10,12 +10,13 @@
   "scheduler": "none",
   "gc": "conservative",
   "cflags": ["-mno-bulk-memory", "-mnontrapping-fptoint", "-msign-ext"],
+  "default-stack-size": 16384,
   "ldflags": [
     "--allow-undefined",
     "--no-demangle",
     "--stack-first",
     "--no-entry",
-    "-zstack-size=14752"
+    "-zstack-size=16384"
   ],
   "extra-files": ["src/runtime/asm_tinygowasm.S"]
 }
