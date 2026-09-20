@@ -218,7 +218,7 @@ fn build_rust_inner(config: &Config, example: bool) -> anyhow::Result<()> {
         // TODO: Enable `+relaxed-simd` when it works.
         //      At the moment of writing, it causes runtime error for Blutti:
         //      > unexpected SIMD opcode: 0xfd (at offset 0x9f).
-        let flags = "-Clink-arg=-zstack-size=4096 -Ctarget-feature=+extended-const,+tail-call";
+        let flags = "-Clink-arg=-zstack-size=8192 -Ctarget-feature=+extended-const,+tail-call";
         cmd = cmd.env("RUSTFLAGS", flags);
     }
     run_cmd(cmd)?;
@@ -320,7 +320,7 @@ fn build_cpp_inner(config: &Config, bin_name: &str, fname: &str) -> anyhow::Resu
             cmd_args.push(arg.as_str());
         }
     } else {
-        cmd_args.push("-Wl,-zstack-size=14752,--initial-memory=65536,--max-memory=65536");
+        cmd_args.push("-Wl,-zstack-size=8192,--initial-memory=65536,--max-memory=65536");
     }
     let clang_path = wasi_sdk.join("bin").join(bin_name);
     run_cmd(
