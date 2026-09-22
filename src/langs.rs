@@ -4,8 +4,6 @@ use crate::file_names::BIN;
 use crate::wasm::{optimize, strip_custom};
 use anyhow::{Context, bail};
 use std::env::temp_dir;
-use std::fs::File;
-use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
@@ -152,18 +150,27 @@ fn build_go(config: &Config) -> anyhow::Result<()> {
     Ok(())
 }
 
-/// Get the path to target.json in the project root or create a temporary one.
+/// Get the path to `target.json` in the project root or create a temporary one.
 fn find_tinygo_target(config: &Config) -> anyhow::Result<PathBuf> {
+    // Check if target.json already exists.
     let target_path = config.root_path.join("target.json");
     if target_path.is_file() {
+        if config.stack_size.is_some() {
+            bail!("stack_size cannot be set when a custom target.json is used");
+        }
         return Ok(target_path);
     }
+
+    // Prepare default target.json.
+    let target_raw = include_str!("target.json");
+    let mut target_raw = target_raw.to_owned();
+    if let Some(stack_size) = config.stack_size {
+        target_raw = target_raw.replace("16384", &format!("{stack_size}"));
+    }
+
+    // Write default target.json into a temp file.
     let target_path = temp_dir().join("firefly-tinygo-target.json");
-    let mut target_file = File::create(&target_path).context("create temporary file")?;
-    let target_raw = include_bytes!("target.json");
-    target_file
-        .write_all(target_raw)
-        .context("write temp file")?;
+    std::fs::write(&target_path, target_raw).context("write temp file")?;
     Ok(target_path)
 }
 
@@ -212,13 +219,16 @@ fn build_rust_inner(config: &Config, example: bool) -> anyhow::Result<()> {
     let mut cmd = cmd.args(cmd_args).current_dir(in_path);
     let cargo_config = config.root_path.join(".cargo").join("config.toml");
     if !cargo_config.exists() {
+        let stack_size = config.stack_size.unwrap_or(16384);
         // https://doc.rust-lang.org/reference/attributes/codegen.html#wasm32-or-wasm64
         // https://github.com/wasmi-labs/wasmi/?tab=readme-ov-file#webassembly-features
         //
         // TODO: Enable `+relaxed-simd` when it works.
         //      At the moment of writing, it causes runtime error for Blutti:
         //      > unexpected SIMD opcode: 0xfd (at offset 0x9f).
-        let flags = "-Clink-arg=-zstack-size=8192 -Ctarget-feature=+extended-const,+tail-call";
+        let flags = format!(
+            "-Clink-arg=-zstack-size={stack_size} -Ctarget-feature=+extended-const,+tail-call"
+        );
         cmd = cmd.env("RUSTFLAGS", flags);
     }
     run_cmd(cmd)?;
@@ -305,13 +315,16 @@ fn build_cpp_inner(config: &Config, bin_name: &str, fname: &str) -> anyhow::Resu
     }
     let out_path = config.rom_path.join(BIN);
     let wasi_sysroot = wasi_sdk.join("share").join("wasi-sysroot");
+    let stack_size = config.stack_size.unwrap_or(16384);
+    let stack_size = format!("-Wl,-zstack-size={stack_size}");
     let mut cmd_args = vec![
         "--sysroot",
         path_to_utf8(&wasi_sysroot)?,
         "-o",
         path_to_utf8(&out_path)?,
         "-mexec-model=reactor",
-        "-Wl,--stack-first,--no-entry,--strip-all,--gc-sections,--lto-O3",
+        "-Wl,--stack-first,--no-entry,--strip-all,--gc-sections,--lto-O3,--initial-memory=65536",
+        &stack_size,
         "-Os",
         path_to_utf8(in_path)?,
     ];
@@ -319,8 +332,6 @@ fn build_cpp_inner(config: &Config, bin_name: &str, fname: &str) -> anyhow::Resu
         for arg in additional_args {
             cmd_args.push(arg.as_str());
         }
-    } else {
-        cmd_args.push("-Wl,-zstack-size=8192,--initial-memory=65536,--max-memory=65536");
     }
     let clang_path = wasi_sdk.join("bin").join(bin_name);
     run_cmd(
@@ -356,6 +367,9 @@ fn find_wasi_sdk() -> anyhow::Result<PathBuf> {
 // Build Zig project.
 fn build_zig(config: &Config) -> anyhow::Result<()> {
     check_installed("Zig", "zig", "version")?;
+    if config.stack_size.is_some() {
+        bail!("stack_size cannot be set for Zig apps, set it via build.zig instead");
+    }
     let mut cmd_args = vec!["build"];
     if let Some(additional_args) = &config.compile_args {
         for arg in additional_args {
@@ -387,12 +401,17 @@ fn build_odin(config: &Config) -> anyhow::Result<()> {
     let path = std::env::var("PATH").unwrap_or_default();
     let path = format!("{path}:{wasi_sdk_bin}");
 
+    let stack_size = config.stack_size.unwrap_or(16384);
+    let flags = format!(
+        "-extra-linker-flags:-zstack-size={stack_size} --initial-memory=65536 --stack-first --lto-O3 --gc-sections --strip-all"
+    );
     let mut cmd_args = vec![
         "build",
         ".",
         "-target:freestanding_wasm32",
         "-out:firefly.wasm",
         "-source-code-locations:none",
+        &flags,
     ];
     if let Some(additional_args) = &config.compile_args {
         for arg in additional_args {
@@ -416,6 +435,9 @@ fn build_odin(config: &Config) -> anyhow::Result<()> {
 // Build Moon project.
 fn build_moon(config: &Config) -> anyhow::Result<()> {
     check_installed("Moon", "moon", "version")?;
+    if config.stack_size.is_some() {
+        bail!("stack_size cannot be set for MoonBit apps");
+    }
     let mut cmd_args = vec!["build", "--target", "wasm", "--release"];
     if let Some(additional_args) = &config.compile_args {
         for arg in additional_args {
@@ -494,18 +516,27 @@ fn get_moon_pkg_name(root: &Path) -> Option<String> {
 
 // Build Lua project.
 fn build_lua(config: &Config) -> anyhow::Result<()> {
+    if config.stack_size.is_some() {
+        bail!("stack_size cannot be set for Lua apps");
+    }
     let url = "https://github.com/firefly-zero/firefly-lua/releases/latest/download/main.wasm";
     build_interpreted(config, url)
 }
 
 // Build Bitsy project.
 fn build_bitsy(config: &Config) -> anyhow::Result<()> {
+    if config.stack_size.is_some() {
+        bail!("stack_size cannot be set for Bitsy apps");
+    }
     let url = "https://github.com/firefly-zero/firefly-bitsy/releases/latest/download/main.wasm";
     build_interpreted(config, url)
 }
 
 // Build Bulb Script project.
 fn build_bulb(config: &Config) -> anyhow::Result<()> {
+    if config.stack_size.is_some() {
+        bail!("stack_size cannot be set for Bulb Script apps");
+    }
     let url = "https://github.com/firefly-zero/firefly-bulb/releases/latest/download/main.wasm";
     build_interpreted(config, url)
 }
@@ -526,6 +557,9 @@ fn build_interpreted(config: &Config, url: &str) -> anyhow::Result<()> {
 
 fn build_as(config: &Config) -> anyhow::Result<()> {
     check_installed("AssemblyScript", "npx", "--version")?;
+    if config.stack_size.is_some() {
+        bail!("stack_size cannot be set for AssemblyScript apps");
+    }
     let mut cmd_args = vec![
         "asc",
         "assembly",

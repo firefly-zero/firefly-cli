@@ -19,6 +19,11 @@ pub struct Config {
     /// The programming language used for the app.
     pub lang: Option<Lang>,
 
+    /// How much RAM should be allocated for stack.
+    ///
+    /// Default: 16384, unless stack size cannot be configured for the language.
+    pub stack_size: Option<u32>,
+
     /// Additional CLI args to pass into the build subcommand.
     pub compile_args: Option<Vec<String>>,
 
