@@ -149,7 +149,7 @@ mod tests {
         std::env::set_current_dir(&root).unwrap();
 
         let actual = get_vfs_path();
-        assert!(actual != expected);
+        assert_ne!(actual, expected);
 
         std::fs::create_dir_all(&expected).unwrap();
         let actual = get_vfs_path();

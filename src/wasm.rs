@@ -50,6 +50,8 @@ pub fn strip_custom(bin_path: &Path) -> anyhow::Result<()> {
             continue;
         }
         if let Some((id, range)) = payload.as_section() {
+            #[expect(clippy::cast_possible_truncation)]
+            let range = range.start as usize..range.end as usize;
             wasm_encoder::RawSection {
                 id,
                 data: &input_bytes[range],
