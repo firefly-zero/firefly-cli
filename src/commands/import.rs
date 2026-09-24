@@ -51,7 +51,6 @@ pub fn cmd_import(vfs: &Path, args: &ImportArgs) -> Result<()> {
     if let Some(rom_path) = rom_path.to_str() {
         println!("✅ installed: {rom_path}");
     }
-    write_installed(&meta, vfs)?;
     reset_launcher_cache(vfs).context("reset launcher cache")?;
     Ok(())
 }
@@ -133,22 +132,6 @@ fn read_meta_raw(archive: &mut ZipArchive<File>) -> Result<Vec<u8>> {
         bail!("meta is empty");
     }
     Ok(meta_raw)
-}
-
-/// Write the latest installed app name into internal DB.
-fn write_installed(meta: &Meta<'_>, vfs_path: &Path) -> anyhow::Result<()> {
-    let short_meta = firefly_types::ShortMeta {
-        app_id: meta.app_id,
-        author_id: meta.author_id,
-    };
-    let encoded = short_meta.encode_vec().context("serialize")?;
-    let output_path = vfs_path.join("sys").join("new-app");
-    fs::write(output_path, &encoded).context("write new-app file")?;
-    if meta.launcher {
-        let output_path = vfs_path.join("sys").join("launcher");
-        fs::write(output_path, encoded).context("write launcher file")?;
-    }
-    Ok(())
 }
 
 fn reset_launcher_cache(vfs_path: &Path) -> anyhow::Result<()> {

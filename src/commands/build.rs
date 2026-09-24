@@ -102,7 +102,6 @@ pub fn cmd_build(vfs: PathBuf, args: &BuildArgs) -> anyhow::Result<()> {
 
     // Update system files.
     reset_launcher_cache(&config.vfs_path).context("reset launcher cache")?;
-    write_installed(&config).context("write app-name")?;
 
     // Show build report.
     let new_sizes = collect_sizes(&config.rom_path);
@@ -187,22 +186,6 @@ fn reset_launcher_cache(vfs_path: &Path) -> anyhow::Result<()> {
         .join("metas");
     if cache_path.exists() {
         std::fs::remove_file(cache_path)?;
-    }
-    Ok(())
-}
-
-/// Write the latest installed app name into internal DB.
-fn write_installed(config: &Config) -> anyhow::Result<()> {
-    let short_meta = firefly_types::ShortMeta {
-        app_id: &config.app_id,
-        author_id: &config.author_id,
-    };
-    let encoded = short_meta.encode_vec().context("serialize")?;
-    let output_path = config.vfs_path.join("sys").join("new-app");
-    fs::write(output_path, &encoded).context("write new-app file")?;
-    if config.launcher {
-        let output_path = config.vfs_path.join("sys").join("launcher");
-        fs::write(output_path, encoded).context("write launcher file")?;
     }
     Ok(())
 }
