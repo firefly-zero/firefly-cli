@@ -179,7 +179,7 @@ pub struct FlashArgs {
     #[arg(long)]
     pub revision: u8,
 
-    /// Path to the firmware source code or archive.
+    /// Path to the firmware source code or firmware binary archive.
     #[arg(long)]
     pub input: Option<PathBuf>,
 

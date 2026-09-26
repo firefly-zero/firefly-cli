@@ -89,6 +89,12 @@ fn is_source(args: &FlashArgs) -> Result<bool> {
 
 /// Build firmware from source and flash it to the device.
 fn flash_from_source(args: &FlashArgs) -> Result<()> {
+    let root = if let Some(path) = &args.input {
+        path
+    } else {
+        &std::env::current_dir().context("detect current dir")?
+    };
+
     // If output path is provided, save the image into the file.
     if let Some(output_path) = &args.output {
         // TODO: support saving as gz file
@@ -109,19 +115,27 @@ fn flash_from_source(args: &FlashArgs) -> Result<()> {
             cmd_args.push("--port");
             cmd_args.push(port);
         }
-        Command::new("cargo").args(cmd_args).output()?;
+        Command::new("cargo")
+            .args(cmd_args)
+            .current_dir(root)
+            .output()?;
         return Ok(());
     }
 
     // Switch OTA to the factory slot.
+    let partitions_path = root.join("partitions.csv");
+    let partitions = path_to_utf8(&partitions_path)?;
     let cmd_args = [
         "espflash",
         "erase-parts",
         "--partition-table",
-        "partitions.csv",
+        partitions,
         "otadata",
     ];
-    Command::new("cargo").args(cmd_args).output()?;
+    Command::new("cargo")
+        .args(cmd_args)
+        .current_dir(root)
+        .output()?;
 
     // Flash the image to the device.
     let revision = format!("v{}", args.revision);
@@ -136,7 +150,7 @@ fn flash_from_source(args: &FlashArgs) -> Result<()> {
         "esp32s3",
         "--release",
         "--partition-table",
-        "partitions.csv",
+        partitions,
         "--target-app-partition",
         "factory",
     ];
@@ -144,7 +158,10 @@ fn flash_from_source(args: &FlashArgs) -> Result<()> {
         cmd_args.push("--port");
         cmd_args.push(port);
     }
-    Command::new("cargo").args(cmd_args).output()?;
+    Command::new("cargo")
+        .args(cmd_args)
+        .current_dir(root)
+        .output()?;
 
     Ok(())
 }
