@@ -13,6 +13,7 @@ pub fn run_command(vfs: PathBuf, command: &Commands) -> anyhow::Result<()> {
         New(args) => cmd_new(args),
         Test(args) => cmd_test(args),
         Emulator(args) => cmd_emulator(&vfs, args),
+        Flash(args) => cmd_flash(args),
         Badges(args) => cmd_badges(&vfs, args),
         Boards(args) => cmd_boards(&vfs, args),
         Inspect(args) => cmd_inspect(&vfs, args),

@@ -85,14 +85,7 @@ fn download_dir(src_dir: &Path, dst_dir: &Path) -> Result<()> {
         }
         let dst_file_name = get_output_file_name(&src_path)?;
         let dst_path = dst_dir.join(dst_file_name);
-        let src_path_str = path_to_utf8(&src_path)?;
-        let dst_path_str = path_to_utf8(&dst_path)?;
-        copy_file(&src_path, &dst_path).with_context(|| {
-            format!(
-                "copy screenshot from {} into {}",
-                src_path_str, dst_path_str,
-            )
-        })?;
+        copy_file(&src_path, &dst_path).context("copy screenshot")?;
     }
     Ok(())
 }
