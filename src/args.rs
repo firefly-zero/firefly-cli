@@ -177,7 +177,7 @@ pub struct ExportArgs {
 pub struct FlashArgs {
     /// Hardware version.
     #[arg(long)]
-    pub version: u8,
+    pub revision: u8,
 
     /// Path to the firmware source code or archive.
     #[arg(long)]

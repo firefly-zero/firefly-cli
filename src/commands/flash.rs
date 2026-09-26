@@ -6,7 +6,7 @@ use anyhow::{Context, Result, bail};
 /// `ff flash`: Flash firmware into device or file.
 pub fn cmd_flash(args: &FlashArgs) -> Result<()> {
     if let Some(port) = &args.port
-        && !port.starts_with("/dev/")
+        && !port.starts_with("/dev/tty")
     {
         bail!("invalid --port");
     }
@@ -55,6 +55,7 @@ fn write_serial(args: &FlashArgs, serial: u32) -> Result<()> {
         "espflash",
         "write-bin",
         "--skip-update-check",
+        "--non-interactive",
         "--chip",
         "esp32s3",
         "0x10000",
@@ -91,13 +92,14 @@ fn flash_from_source(args: &FlashArgs) -> Result<()> {
     // If output path is provided, save the image into the file.
     if let Some(output_path) = &args.output {
         // TODO: support saving as gz file
-        let version = format!("v{}", args.version);
+        let revision = format!("v{}", args.revision);
         let mut cmd_args = vec![
             "espflash",
             "save-image",
             "--skip-update-check",
+            "--non-interactive",
             "--features",
-            &version,
+            &revision,
             "--chip",
             "esp32s3",
             "--release",
@@ -111,7 +113,38 @@ fn flash_from_source(args: &FlashArgs) -> Result<()> {
         return Ok(());
     }
 
-    // If no output path provided, flash the image to the device.
+    // Switch OTA to the factory slot.
+    let cmd_args = [
+        "espflash",
+        "erase-parts",
+        "--partition-table",
+        "partitions.csv",
+        "otadata",
+    ];
+    Command::new("cargo").args(cmd_args).output()?;
+
+    // Flash the image to the device.
+    let revision = format!("v{}", args.revision);
+    let mut cmd_args = vec![
+        "espflash",
+        "flash",
+        "--skip-update-check",
+        "--non-interactive",
+        "--features",
+        &revision,
+        "--chip",
+        "esp32s3",
+        "--release",
+        "--partition-table",
+        "partitions.csv",
+        "--target-app-partition",
+        "factory",
+    ];
+    if let Some(port) = &args.port {
+        cmd_args.push("--port");
+        cmd_args.push(port);
+    }
+    Command::new("cargo").args(cmd_args).output()?;
 
     Ok(())
 }
@@ -139,25 +172,6 @@ fn espflash_installed() -> bool {
 
 // vars:
 //   IMAGE: ../../apps/firefly-updates/firefly-main
-
-//   flash:
-//     desc: Build the firmware and write it to the device connected via USB.
-//     cmds:
-//       - task: install-espflash
-//       - task: write-serial
-//       # Switch OTA to the factory slot
-//       - >
-//         cargo espflash erase-parts
-//         --partition-table partitions.csv
-//         otadata
-//       - >
-//         cargo espflash flash
-//         --skip-update-check
-//         --chip                  esp32s3
-//         --partition-table       partitions.csv
-//         --target-app-partition  factory
-//         --release
-//         {{.CLI_ARGS}}
 
 //   monitor:
 //     cmds:
