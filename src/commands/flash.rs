@@ -44,7 +44,6 @@ pub fn cmd_flash(root_args: &RuntimeArgs, args: &FlashArgs) -> Result<()> {
         bail!("firmware can only be built from source")
     }
 
-    // TODO: monitor
     println!("✅ flashed");
     Ok(())
 }
@@ -190,16 +189,3 @@ fn exec_espflash(root: &Path, cmd_args: &[&str]) -> Result<()> {
     }
     Ok(())
 }
-
-// # https://taskfile.dev
-// version: "3"
-// dotenv:
-//   - ~/export-esp.sh
-
-// vars:
-//   IMAGE: ../../apps/firefly-updates/firefly-main
-
-//   monitor:
-//     cmds:
-//       - task: install-espflash
-//       - cargo espflash monitor {{.CLI_ARGS}}
