@@ -175,13 +175,19 @@ fn exec_espflash(root: &Path, cmd_args: &[&str]) -> Result<()> {
             let dotenv_raw = fs::read_to_string(dotenv_path).context("read ~/export-esp.sh")?;
             let parts: Vec<_> = dotenv_raw.split('"').collect();
             if parts.len() == 5 {
-                cmd = cmd.env("PATH", parts[1]);
+                let (path, _) = parts[1].split_once(':').unwrap();
+                let path = format!("{path}:{}", std::env::var("PATH").unwrap());
+                cmd = cmd.env("PATH", path);
                 cmd = cmd.env("LIBCLANG_PATH", parts[3]);
             }
         }
     }
 
-    cmd.status().context("run espflash")?;
+    let status = cmd.status().context("run espflash")?;
+    if !status.success() {
+        let code = status.code().unwrap_or_default();
+        bail!("unexpected status code: {code}")
+    }
     Ok(())
 }
 
