@@ -1,6 +1,7 @@
 use crate::args::BuildArgs;
 use crate::config::{Config, Lang};
 use crate::file_names::BIN;
+use crate::fs::path_to_utf8;
 use crate::wasm::{optimize, strip_custom};
 use anyhow::{Context, bail};
 use std::env::temp_dir;
@@ -621,14 +622,6 @@ fn find_wasm(from_dir: &Path) -> anyhow::Result<PathBuf> {
     }
 }
 
-/// Convert a file system path to UTF-8 if possible.
-pub fn path_to_utf8(path: &Path) -> anyhow::Result<&str> {
-    match path.to_str() {
-        Some(path) => Ok(path),
-        None => bail!("project root path cannot be converted to UTF-8"),
-    }
-}
-
 pub fn run_cmd(cmd: &mut Command) -> anyhow::Result<()> {
     let status = cmd.status()?;
     if !status.success() {
@@ -642,7 +635,7 @@ pub fn run_cmd(cmd: &mut Command) -> anyhow::Result<()> {
 pub fn check_installed(lang: &str, bin: &str, arg: &str) -> anyhow::Result<()> {
     use std::fmt::Write;
 
-    let output = Command::new(bin).args([arg]).output();
+    let output = Command::new(bin).arg(arg).output();
     let Ok(output) = output else {
         return Ok(());
     };

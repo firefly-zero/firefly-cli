@@ -1,4 +1,5 @@
 use crate::args::ShotsDownloadArgs;
+use crate::fs::path_to_utf8;
 use anyhow::{Context, Result, bail};
 use std::io::Write;
 use std::path::{Path, PathBuf};
@@ -20,7 +21,7 @@ pub fn cmd_shots_download(vfs: &Path, args: &ShotsDownloadArgs) -> Result<()> {
         return download_file(&src_path, &dst_dir);
     }
     if src_path.is_dir() {
-        println!("downloading a dir from {}", path_to_utf8(&src_path));
+        println!("downloading a dir from {}", path_to_utf8(&src_path)?);
         return download_dir(&src_path, &dst_dir);
     }
 
@@ -67,7 +68,7 @@ fn download_dir(src_dir: &Path, dst_dir: &Path) -> Result<()> {
     }
     println!(
         "⏳️ downloading all files from from {}...",
-        path_to_utf8(src_dir)
+        path_to_utf8(src_dir)?
     );
     if !dst_dir.exists() {
         std::fs::create_dir_all(dst_dir).context("create output dir")?;
@@ -84,11 +85,12 @@ fn download_dir(src_dir: &Path, dst_dir: &Path) -> Result<()> {
         }
         let dst_file_name = get_output_file_name(&src_path)?;
         let dst_path = dst_dir.join(dst_file_name);
+        let src_path_str = path_to_utf8(&src_path)?;
+        let dst_path_str = path_to_utf8(&dst_path)?;
         copy_file(&src_path, &dst_path).with_context(|| {
             format!(
                 "copy screenshot from {} into {}",
-                path_to_utf8(&src_path),
-                path_to_utf8(&dst_path),
+                src_path_str, dst_path_str,
             )
         })?;
     }
@@ -99,7 +101,7 @@ fn download_dir(src_dir: &Path, dst_dir: &Path) -> Result<()> {
 fn download_file(src_path: &Path, dst_path: &Path) -> Result<()> {
     println!(
         "⏳️ downloading a single file from {}...",
-        path_to_utf8(src_path)
+        path_to_utf8(src_path)?
     );
     let is_file = has_ext(dst_path, "png");
     if dst_path.is_file() || is_file {
@@ -213,9 +215,4 @@ fn write_chunk<W: Write>(mut w: W, name: &[u8; 4], data: &[u8]) -> Result<()> {
     crc.update(data);
     w.write_all(&crc.finalize().to_be_bytes())?;
     Ok(())
-}
-
-/// Convert a file system path to UTF-8 if possible.
-pub fn path_to_utf8(path: &Path) -> &str {
-    path.to_str().unwrap_or("???")
 }
