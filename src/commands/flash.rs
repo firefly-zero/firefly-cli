@@ -94,6 +94,16 @@ fn flash_from_source(args: &FlashArgs) -> Result<()> {
     } else {
         &std::env::current_dir().context("detect current dir")?
     };
+    let mut shared_args = vec![
+        "--skip-update-check",
+        "--non-interactive",
+        "--chip",
+        "esp32s3",
+    ];
+    if let Some(port) = &args.port {
+        shared_args.push("--port");
+        shared_args.push(port);
+    }
 
     // If output path is provided, save the image into the file.
     if let Some(output_path) = &args.output {
@@ -102,19 +112,12 @@ fn flash_from_source(args: &FlashArgs) -> Result<()> {
         let mut cmd_args = vec![
             "espflash",
             "save-image",
-            "--skip-update-check",
-            "--non-interactive",
             "--features",
             &revision,
-            "--chip",
-            "esp32s3",
             "--release",
             path_to_utf8(output_path)?,
         ];
-        if let Some(port) = &args.port {
-            cmd_args.push("--port");
-            cmd_args.push(port);
-        }
+        cmd_args.extend_from_slice(&shared_args);
         Command::new("cargo")
             .args(cmd_args)
             .current_dir(root)
@@ -125,13 +128,14 @@ fn flash_from_source(args: &FlashArgs) -> Result<()> {
     // Switch OTA to the factory slot.
     let partitions_path = root.join("partitions.csv");
     let partitions = path_to_utf8(&partitions_path)?;
-    let cmd_args = [
+    let mut cmd_args = vec![
         "espflash",
         "erase-parts",
         "--partition-table",
         partitions,
         "otadata",
     ];
+    cmd_args.extend_from_slice(&shared_args);
     Command::new("cargo")
         .args(cmd_args)
         .current_dir(root)
@@ -142,18 +146,15 @@ fn flash_from_source(args: &FlashArgs) -> Result<()> {
     let mut cmd_args = vec![
         "espflash",
         "flash",
-        "--skip-update-check",
-        "--non-interactive",
         "--features",
         &revision,
-        "--chip",
-        "esp32s3",
         "--release",
         "--partition-table",
         partitions,
         "--target-app-partition",
         "factory",
     ];
+    cmd_args.extend_from_slice(&shared_args);
     if let Some(port) = &args.port {
         cmd_args.push("--port");
         cmd_args.push(port);
