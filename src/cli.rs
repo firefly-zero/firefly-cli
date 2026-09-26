@@ -13,7 +13,6 @@ pub fn run_command(vfs: PathBuf, command: &Commands) -> anyhow::Result<()> {
         New(args) => cmd_new(args),
         Test(args) => cmd_test(args),
         Emulator(args) => cmd_emulator(&vfs, args),
-        Flash(args) => cmd_flash(args),
         Badges(args) => cmd_badges(&vfs, args),
         Boards(args) => cmd_boards(&vfs, args),
         Inspect(args) => cmd_inspect(&vfs, args),
@@ -36,6 +35,7 @@ pub fn run_command(vfs: PathBuf, command: &Commands) -> anyhow::Result<()> {
             RuntimeCommands::Cheat(args) => cmd_cheat(root_args, args),
             RuntimeCommands::Monitor => cmd_monitor(root_args),
             RuntimeCommands::Logs => cmd_logs(root_args),
+            RuntimeCommands::Flash(args) => cmd_flash(root_args, args),
         },
         Vfs => cmd_vfs(),
     }

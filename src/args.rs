@@ -39,9 +39,6 @@ pub enum Commands {
     /// Launch firefly-emulator.
     Emulator(EmulatorArgs),
 
-    /// Write firmware on the device.
-    Flash(FlashArgs),
-
     /// Run tests.
     #[clap(alias("tests"), alias("pytest"))]
     Test(TestArgs),
@@ -182,10 +179,6 @@ pub struct FlashArgs {
     /// Path to the firmware source code or firmware binary archive.
     #[arg(long)]
     pub input: Option<PathBuf>,
-
-    /// Path to serial port for connecting to a running device.
-    #[arg(long)]
-    pub port: Option<String>,
 
     /// Path to a file where to write a firmware dump.
     #[arg(long)]
@@ -397,6 +390,9 @@ pub enum RuntimeCommands {
 
     /// Fetch and print the ID of the running app.
     Id,
+
+    /// Write firmware on the device.
+    Flash(FlashArgs),
 }
 
 #[derive(Debug, Parser)]

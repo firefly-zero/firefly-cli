@@ -1,11 +1,13 @@
+use crate::{
+    args::{FlashArgs, RuntimeArgs},
+    fs::path_to_utf8,
+};
+use anyhow::{Context, Result, bail};
 use std::{env::temp_dir, fs, path::Path, process::Command};
 
-use crate::{args::FlashArgs, fs::path_to_utf8};
-use anyhow::{Context, Result, bail};
-
 /// `ff flash`: Flash firmware into device or file.
-pub fn cmd_flash(args: &FlashArgs) -> Result<()> {
-    if let Some(port) = &args.port
+pub fn cmd_flash(root_args: &RuntimeArgs, args: &FlashArgs) -> Result<()> {
+    if let Some(port) = &root_args.port
         && !port.starts_with("/dev/tty")
     {
         bail!("invalid --port");
@@ -30,12 +32,12 @@ pub fn cmd_flash(args: &FlashArgs) -> Result<()> {
     // If serial number is provided, write it to the device.
     if let Some(serial) = args.serial {
         println!("⏳️ writing serial number...");
-        write_serial(args, serial).context("write serial number")?;
+        write_serial(root_args, serial).context("write serial number")?;
     }
 
     if is_source(args)? {
         println!("⏳️ flashing firmware from source...");
-        flash_from_source(args)?;
+        flash_from_source(root_args, args)?;
     } else {
         // TODO: support installing from file.
         // TODO: support downloading and installing a release.
@@ -48,7 +50,7 @@ pub fn cmd_flash(args: &FlashArgs) -> Result<()> {
 }
 
 /// Write serial number into flash memory of the device.
-fn write_serial(args: &FlashArgs, serial: u32) -> Result<()> {
+fn write_serial(root_args: &RuntimeArgs, serial: u32) -> Result<()> {
     let serial_path = temp_dir().join("firefly-serial.bin");
     fs::write(serial_path, serial.to_le_bytes()).context("write serial number into temp file")?;
     let mut cmd_args: Vec<&str> = vec![
@@ -60,7 +62,7 @@ fn write_serial(args: &FlashArgs, serial: u32) -> Result<()> {
         "0x10000",
         "/tmp/serial.txt",
     ];
-    if let Some(port) = &args.port {
+    if let Some(port) = &root_args.port {
         cmd_args.push("--port");
         cmd_args.push(port);
     }
@@ -88,7 +90,7 @@ fn is_source(args: &FlashArgs) -> Result<bool> {
 }
 
 /// Build firmware from source and flash it to the device.
-fn flash_from_source(args: &FlashArgs) -> Result<()> {
+fn flash_from_source(root_args: &RuntimeArgs, args: &FlashArgs) -> Result<()> {
     let root = if let Some(path) = &args.input {
         path
     } else {
@@ -100,7 +102,7 @@ fn flash_from_source(args: &FlashArgs) -> Result<()> {
         "--chip",
         "esp32s3",
     ];
-    if let Some(port) = &args.port {
+    if let Some(port) = &root_args.port {
         shared_args.push("--port");
         shared_args.push(port);
     }
@@ -117,22 +119,16 @@ fn flash_from_source(args: &FlashArgs) -> Result<()> {
             path_to_utf8(output_path)?,
         ];
         cmd_args.extend_from_slice(&shared_args);
-        exec_espflash(root, &cmd_args)?;
+        exec_espflash(root, &cmd_args).context("save image")?;
         return Ok(());
     }
 
     // Switch OTA to the factory slot.
     let partitions_path = root.join("partitions.csv");
     let partitions = path_to_utf8(&partitions_path)?;
-    let mut cmd_args = vec![
-        "espflash",
-        "erase-parts",
-        "--partition-table",
-        partitions,
-        "otadata",
-    ];
+    let mut cmd_args = vec!["erase-parts", "--partition-table", partitions, "otadata"];
     cmd_args.extend_from_slice(&shared_args);
-    exec_espflash(root, &cmd_args)?;
+    exec_espflash(root, &cmd_args).context("erase OTA partition")?;
 
     // Flash the image to the device.
     let revision = format!("v{}", args.revision);
@@ -147,7 +143,7 @@ fn flash_from_source(args: &FlashArgs) -> Result<()> {
         "factory",
     ];
     cmd_args.extend_from_slice(&shared_args);
-    exec_espflash(root, &cmd_args)?;
+    exec_espflash(root, &cmd_args).context("flash firmware")?;
 
     Ok(())
 }
@@ -176,16 +172,16 @@ fn exec_espflash(root: &Path, cmd_args: &[&str]) -> Result<()> {
     if let Some(home) = std::env::home_dir() {
         let dotenv_path = home.join("export-esp.sh");
         if dotenv_path.is_file() {
-            let dotenv_raw = fs::read_to_string(dotenv_path)?;
+            let dotenv_raw = fs::read_to_string(dotenv_path).context("read ~/export-esp.sh")?;
             let parts: Vec<_> = dotenv_raw.split('"').collect();
             if parts.len() == 5 {
                 cmd = cmd.env("PATH", parts[1]);
-                cmd = cmd.env("PATH", parts[3]);
+                cmd = cmd.env("LIBCLANG_PATH", parts[3]);
             }
         }
     }
 
-    cmd.output()?;
+    cmd.status().context("run espflash")?;
     Ok(())
 }
 
