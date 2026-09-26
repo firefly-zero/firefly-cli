@@ -1,4 +1,4 @@
-use std::{env::temp_dir, fs, process::Command};
+use std::{env::temp_dir, fs, path::Path, process::Command};
 
 use crate::{args::FlashArgs, fs::path_to_utf8};
 use anyhow::{Context, Result, bail};
@@ -52,7 +52,6 @@ fn write_serial(args: &FlashArgs, serial: u32) -> Result<()> {
     let serial_path = temp_dir().join("firefly-serial.bin");
     fs::write(serial_path, serial.to_le_bytes()).context("write serial number into temp file")?;
     let mut cmd_args: Vec<&str> = vec![
-        "espflash",
         "write-bin",
         "--skip-update-check",
         "--non-interactive",
@@ -65,7 +64,8 @@ fn write_serial(args: &FlashArgs, serial: u32) -> Result<()> {
         cmd_args.push("--port");
         cmd_args.push(port);
     }
-    Command::new("cargo").args(&cmd_args).output()?;
+    let root = std::env::current_dir()?;
+    exec_espflash(&root, &cmd_args)?;
     Ok(())
 }
 
@@ -110,7 +110,6 @@ fn flash_from_source(args: &FlashArgs) -> Result<()> {
         // TODO: support saving as gz file
         let revision = format!("v{}", args.revision);
         let mut cmd_args = vec![
-            "espflash",
             "save-image",
             "--features",
             &revision,
@@ -118,10 +117,7 @@ fn flash_from_source(args: &FlashArgs) -> Result<()> {
             path_to_utf8(output_path)?,
         ];
         cmd_args.extend_from_slice(&shared_args);
-        Command::new("cargo")
-            .args(cmd_args)
-            .current_dir(root)
-            .output()?;
+        exec_espflash(root, &cmd_args)?;
         return Ok(());
     }
 
@@ -136,15 +132,11 @@ fn flash_from_source(args: &FlashArgs) -> Result<()> {
         "otadata",
     ];
     cmd_args.extend_from_slice(&shared_args);
-    Command::new("cargo")
-        .args(cmd_args)
-        .current_dir(root)
-        .output()?;
+    exec_espflash(root, &cmd_args)?;
 
     // Flash the image to the device.
     let revision = format!("v{}", args.revision);
     let mut cmd_args = vec![
-        "espflash",
         "flash",
         "--features",
         &revision,
@@ -155,14 +147,7 @@ fn flash_from_source(args: &FlashArgs) -> Result<()> {
         "factory",
     ];
     cmd_args.extend_from_slice(&shared_args);
-    if let Some(port) = &args.port {
-        cmd_args.push("--port");
-        cmd_args.push(port);
-    }
-    Command::new("cargo")
-        .args(cmd_args)
-        .current_dir(root)
-        .output()?;
+    exec_espflash(root, &cmd_args)?;
 
     Ok(())
 }
@@ -181,6 +166,27 @@ fn espflash_installed() -> bool {
         return false;
     };
     output.status.success()
+}
+
+fn exec_espflash(root: &Path, cmd_args: &[&str]) -> Result<()> {
+    let mut cmd = Command::new("cargo");
+    let mut cmd = cmd.arg("espflash").args(cmd_args).current_dir(root);
+
+    // Set env vars from ~/export-esp.sh.
+    if let Some(home) = std::env::home_dir() {
+        let dotenv_path = home.join("export-esp.sh");
+        if dotenv_path.is_file() {
+            let dotenv_raw = fs::read_to_string(dotenv_path)?;
+            let parts: Vec<_> = dotenv_raw.split('"').collect();
+            if parts.len() == 5 {
+                cmd = cmd.env("PATH", parts[1]);
+                cmd = cmd.env("PATH", parts[3]);
+            }
+        }
+    }
+
+    cmd.output()?;
+    Ok(())
 }
 
 // # https://taskfile.dev
