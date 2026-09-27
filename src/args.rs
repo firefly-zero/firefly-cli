@@ -171,6 +171,25 @@ pub struct ExportArgs {
 }
 
 #[derive(Debug, Parser)]
+pub struct FlashArgs {
+    /// Hardware version.
+    #[arg(long)]
+    pub revision: u8,
+
+    /// Path to the firmware source code or firmware binary archive.
+    #[arg(long)]
+    pub input: Option<PathBuf>,
+
+    /// Path to a file where to write a firmware dump.
+    #[arg(long)]
+    pub output: Option<PathBuf>,
+
+    /// Serial number to write on the device.
+    #[arg(long)]
+    pub serial: Option<u32>,
+}
+
+#[derive(Debug, Parser)]
 pub struct BadgesArgs {
     /// Full app ID.
     pub id: String,
@@ -371,6 +390,9 @@ pub enum RuntimeCommands {
 
     /// Fetch and print the ID of the running app.
     Id,
+
+    /// Write firmware on the device.
+    Flash(FlashArgs),
 }
 
 #[derive(Debug, Parser)]

@@ -1,3 +1,4 @@
+use anyhow::bail;
 use crossterm::style::Stylize;
 use std::collections::HashMap;
 use std::ffi::OsString;
@@ -28,6 +29,14 @@ pub fn format_size(size: u64) -> String {
         format!("{new_size:>5} {}", "Kb".blue())
     } else {
         format!("{size:>8}")
+    }
+}
+
+/// Convert a file system path to UTF-8 if possible.
+pub fn path_to_utf8(path: &Path) -> anyhow::Result<&str> {
+    match path.to_str() {
+        Some(path) => Ok(path),
+        None => bail!("path cannot be converted to UTF-8"),
     }
 }
 
