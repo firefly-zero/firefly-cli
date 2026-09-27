@@ -217,15 +217,16 @@ pub struct ImportArgs {
     ///
     /// 3. App ID in the catalog (for example, `sys.launcher`).
     ///
-    /// 4. The word "launcher" to install the latest version of the default launcher.
-    #[arg()]
+    /// 4. Author ID starting with "@".
     pub path: String,
+
+    /// Any additional apps to install.
+    pub paths: Option<Vec<String>>,
 }
 
 #[derive(Debug, Parser)]
 pub struct NewArgs {
     /// The directory name to create, the new project root and name.
-    #[arg()]
     pub name: String,
 
     /// The programming language to use for the project.
@@ -320,13 +321,11 @@ pub struct CheatArgs {
     /// The command to pass into the app.
     ///
     /// Either an integer or a command listed in firefly.toml.
-    #[arg()]
     pub command: String,
 
     /// The value to pass into the app.
     ///
     /// Either an integer, boolean, or a character.
-    #[arg()]
     pub value: String,
 
     /// Path to the project root.
@@ -398,7 +397,6 @@ pub enum RuntimeCommands {
 #[derive(Debug, Parser)]
 pub struct LaunchArgs {
     /// The app ID to launch. For example, "lux.snek".
-    #[arg()]
     pub id: String,
 }
 
@@ -417,6 +415,5 @@ pub struct CatalogListArgs {
 #[derive(Debug, Parser)]
 pub struct CatalogShowArgs {
     /// The app/author ID to get info for. For example, "lux.snek".
-    #[arg()]
     pub id: String,
 }
