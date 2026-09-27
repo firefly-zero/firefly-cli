@@ -1,33 +1,54 @@
 use crate::args::ImportArgs;
+use crate::commands::catalog::{App, Author};
 use crate::crypto::hash_dir;
 use crate::file_names::{HASH, META, STATS};
 use crate::vfs::init_vfs;
 use anyhow::{Context, Result, bail};
 use chrono::Datelike;
 use firefly_types::{Encode, Meta, validate_id};
-use serde::Deserialize;
 use std::env::temp_dir;
 use std::fs::{self, File, create_dir_all};
 use std::io::Read;
 use std::path::{Path, PathBuf};
 use zip::ZipArchive;
 
-/// API response from the firefly catalog.
-///
-/// Example: <https://catalog.fireflyzero.com/sys.launcher.json>
-#[derive(Deserialize)]
-struct CatalogApp {
-    download: String,
+// `ff import`: Install apps from catalog, file, or URL.
+pub fn cmd_import(vfs: &Path, args: &ImportArgs) -> Result<()> {
+    // If an author ID is given, download all system apps.
+    if args.path.starts_with('@') {
+        let url = format!("https://catalog.fireflyzero.com/{}.json", args.path);
+        let resp = ureq::get(&url).call().context("send HTTP request")?;
+        let mut body = resp.into_body().into_reader();
+        let author: Author = serde_json::from_reader(&mut body).context("parse JSON")?;
+        println!("⏳️ installing all apps of the author...");
+        if let Some(apps) = author.apps {
+            for app in apps {
+                import_app(vfs, &app.id).context("download a system app")?;
+            }
+        }
+        println!("✅ all apps of the author have been installed");
+        return Ok(());
+    }
+
+    // Download explicitly listed apps.
+    import_app(vfs, &args.path)?;
+    if let Some(paths) = &args.paths {
+        for path in paths {
+            import_app(vfs, path)?;
+        }
+    }
+    Ok(())
 }
 
-pub fn cmd_import(vfs: &Path, args: &ImportArgs) -> Result<()> {
-    let path = fetch_archive(&args.path).context("download ROM archive")?;
+/// Download the given app. The path can be local file, URL, or app ID.
+fn import_app(vfs: &Path, raw_path: &str) -> Result<()> {
+    let path = fetch_archive(raw_path).context("download ROM archive")?;
     let file = File::open(path).context("open archive file")?;
     let mut archive = ZipArchive::new(file).context("open archive")?;
 
     let meta_raw = read_meta_raw(&mut archive)?;
     let meta = Meta::decode(&meta_raw).context("parse meta")?;
-    if !id_matches(&args.path, &meta) {
+    if !id_matches(raw_path, &meta) {
         bail!(
             "app ID ({}.{}) doesn't match the expected ID",
             meta.author_id,
@@ -97,7 +118,7 @@ fn fetch_archive(path: &str) -> Result<PathBuf> {
         let url = format!("https://catalog.fireflyzero.com/{path}.json");
         let resp = ureq::get(&url).call().context("send HTTP request")?;
         let mut body = resp.into_body().into_reader();
-        let app: CatalogApp = serde_json::from_reader(&mut body).context("parse JSON")?;
+        let app: App = serde_json::from_reader(&mut body).context("parse JSON")?;
         // TODO(@orsinium): the download link might be a download page,
         // not the actual ROM file.
         path = app.download;
@@ -319,6 +340,7 @@ mod tests {
         let path_str = archive_path.to_str().unwrap();
         let args = ImportArgs {
             path: path_str.to_string(),
+            paths: None,
         };
         cmd_import(&vfs2, &args).unwrap();
 

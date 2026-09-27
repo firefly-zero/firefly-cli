@@ -8,8 +8,8 @@ const BASE_URL: &str = "https://catalog.fireflyzero.com/";
 const LIST_URL: &str = "https://catalog.fireflyzero.com/apps.json";
 
 #[derive(Deserialize)]
-struct ShortApp {
-    id: String,
+pub struct ShortApp {
+    pub id: String,
     name: String,
     author: String,
     short: String,
@@ -17,24 +17,25 @@ struct ShortApp {
 }
 
 #[derive(Deserialize)]
-struct App {
+pub struct App {
     name: String,
     author: Author,
     short: String,
     added: String,
-    download: String,
+    pub download: String,
     desc: String,
     links: Option<HashMap<String, String>>,
     categories: Vec<String>,
 }
 
 #[derive(Deserialize)]
-struct Author {
+pub struct Author {
     name: String,
     pronouns: Option<String>,
     links: HashMap<String, String>,
     short: String,
     about: Option<String>,
+    pub apps: Option<Vec<ShortApp>>,
 }
 
 pub fn cmd_catalog_list(_args: &CatalogListArgs) -> Result<()> {
