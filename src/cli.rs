@@ -25,6 +25,7 @@ pub fn run_command(vfs: PathBuf, command: &Commands) -> anyhow::Result<()> {
         },
         Config(command) => match command {
             ConfigCommands::Get(args) => cmd_config_get(&vfs, args),
+            ConfigCommands::Reset(args) => cmd_config_reset(&vfs, args),
         },
         Runtime(root_args) => match &root_args.command {
             RuntimeCommands::Launch(args) => cmd_launch(root_args, args),

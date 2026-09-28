@@ -34,19 +34,24 @@ pub fn init_vfs(path: &Path) -> anyhow::Result<()> {
     let settings_path = path.join("sys").join("config");
     if !is_valid_settings(&settings_path) {
         // TODO(@orsinium): detect country code.
-        let mut settings = firefly_types::Settings {
-            timezone: detect_tz(),
-            name: generate_valid_name(),
-            ..Default::default()
-        };
-        if !settings.timezone.contains('/') {
-            settings.timezone = "Europe/Amsterdam".to_string();
-        }
+        let settings = generate_settings();
         let encoded = settings.encode_vec().context("serialize settings")?;
         fs::write(settings_path, encoded).context("write settings file")?;
     }
 
     Ok(())
+}
+
+pub fn generate_settings() -> firefly_types::Settings {
+    let mut settings = firefly_types::Settings {
+        timezone: detect_tz(),
+        name: generate_valid_name(),
+        ..Default::default()
+    };
+    if !settings.timezone.contains('/') {
+        settings.timezone = "Europe/Amsterdam".to_string();
+    }
+    settings
 }
 
 fn is_valid_settings(path: &Path) -> bool {

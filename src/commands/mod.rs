@@ -25,7 +25,7 @@ pub use boards::cmd_boards;
 pub use build::cmd_build;
 pub use catalog::{cmd_catalog_list, cmd_catalog_show};
 pub use cheat::cmd_cheat;
-pub use config::cmd_config_get;
+pub use config::{cmd_config_get, cmd_config_reset};
 pub use emulator::cmd_emulator;
 pub use export::cmd_export;
 pub use flash::cmd_flash;

@@ -1,4 +1,4 @@
-use crate::args::ConfigGetArgs;
+use crate::{args::ConfigGetArgs, vfs::generate_settings};
 use anyhow::{Context, Result, bail};
 use firefly_types::Encode;
 use std::path::Path;
@@ -65,6 +65,20 @@ pub fn cmd_config_get(vfs: &Path, args: &ConfigGetArgs) -> Result<()> {
 
     println!("}}");
     Ok(())
+}
+
+pub fn cmd_config_reset(vfs: &Path, args: &ConfigGetArgs) -> Result<()> {
+    if !vfs.exists() {
+        bail!("vfs is not created yet")
+    }
+    let settings_path = vfs.join("sys").join("config");
+    if !settings_path.exists() {
+        bail!("settings file not found")
+    }
+    let settings = generate_settings();
+    let raw = settings.encode_vec()?;
+    std::fs::write(settings_path, raw)?;
+    cmd_config_get(vfs, args)
 }
 
 fn p(r: &[u8]) -> &str {

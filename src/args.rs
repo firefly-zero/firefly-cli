@@ -351,6 +351,8 @@ pub enum ConfigCommands {
     /// Get config as JSON.
     #[clap(alias("list"), alias("dump"), alias("export"), alias("json"))]
     Get(ConfigGetArgs),
+    /// Remove config and generate a new one with default values.
+    Reset(ConfigGetArgs),
 }
 
 #[derive(Debug, Parser)]
