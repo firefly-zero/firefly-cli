@@ -160,8 +160,8 @@ fn new_odin(name: &str) -> Result<()> {
     c.cd(name)?;
     let url = format!("{BASE_URL}/firefly.odin");
     c.wget(&["vendor", "firefly", "firefly.odin"], &url)?;
-    let url = format!("{BASE_URL}/audio.odin");
-    c.wget(&["vendor", "firefly", "audio.odin"], &url)?;
+    let url = format!("{BASE_URL}/audio/audio.odin");
+    c.wget(&["vendor", "firefly", "audio", "audio.odin"], &url)?;
     c.copy_asset(&["main.odin"], "main.odin")?;
     Ok(())
 }
