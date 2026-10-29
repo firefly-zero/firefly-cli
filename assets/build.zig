@@ -6,7 +6,7 @@ pub fn build(b: *std.Build) void {
         .os_tag = .freestanding,
     };
     const target = b.resolveTargetQuery(target_query);
-    const optimize: std.builtin.OptimizeMode = .ReleaseFast;
+    const optimize: std.builtin.OptimizeMode = .fast;
     const exe = b.addExecutable(.{
         .name = "main",
         .root_module = b.createModule(.{
