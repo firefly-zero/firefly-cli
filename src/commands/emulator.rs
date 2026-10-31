@@ -26,14 +26,11 @@ pub fn cmd_emulator(vfs: &Path, args: &EmulatorArgs) -> Result<()> {
 
 fn format_args(args: &EmulatorArgs) -> Vec<&str> {
     let mut res = Vec::new();
-    if args.update {
-        res.push("--update");
-    }
     if args.fullscreen {
         res.push("--fullscreen");
     }
     if args.no_keyboard {
-        res.push("--no_keyboard");
+        res.push("--no-keyboard");
     }
     if args.mute {
         res.push("--mute");
@@ -48,11 +45,11 @@ fn format_args(args: &EmulatorArgs) -> Vec<&str> {
         res.push(val);
     }
     if let Some(val) = &args.tcp_ip {
-        res.push("--tcp_ip");
+        res.push("--tcp-ip");
         res.push(val);
     }
     if let Some(val) = &args.udp_ip {
-        res.push("--udp_ip");
+        res.push("--udp-ip");
         res.push(val);
     }
     if let Some(val) = &args.peers {
