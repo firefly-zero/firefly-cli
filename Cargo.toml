@@ -70,4 +70,4 @@ wasm-encoder = "0.263.0"
 # Parse wasm binaries for post-processing (removing custom sections)
 wasmparser = "0.263.0"
 # Work with zip archives (distribution format for ROMs)
-zip = { version = "8.6.0", default-features = false, features = ["zstd"] }
+zip = { version = "9.2.0", default-features = false, features = ["zstd"] }
