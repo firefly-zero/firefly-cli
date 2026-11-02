@@ -8,7 +8,7 @@ use std::net::{IpAddr, Ipv4Addr, SocketAddr, TcpStream};
 use std::thread::sleep;
 use std::time::Duration;
 
-static IP: IpAddr = IpAddr::V4(Ipv4Addr::UNSPECIFIED);
+static IP: IpAddr = IpAddr::V4(Ipv4Addr::LOCALHOST);
 const TCP_PORT_MIN: u16 = 3210;
 const TCP_PORT_MAX: u16 = 3217;
 
