@@ -22,8 +22,10 @@ struct Stats {
     mem: Option<serial::Memory>,
     /// The last reported log record.
     log: Option<String>,
-    /// When the last message was received.
+    /// When the last message was sent or received.
     last_msg: Option<Instant>,
+    /// When the last message was received.
+    last_resp: Option<chrono::DateTime<chrono::Local>>,
 }
 
 impl Stats {
@@ -72,6 +74,7 @@ fn read_device(stream: &mut dyn Stream, stats: &mut Stats) -> Result<()> {
         Ok(resp) => {
             parse_stats(stats, resp);
             stats.last_msg = Some(Instant::now());
+            stats.last_resp = Some(chrono::Local::now());
         }
         Err(err) => {
             if !is_timeout(&err) {
@@ -159,6 +162,9 @@ fn render_stats(stats: &Stats) -> Result<()> {
         return Ok(());
     }
     execute!(io::stdout(), terminal::Clear(terminal::ClearType::All))?;
+    if let Some(last_resp) = &stats.last_resp {
+        render_last_resp(last_resp).context("render last message time")?;
+    }
     if let Some(cpu) = &stats.cpu {
         render_cpu(cpu).context("render cpu table")?;
     }
@@ -174,6 +180,19 @@ fn render_stats(stats: &Stats) -> Result<()> {
     if let Some(log) = &stats.log {
         render_log(log).context("render logs")?;
     }
+    Ok(())
+}
+
+fn render_last_resp(last_resp: &chrono::DateTime<chrono::Local>) -> anyhow::Result<()> {
+    const X: u16 = 1;
+    const Y: u16 = 0;
+    execute!(
+        io::stdout(),
+        cursor::MoveTo(X, Y),
+        style::Print("last update:".blue()),
+        cursor::MoveTo(X + 13, Y),
+        style::Print(&format!("{}", last_resp.format("%H:%M:%S")).blue()),
+    )?;
     Ok(())
 }
 

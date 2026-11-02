@@ -156,6 +156,10 @@ impl Stream for TcpStream {
     fn next(&mut self) -> Result<Response> {
         let mut buf = vec![0; 64];
         self.read(&mut buf).context("read response")?;
+        if buf.iter().all(|b| *b == 0) {
+            let kind = std::io::ErrorKind::TimedOut;
+            Err(std::io::Error::new(kind, "empty response"))?;
+        }
         let resp = Response::decode(&buf).context("decode response")?;
         Ok(resp)
     }
