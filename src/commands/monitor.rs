@@ -5,6 +5,7 @@ use crossterm::style::Stylize;
 use crossterm::{cursor, event, execute, style, terminal};
 use firefly_types::serial;
 use std::io;
+use std::thread::sleep;
 use std::time::{Duration, Instant};
 
 const COL1: u16 = 8;
@@ -57,6 +58,7 @@ fn monitor_inner(root_args: &RuntimeArgs) -> Result<()> {
         }
         read_device(&mut *stream, &mut stats)?;
         render_stats(&stats).context("render stats")?;
+        sleep(std::time::Duration::from_millis(5));
     }
 }
 
