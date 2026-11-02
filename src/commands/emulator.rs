@@ -104,7 +104,7 @@ fn get_release_url() -> String {
         _ => compile_error!("unsupported architecture"),
     };
     let os = cfg_select! {
-        target_os = "windows" => "windows-msvc",
+        target_os = "windows" => "pc-windows-msvc",
         target_os = "macos" => "apple-darwin",
         target_os = "linux" => "unknown-linux-gnu",
         _ => compile_error!("unsupported os"),
