@@ -79,7 +79,7 @@ pub fn optimize(bin_path: &Path, strip: bool) -> anyhow::Result<()> {
 
     // https://github.com/wasmi-labs/wasmi/?tab=readme-ov-file#webassembly-features
     let mut args = vec![
-        "-Os",
+        "-O4",
         "--dae-optimizing",
         "--disable-exception-handling",
         "--disable-gc",

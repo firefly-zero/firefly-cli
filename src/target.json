@@ -12,6 +12,7 @@
   "cflags": ["-mno-bulk-memory", "-mnontrapping-fptoint", "-msign-ext"],
   "default-stack-size": 16384,
   "ldflags": [
+    "-O3",
     "--allow-undefined",
     "--no-demangle",
     "--stack-first",

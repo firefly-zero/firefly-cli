@@ -326,7 +326,7 @@ fn build_cpp_inner(config: &Config, bin_name: &str, fname: &str) -> anyhow::Resu
         "-mexec-model=reactor",
         "-Wl,--stack-first,--no-entry,--strip-all,--gc-sections,--lto-O3,--initial-memory=65536",
         &stack_size,
-        "-Os",
+        "-O3",
         path_to_utf8(in_path)?,
     ];
     if let Some(additional_args) = &config.compile_args {
@@ -404,7 +404,7 @@ fn build_odin(config: &Config) -> anyhow::Result<()> {
 
     let stack_size = config.stack_size.unwrap_or(16384);
     let flags = format!(
-        "-extra-linker-flags:-zstack-size={stack_size} --initial-memory=65536 --stack-first --lto-O3 --gc-sections --strip-all"
+        "-extra-linker-flags:-O3 -zstack-size={stack_size} --initial-memory=65536 --stack-first --lto-O3 --gc-sections --strip-all"
     );
     let mut cmd_args = vec![
         "build",
@@ -412,6 +412,7 @@ fn build_odin(config: &Config) -> anyhow::Result<()> {
         "-target:freestanding_wasm32",
         "-out:firefly.wasm",
         "-source-code-locations:none",
+        "-o:speed",
         &flags,
     ];
     if let Some(additional_args) = &config.compile_args {
