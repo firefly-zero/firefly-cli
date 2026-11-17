@@ -1,9 +1,10 @@
-use crate::{
-    args::{FlashArgs, RuntimeArgs},
-    fs::path_to_utf8,
-};
+use crate::args::{FlashArgs, RuntimeArgs};
+use crate::fs::path_to_utf8;
 use anyhow::{Context, Result, bail};
-use std::{env::temp_dir, fs, path::Path, process::Command};
+use std::env::temp_dir;
+use std::fs;
+use std::path::Path;
+use std::process::Command;
 
 /// `ff flash`: Flash firmware into device or file.
 pub fn cmd_flash(root_args: &RuntimeArgs, args: &FlashArgs) -> Result<()> {

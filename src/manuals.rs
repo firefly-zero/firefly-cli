@@ -1,8 +1,8 @@
-use std::path::Path;
-
 use anyhow::{Context, Result, bail};
-use firefly_types::{Encode, manuals::*};
+use firefly_types::Encode;
+use firefly_types::manuals::*;
 use markdown::mdast;
+use std::path::Path;
 
 pub fn convert_manual(in_path: &Path, out_path: &Path) -> Result<()> {
     let manual = parse_manual(in_path).context("parse")?;

@@ -1,9 +1,7 @@
 use crate::args::PostinstallArgs;
 use anyhow::{Context, Result, bail};
-use std::{
-    io::Write,
-    path::{Path, PathBuf},
-};
+use std::io::Write;
+use std::path::{Path, PathBuf};
 
 pub fn cmd_postinstall(vfs: &Path, args: &PostinstallArgs) -> Result<()> {
     let path = move_self(args.path.clone()).context("move binary")?;

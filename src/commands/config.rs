@@ -1,4 +1,5 @@
-use crate::{args::ConfigGetArgs, vfs::generate_settings};
+use crate::args::ConfigGetArgs;
+use crate::vfs::generate_settings;
 use anyhow::{Context, Result, bail};
 use firefly_types::Encode;
 use std::path::Path;

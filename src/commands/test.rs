@@ -1,6 +1,8 @@
-use crate::{args::TestArgs, langs::run_cmd};
+use crate::args::TestArgs;
+use crate::langs::run_cmd;
 use anyhow::{Context, Ok, Result, bail};
-use std::{path::Path, process::Command};
+use std::path::Path;
+use std::process::Command;
 
 /// Run tests.
 pub fn cmd_test(_args: &TestArgs) -> Result<()> {
