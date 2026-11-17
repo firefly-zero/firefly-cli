@@ -98,7 +98,7 @@ struct Score {
 
 fn merge_scores(friends: &[String], scores: &firefly_types::BoardScores) -> Vec<Score> {
     let mut res = Vec::new();
-    for score in scores.me.iter() {
+    for score in &scores.me {
         if *score == 0 {
             continue;
         }
@@ -107,7 +107,7 @@ fn merge_scores(friends: &[String], scores: &firefly_types::BoardScores) -> Vec<
             value: *score,
         });
     }
-    for score in scores.friends.iter() {
+    for score in &scores.friends {
         if score.score == 0 {
             continue;
         }
