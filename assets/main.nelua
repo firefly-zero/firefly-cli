@@ -1,0 +1,26 @@
+## context.rootpragmas.nogc = false
+local ff = require 'vendor/firefly'
+
+local function boot()
+    -- ...
+end
+
+local function update()
+    -- ...
+end
+
+local function render()
+  ff.clear_screen(ff.Color.Green)
+  ff.draw_triangle(
+    {x=40, y=60},
+    {x=60, y=40},
+    {x=80, y=60},
+    {
+      fill_color=ff.Color.Red,
+      stroke_color=ff.Color.Blue,
+      stroke_width=1,
+    }
+  )
+end
+
+## ff.value.init({boot=boot, update=update, render=render})

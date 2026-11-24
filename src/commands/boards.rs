@@ -56,7 +56,7 @@ pub fn cmd_boards(vfs: &Path, args: &BoardsArgs) -> Result<()> {
             let name: String = if &score.name == "me" {
                 score.name.magenta().to_string()
             } else {
-                score.name.clone()
+                score.name
             };
             println!("  {name:16} {val}");
         }
