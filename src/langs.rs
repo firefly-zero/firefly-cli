@@ -28,6 +28,7 @@ pub fn build_bin(config: &Config, args: &BuildArgs) -> anyhow::Result<()> {
         Lang::Go => build_go(config),
         Lang::Lua => build_lua(config),
         Lang::Moon => build_moon(config),
+        Lang::Nelua => build_nelua(config),
         Lang::Odin => build_odin(config),
         Lang::Python => build_python(config),
         Lang::Rust => build_rust(config),
@@ -103,6 +104,9 @@ fn detect_lang(root: &Path) -> anyhow::Result<Lang> {
     }
     if root.join("main.lua").exists() {
         return Ok(Lang::Lua);
+    }
+    if root.join("main.nelua").exists() {
+        return Ok(Lang::Nelua);
     }
     if root.join("main.bitsy").exists() {
         return Ok(Lang::Bitsy);
@@ -337,6 +341,48 @@ fn build_cpp_inner(config: &Config, bin_name: &str, fname: &str) -> anyhow::Resu
     let clang_path = wasi_sdk.join("bin").join(bin_name);
     run_cmd(
         Command::new(path_to_utf8(&clang_path)?)
+            .args(cmd_args)
+            .current_dir(&config.root_path),
+    )?;
+    Ok(())
+}
+
+/// Build Nelua project using wasi-sdk.
+fn build_nelua(config: &Config) -> anyhow::Result<()> {
+    check_installed("Nelua", "nelua", "--version")?;
+    let wasi_sdk = find_wasi_sdk()?;
+    let mut in_path = &config.root_path.join("main.nelua");
+    let in_path_src = &config.root_path.join("src").join("main.nelua");
+    if !in_path.exists() {
+        in_path = in_path_src;
+        if !in_path.exists() {
+            bail!("file main.nelua not found");
+        }
+    }
+    let out_path = config.rom_path.join(BIN);
+    let clang_path = wasi_sdk.join("bin").join("clang");
+    let stack_size = config.stack_size.unwrap_or(16384);
+    let ldflags = format!(
+        "--ldflags=-Wl,-zstack-size={stack_size},--stack-first,--no-entry,--strip-all,--gc-sections,--lto-O3,--initial-memory=131072"
+    );
+    let mut cmd_args = vec![
+        path_to_utf8(in_path)?,
+        "--release",
+        "--add-path",
+        "./vendor/?.nelua",
+        &ldflags,
+        "--cc",
+        path_to_utf8(&clang_path)?,
+        "-o",
+        path_to_utf8(&out_path)?,
+    ];
+    if let Some(additional_args) = &config.compile_args {
+        for arg in additional_args {
+            cmd_args.push(arg.as_str());
+        }
+    }
+    run_cmd(
+        Command::new("nelua")
             .args(cmd_args)
             .current_dir(&config.root_path),
     )?;

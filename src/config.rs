@@ -195,6 +195,7 @@ pub enum Lang {
     Go,     // 🏃
     Lua,    // 🌙
     Moon,   // 🐰
+    Nelua,  // 🌚
     Odin,   // 🐦‍⬛
     Python, // 🐍
     Rust,   // 🦀

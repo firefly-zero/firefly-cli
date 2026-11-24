@@ -30,6 +30,7 @@ pub fn cmd_new(args: &NewArgs) -> Result<()> {
         Lang::Go => new_go(&args.name).context("new Go project")?,
         Lang::Lua => new_lua(&args.name).context("new Lua project")?,
         Lang::Moon => new_moon(&args.name).context("new Moon project")?,
+        Lang::Nelua => new_nelua(&args.name).context("new Nelua project")?,
         Lang::Odin => new_odin(&args.name).context("new Odin project")?,
         Lang::Python => bail!("Python is not supported yet"),
         Lang::Rust => new_rust(&args.name).context("new Rust project")?,
@@ -106,6 +107,7 @@ fn parse_lang(lang: &str) -> Result<Lang> {
         "cpp" | "c++" => Lang::Cpp,
         "go" | "golang" | "tinygo" => Lang::Go,
         "lua" => Lang::Lua,
+        "nelua" => Lang::Nelua,
         "moon" | "moonbit" | "mbt" => Lang::Moon,
         "odin" | "abadidea" => Lang::Odin,
         "python" | "py" => Lang::Python,
@@ -213,6 +215,16 @@ fn new_c_or_cpp(name: &str, main: &str) -> Result<()> {
         c.wget(&["vendor", "firefly", fname], url)?;
     }
     c.copy_asset(&[main], main)?;
+    Ok(())
+}
+
+fn new_nelua(name: &str) -> Result<()> {
+    const SRC_URL: &str =
+        "https://github.com/firefly-zero/firefly-nelua/raw/refs/heads/main/firefly.nelua";
+    let mut c = Commander::default();
+    c.cd(name)?;
+    c.wget(&["vendor", "firefly.nelua"], SRC_URL)?;
+    c.copy_asset(&["main.nelua"], "main.nelua")?;
     Ok(())
 }
 
